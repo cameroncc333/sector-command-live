@@ -135,8 +135,8 @@ def ask(user_message: str, market_context: dict = None) -> str:
                f":generateContent?key={GEMINI_API_KEY}")
 
         payload = {
-            "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-            "contents": [{"parts": [{"text": full_prompt}]}],
+            "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+            "contents": [{"role": "user", "parts": [{"text": full_prompt}]}],
             "generationConfig": {"temperature": 0.4, "maxOutputTokens": 500},
         }
 
