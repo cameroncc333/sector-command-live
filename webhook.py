@@ -531,7 +531,13 @@ def api_macro():
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({"status": "ok", "ts": datetime.datetime.utcnow().isoformat()})
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+    return jsonify({
+        "status": "ok",
+        "ts": datetime.datetime.utcnow().isoformat(),
+        "gemini": "key_set" if gemini_key else "no_key",
+        "telegram": "key_set" if os.environ.get("TELEGRAM_TOKEN") else "no_key",
+    })
 
 
 # ── internal helpers ──────────────────────────────────────────────────────
