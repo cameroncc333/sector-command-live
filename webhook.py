@@ -542,16 +542,19 @@ def health():
 
 @app.route("/test-gemini", methods=["GET"])
 def test_gemini():
-    """Quick Gemini smoke test — visit /test-gemini in browser after deploy."""
+    """List available Gemini models for this API key, then test the configured one."""
     import requests as _req
     key = os.environ.get("GEMINI_API_KEY", "")
     if not key:
         return jsonify({"error": "no key"})
     try:
-        from engine.llm_router import MODEL
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={key}"
-        r = _req.post(url, json={"contents": [{"parts": [{"text": "Say hello in one word."}]}]}, timeout=15)
-        return jsonify({"status": r.status_code, "model": MODEL, "response": r.json()})
+        # List all available models
+        list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={key}"
+        lr = _req.get(list_url, timeout=15)
+        models_data = lr.json()
+        available = [m["name"] for m in models_data.get("models", [])
+                     if "generateContent" in m.get("supportedGenerationMethods", [])]
+        return jsonify({"available_models": available})
     except Exception as e:
         return jsonify({"error": str(e)})
 
