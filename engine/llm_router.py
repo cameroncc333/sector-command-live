@@ -19,7 +19,6 @@ import os
 import json
 import datetime
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 MODEL = "gemini-1.5-pro"
 
 SYSTEM_PROMPT = """You are Sector Command, a personal quantitative trading assistant built by Cameron Camarotti.
@@ -123,6 +122,7 @@ def ask(user_message: str, market_context: dict = None) -> str:
     Route a natural-language message through Gemini and return the reply.
     Falls back gracefully if no API key is set.
     """
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
     if not GEMINI_API_KEY:
         return _fallback(user_message)
 
