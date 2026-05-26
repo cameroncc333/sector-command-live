@@ -554,7 +554,13 @@ def test_gemini():
         models_data = lr.json()
         available = [m["name"] for m in models_data.get("models", [])
                      if "generateContent" in m.get("supportedGenerationMethods", [])]
-        return jsonify({"available_models": available})
+        # Also test the configured model
+        from engine.llm_router import MODEL
+        test_url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={key}"
+        tr = _req.post(test_url, json={"contents": [{"parts": [{"text": "Say hello."}]}]}, timeout=15)
+        test_result = tr.json()
+        reply = test_result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "no text")
+        return jsonify({"available_models": available, "model_tested": MODEL, "reply": reply, "status": tr.status_code})
     except Exception as e:
         return jsonify({"error": str(e)})
 
