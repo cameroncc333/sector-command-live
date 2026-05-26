@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+rl_env/
+*.tar.gz
+.DS_Store
+# keep the journal DB, RL signal, and last briefing tracked so GitHub Actions can read them
+!data/sector_command.db
+!data/rl_signal.json
+!data/last_briefing.json
+data/alert_state.json
+# holdings DB has personal financial data — never commit it
+data/holdings.db

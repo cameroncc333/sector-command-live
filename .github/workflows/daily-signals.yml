@@ -1,0 +1,66 @@
+name: Sector Command Live — Daily Signals
+
+# Runs 4× per trading day (pre-open, midday, pre-close, EOD), US Eastern.
+# Cron is UTC. EDT = UTC-4.
+on:
+  schedule:
+    - cron: "0 13 * * 1-5"   # 09:00 EDT  pre-open
+    - cron: "0 16 * * 1-5"   # 12:00 EDT  midday
+    - cron: "30 19 * * 1-5"  # 15:30 EDT  pre-close
+    - cron: "30 20 * * 1-5"  # 16:30 EDT  EOD summary
+  workflow_dispatch: {}
+
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-full.txt
+
+      - name: Load RL signal (from repo artifact or use stub)
+        env:
+          RL_SIGNAL_JSON: ${{ secrets.RL_SIGNAL_JSON_PATH }}
+        run: |
+          # If you commit data/rl_signal.json from your MacBook (via generate_rl_signal.py),
+          # the engine reads it automatically. Nothing to do here.
+          # If RL_SIGNAL_JSON_PATH secret points to a different location, set it above.
+          if [ -f "data/rl_signal.json" ]; then
+            echo "RL signal found at data/rl_signal.json"
+            cat data/rl_signal.json | python -c "import sys,json; d=json.load(sys.stdin); print(f'RL: {d[\"action\"]} {d[\"target\"]} @ {d[\"confidence\"]}% ({d.get(\"_source\",\"?\")})')"
+          else
+            echo "No RL signal file found — engine will use stub (STUB stamp will appear in briefing)"
+          fi
+
+      - name: Run Sector Command engine
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          NEWSAPI_KEY: ${{ secrets.NEWSAPI_KEY }}
+          QUIVER_API_KEY: ${{ secrets.QUIVER_API_KEY }}
+          GOOGLE_CREDS_B64: ${{ secrets.GOOGLE_CREDS_B64 }}
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          NEWS_MODE: lexicon
+          RL_SIGNAL_JSON: data/rl_signal.json
+        run: python main_engine.py
+
+      - name: Persist journal DB and RL signal to repo
+        run: |
+          git config user.name "sector-command-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/sector_command.db data/rl_signal.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "log: $(date -u +%F) signal run"
+          git push || echo "push skipped (no changes or no remote)"

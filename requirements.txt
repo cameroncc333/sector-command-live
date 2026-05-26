@@ -1,0 +1,4 @@
+# Lean requirements — used by the Vercel webhook (must stay under bundle limits)
+# The webhook only needs Flask + requests; no ML libraries.
+flask>=3.0.0
+requests>=2.31.0
