@@ -24,27 +24,56 @@ from interface.telegram_bot import (
 )
 from engine.journal import Journal
 from engine.position_tracker import PositionTracker
-from engine.llm_router import ask as llm_ask, load_market_context_from_disk
-from engine.risk_metrics import macro_snapshot, portfolio_var, format_risk_block, sector_rotation_matrix
-from engine.sell_signals import check_exit_signals, format_sell_alerts
+
+try:
+    from engine.llm_router import ask as llm_ask, load_market_context_from_disk
+except Exception as _e:
+    print(f"[webhook] llm_router unavailable: {_e}")
+    llm_ask = None
+    load_market_context_from_disk = None
+
+try:
+    from engine.risk_metrics import macro_snapshot, portfolio_var, format_risk_block, sector_rotation_matrix
+except Exception as _e:
+    print(f"[webhook] risk_metrics unavailable: {_e}")
+    macro_snapshot = None
+    portfolio_var = None
+    format_risk_block = None
+    sector_rotation_matrix = None
+
+try:
+    from engine.sell_signals import check_exit_signals, format_sell_alerts
+except Exception as _e:
+    print(f"[webhook] sell_signals unavailable: {_e}")
+    check_exit_signals = None
+    format_sell_alerts = None
 
 try:
     from engine.performance_tracker import PaperPortfolio
-except Exception:
+except Exception as _e:
+    print(f"[webhook] performance_tracker unavailable: {_e}")
     PaperPortfolio = None
 
 try:
     from engine.alpaca_executor import execute_command as alpaca_execute, portfolio_summary
-except Exception:
+except Exception as _e:
+    print(f"[webhook] alpaca_executor unavailable: {_e}")
     alpaca_execute = None
     portfolio_summary = None
 
 try:
     from engine.repo_signals import collect_all, sector_technicals, algo_composite_signal
-except Exception:
+except Exception as _e:
+    print(f"[webhook] repo_signals unavailable: {_e}")
     collect_all = None
     sector_technicals = None
     algo_composite_signal = None
+
+try:
+    from engine.earnings_calendar import upcoming_earnings_for_holdings
+except Exception as _e:
+    print(f"[webhook] earnings_calendar unavailable: {_e}")
+    upcoming_earnings_for_holdings = None
 
 app     = Flask(__name__, template_folder="templates")
 bot     = TelegramBot()
