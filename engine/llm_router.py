@@ -19,7 +19,7 @@ import os
 import json
 import datetime
 
-MODEL = "gemini-1.5-pro"
+MODEL = "gemini-1.5-flash"
 
 SYSTEM_PROMPT = """You are Sector Command, a personal quantitative trading assistant built by Cameron Camarotti.
 
