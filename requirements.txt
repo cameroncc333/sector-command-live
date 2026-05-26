@@ -1,4 +1,11 @@
-# Lean requirements — used by the Vercel webhook (must stay under bundle limits)
-# The webhook only needs Flask + requests; no ML libraries.
+# Vercel webhook requirements — all packages the webhook actually imports
 flask>=3.0.0
 requests>=2.31.0
+numpy>=1.24.0
+pandas>=2.0.0
+yfinance>=0.2.40
+scipy>=1.11.0
+google-generativeai>=0.7.0
+beautifulsoup4>=4.12.0
+gspread>=6.0.0
+google-auth>=2.30.0
