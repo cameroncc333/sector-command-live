@@ -129,14 +129,15 @@ def ask(user_message: str, market_context: dict = None) -> str:
 
     try:
         ctx_block = build_context_block(market_context or {})
-        full_prompt = f"{ctx_block}\n\n=== USER QUESTION ===\n{user_message}"
+        full_prompt = (f"{SYSTEM_PROMPT}\n\n"
+                       f"{ctx_block}\n\n"
+                       f"=== USER QUESTION ===\n{user_message}")
 
-        url = (f"https://generativelanguage.googleapis.com/v1/models/{MODEL}"
+        url = (f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}"
                f":generateContent?key={GEMINI_API_KEY}")
 
         payload = {
-            "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-            "contents": [{"role": "user", "parts": [{"text": full_prompt}]}],
+            "contents": [{"parts": [{"text": full_prompt}]}],
             "generationConfig": {"temperature": 0.4, "maxOutputTokens": 500},
         }
 
