@@ -20,8 +20,11 @@ import json
 import sqlite3
 import datetime
 
-DB_PATH = os.environ.get("HOLDINGS_DB",
-    os.path.join(os.path.dirname(__file__), "..", "data", "holdings.db"))
+if os.environ.get("VERCEL"):
+    DB_PATH = "/tmp/holdings.db"
+else:
+    DB_PATH = os.environ.get("HOLDINGS_DB",
+        os.path.join(os.path.dirname(__file__), "..", "data", "holdings.db"))
 
 
 class PositionTracker:

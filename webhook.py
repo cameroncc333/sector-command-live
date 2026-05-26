@@ -23,18 +23,33 @@ from interface.telegram_bot import (
     format_explain, answer_question,
 )
 from engine.journal import Journal
-from engine.performance_tracker import PaperPortfolio
-from engine.alpaca_executor import execute_command as alpaca_execute, portfolio_summary
-from engine.repo_signals import collect_all, sector_technicals, algo_composite_signal
 from engine.position_tracker import PositionTracker
 from engine.llm_router import ask as llm_ask, load_market_context_from_disk
 from engine.risk_metrics import macro_snapshot, portfolio_var, format_risk_block, sector_rotation_matrix
 from engine.sell_signals import check_exit_signals, format_sell_alerts
 
-app    = Flask(__name__, template_folder="templates")
-bot    = TelegramBot()
+try:
+    from engine.performance_tracker import PaperPortfolio
+except Exception:
+    PaperPortfolio = None
+
+try:
+    from engine.alpaca_executor import execute_command as alpaca_execute, portfolio_summary
+except Exception:
+    alpaca_execute = None
+    portfolio_summary = None
+
+try:
+    from engine.repo_signals import collect_all, sector_technicals, algo_composite_signal
+except Exception:
+    collect_all = None
+    sector_technicals = None
+    algo_composite_signal = None
+
+app     = Flask(__name__, template_folder="templates")
+bot     = TelegramBot()
 journal = Journal()
-pt     = PositionTracker()
+pt      = PositionTracker()
 
 
 # ── TELEGRAM WEBHOOK ──────────────────────────────────────────────────────
