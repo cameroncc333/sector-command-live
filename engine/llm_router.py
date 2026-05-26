@@ -19,7 +19,13 @@ import os
 import json
 import datetime
 
-MODEL = "gemini-2.0-flash"
+# Models tried in order; first 200-response wins (avoids 429 quota exhaustion)
+MODELS = [
+    "gemini-2.0-flash-lite",   # free-tier quota typically available
+    "gemini-2.5-flash",        # newer, fallback
+    "gemini-2.0-flash",        # may hit quota limit:0 on free plan
+    "gemini-flash-latest",     # alias
+]
 
 SYSTEM_PROMPT = """You are Sector Command, a personal quantitative trading assistant built by Cameron Camarotti.
 
@@ -120,35 +126,42 @@ def build_context_block(market_context: dict) -> str:
 def ask(user_message: str, market_context: dict = None) -> str:
     """
     Route a natural-language message through Gemini REST API (no SDK dependency).
-    Falls back gracefully if no API key is set.
+    Tries each model in MODELS order; skips 429/quota errors. Falls back if no key.
     """
     import requests as _requests
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
     if not GEMINI_API_KEY:
         return _fallback(user_message)
 
-    try:
-        ctx_block = build_context_block(market_context or {})
-        full_prompt = (f"{SYSTEM_PROMPT}\n\n"
-                       f"{ctx_block}\n\n"
-                       f"=== USER QUESTION ===\n{user_message}")
+    ctx_block = build_context_block(market_context or {})
+    full_prompt = (f"{SYSTEM_PROMPT}\n\n"
+                   f"{ctx_block}\n\n"
+                   f"=== USER QUESTION ===\n{user_message}")
 
-        url = (f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}"
-               f":generateContent?key={GEMINI_API_KEY}")
+    payload = {
+        "contents": [{"parts": [{"text": full_prompt}]}],
+        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 500},
+    }
 
-        payload = {
-            "contents": [{"parts": [{"text": full_prompt}]}],
-            "generationConfig": {"temperature": 0.4, "maxOutputTokens": 500},
-        }
+    last_err = None
+    for model in MODELS:
+        try:
+            url = (f"https://generativelanguage.googleapis.com/v1beta/models/{model}"
+                   f":generateContent?key={GEMINI_API_KEY}")
+            r = _requests.post(url, json=payload, timeout=30)
+            if r.status_code == 429:
+                print(f"[llm_router] {model} quota exceeded, trying next model")
+                last_err = f"{model} quota exceeded"
+                continue
+            r.raise_for_status()
+            data = r.json()
+            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except Exception as e:
+            print(f"[llm_router] {model} failed: {e}")
+            last_err = str(e)
+            continue
 
-        r = _requests.post(url, json=payload, timeout=30)
-        r.raise_for_status()
-        data = r.json()
-        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-
-    except Exception as e:
-        print(f"[llm_router] Gemini call failed: {e}")
-        return f"Gemini error: {e}\n\nUse commands: STATUS · CRYPTO · PORTFOLIO · EXPLAIN XLF"
+    return f"AI unavailable ({last_err}).\n\nUse commands: STATUS · CRYPTO · PORTFOLIO · EXPLAIN XLF"
 
 
 def _fallback(user_message: str) -> str:
@@ -218,6 +231,6 @@ if __name__ == "__main__":
     print(build_context_block(ctx))
     print("\nFallback response:")
     print(_fallback("should I buy gold today?"))
-    if GEMINI_API_KEY:
+    if os.environ.get("GEMINI_API_KEY"):
         print("\nLive Gemini response:")
         print(ask("Should I buy XLF today given the current regime?", ctx))
