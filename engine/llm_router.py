@@ -119,37 +119,32 @@ def build_context_block(market_context: dict) -> str:
 
 def ask(user_message: str, market_context: dict = None) -> str:
     """
-    Route a natural-language message through Gemini and return the reply.
+    Route a natural-language message through Gemini REST API (no SDK dependency).
     Falls back gracefully if no API key is set.
     """
+    import requests as _requests
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
     if not GEMINI_API_KEY:
         return _fallback(user_message)
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-
         ctx_block = build_context_block(market_context or {})
-
-        model = genai.GenerativeModel(
-            model_name=MODEL,
-            system_instruction=SYSTEM_PROMPT,
-        )
-
         full_prompt = f"{ctx_block}\n\n=== USER QUESTION ===\n{user_message}"
 
-        response = model.generate_content(
-            full_prompt,
-            generation_config=genai.GenerationConfig(
-                temperature=0.4,
-                max_output_tokens=500,
-            ),
-        )
-        return response.text.strip()
+        url = (f"https://generativelanguage.googleapis.com/v1/models/{MODEL}"
+               f":generateContent?key={GEMINI_API_KEY}")
 
-    except ImportError:
-        return "Gemini package not installed on this server. Use commands: STATUS, CRYPTO, PORTFOLIO, EXPLAIN XLF"
+        payload = {
+            "system_instruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+            "contents": [{"parts": [{"text": full_prompt}]}],
+            "generationConfig": {"temperature": 0.4, "maxOutputTokens": 500},
+        }
+
+        r = _requests.post(url, json=payload, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
     except Exception as e:
         print(f"[llm_router] Gemini call failed: {e}")
         return f"Gemini error: {e}\n\nUse commands: STATUS · CRYPTO · PORTFOLIO · EXPLAIN XLF"
