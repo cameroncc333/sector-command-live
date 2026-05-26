@@ -540,6 +540,22 @@ def health():
     })
 
 
+@app.route("/test-gemini", methods=["GET"])
+def test_gemini():
+    """Quick Gemini smoke test — visit /test-gemini in browser after deploy."""
+    import requests as _req
+    key = os.environ.get("GEMINI_API_KEY", "")
+    if not key:
+        return jsonify({"error": "no key"})
+    try:
+        from engine.llm_router import MODEL
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={key}"
+        r = _req.post(url, json={"contents": [{"parts": [{"text": "Say hello in one word."}]}]}, timeout=15)
+        return jsonify({"status": r.status_code, "model": MODEL, "response": r.json()})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
 # ── internal helpers ──────────────────────────────────────────────────────
 
 def _load_ranked_opportunities() -> list:
