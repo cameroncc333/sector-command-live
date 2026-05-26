@@ -149,11 +149,10 @@ def ask(user_message: str, market_context: dict = None) -> str:
         return response.text.strip()
 
     except ImportError:
-        return ("Gemini package not installed. Run: pip install google-generativeai\n"
-                "Or use commands: STATUS, WHY, CRYPTO, PORTFOLIO, EXPLAIN XLF")
+        return "Gemini package not installed on this server. Use commands: STATUS, CRYPTO, PORTFOLIO, EXPLAIN XLF"
     except Exception as e:
         print(f"[llm_router] Gemini call failed: {e}")
-        return _fallback(user_message)
+        return f"Gemini error: {e}\n\nUse commands: STATUS · CRYPTO · PORTFOLIO · EXPLAIN XLF"
 
 
 def _fallback(user_message: str) -> str:
