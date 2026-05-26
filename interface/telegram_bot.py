@@ -243,6 +243,9 @@ def format_briefing(b: dict) -> str:
         lines.append(f"   Generated: {fr.get('generated_utc','—')}")
         lines.append("")
 
+    # ── Plain English Summary ──────────────────────────────────────────
+    lines.append(_plain_english_summary(b))
+
     # ── Commands ───────────────────────────────────────────────────────
     lines.append("<b>Commands:</b> <code>BUY 1</code> <code>BUY XLF</code> <code>SKIP</code> <code>PORTFOLIO</code>")
     lines.append("<code>CRYPTO</code> <code>GOLD</code> <code>BALANCE 12500</code> <code>EXPLAIN XLF</code>")
@@ -382,8 +385,7 @@ def format_sizing_guide(ticker: str, balance: float, conviction: str = "MEDIUM")
     lines += ["",
               "Rules of thumb:",
               "  • Never put more than 30% in a single position",
-              "  • Keep crypto under 10% total",
-              "  • Meme coins: never more than 1.5% each",
+              "  • Keep crypto (BTC + ETH combined) under 10% total",
               "  • Always keep ≥ 20% cash for opportunities"]
     return "\n".join(lines)
 
@@ -460,6 +462,116 @@ def answer_question(question: str, briefing: dict = None) -> str:
             "• <code>EXPLAIN XLF</code> — learn about any ticker\n"
             "• <code>BALANCE 12500</code> — set your portfolio size\n"
             "• <code>WHY</code> — why the RL made its pick")
+
+
+def _plain_english_summary(b: dict) -> str:
+    """Plain English TL;DR appended to every briefing."""
+    g = b.get
+    vix     = g("vix") or 16
+    regime  = str(g("regime", "NORMAL")).upper()
+    ranked  = g("ranked_opportunities") or []
+    abstain = g("abstain_reason")
+    macro   = g("macro") or {}
+    yc      = macro.get("yield_curve") or {}
+
+    lines = ["", "─────────────────────────────",
+             "📋 <b>PLAIN ENGLISH — WHAT THIS MEANS</b>", ""]
+
+    # Market state
+    try:
+        vix_f = float(vix)
+    except Exception:
+        vix_f = 16.0
+    if vix_f < 15:
+        market_line = "Markets are calm. Good conditions to enter positions."
+    elif vix_f < 22:
+        market_line = "Markets are normal. Nothing unusual — proceed as planned."
+    elif vix_f < 30:
+        market_line = "Markets are a bit choppy. Keep position sizes on the smaller side."
+    else:
+        market_line = "⚠️ Markets are in stress mode. Hold more cash than normal, be cautious."
+    lines.append(f"📊 <b>Market right now:</b> {market_line}")
+
+    # What the system decided
+    lines.append("")
+    if abstain:
+        lines.append(
+            "🤖 <b>What the AI decided:</b> The three RL models couldn't agree on one sector, "
+            "so the system is NOT making a specific bet today — it's pointing to SPY (the whole "
+            "S&P 500) instead. This is intentional. When models disagree, staying broad is the "
+            "safe move. It's not broken, it's being disciplined."
+        )
+    elif ranked:
+        top = ranked[0] if isinstance(ranked[0], dict) else {}
+        ticker     = top.get("ticker", "?")
+        name       = top.get("name", "?")
+        pct        = top.get("suggested_pct") or 9
+        conviction = top.get("conviction", "LOW")
+        conv_words = {"HIGH": "high — this is a strong signal",
+                      "MEDIUM": "moderate — reasonable signal",
+                      "LOW": "low — cautious, small position only",
+                      "SPECULATIVE": "speculative — small size only"}.get(conviction, "moderate")
+        lines.append(
+            f"🤖 <b>What the AI decided:</b> Best opportunity right now is <b>{ticker} ({name})</b>. "
+            f"Conviction is {conv_words}. Suggested size: about {pct:.0f}% of your portfolio."
+        )
+
+    # What to do
+    lines.append("")
+    lines.append("✅ <b>What you should do:</b>")
+    if abstain:
+        lines.append(
+            "No strong edge today. Options: (1) reply <code>SKIP</code> and wait, "
+            "(2) reply <code>BUY SPY</code> to go broad market, "
+            "(3) ask me anything about your portfolio."
+        )
+    elif ranked:
+        top        = ranked[0] if isinstance(ranked[0], dict) else {}
+        ticker     = top.get("ticker", "?")
+        conviction = top.get("conviction", "LOW")
+        if conviction == "HIGH":
+            lines.append(
+                f"Strong signal today. Reply <code>BUY A</code> to take the {ticker} pick. "
+                f"Reply <code>SKIP</code> if you want to sit it out."
+            )
+        elif conviction == "MEDIUM":
+            lines.append(
+                f"Decent signal. Reply <code>BUY A</code> for {ticker} if you want to act, "
+                f"or <code>SKIP</code> to pass. No pressure either way."
+            )
+        else:
+            lines.append(
+                f"Weak signal — the system sees something but isn't confident. "
+                f"Reply <code>BUY A</code> for a small position in {ticker}, or <code>SKIP</code>. "
+                f"Leaning toward skip unless you have a reason to like it."
+            )
+
+    # Macro plain English
+    if yc:
+        try:
+            spread   = float(str(yc.get("spread", 1)).replace("%", ""))
+            inverted = yc.get("inverted", False)
+            if inverted:
+                lines.append(
+                    "\n⚠️ <b>Macro warning:</b> The yield curve is inverted — short-term interest "
+                    "rates are higher than long-term ones. This has historically come before recessions. "
+                    "Not an immediate sell signal, but don't make large new bets right now."
+                )
+            elif spread < 0.5:
+                lines.append(
+                    "\n📉 <b>Macro note:</b> The yield curve is nearly flat. Watch for it going negative "
+                    "(inverted) — that's a yellow flag for the economy."
+                )
+        except Exception:
+            pass
+
+    lines.append(
+        "\n💬 <b>Ask me anything in plain English</b> — \"what is XLF?\", "
+        "\"should I add more to crypto?\", \"what does the yield curve mean?\" — "
+        "Gemini AI will answer with full context from today's market data."
+    )
+
+    return "\n".join(lines)
 
 
 # ── command parser ────────────────────────────────────────────────────────
