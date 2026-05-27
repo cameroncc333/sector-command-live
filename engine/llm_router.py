@@ -21,9 +21,8 @@ import datetime
 
 # Models tried in order; first 200-response wins (avoids 429 quota exhaustion)
 MODELS = [
-    "gemini-2.5-pro",          # best quality — use if quota available
-    "gemini-2.5-flash",        # fast + capable fallback
-    "gemini-2.0-flash-lite",   # free-tier quota typically available
+    "gemini-2.5-flash",        # fast, capable, not a thinking model
+    "gemini-2.0-flash-lite",   # free-tier quota fallback
     "gemini-2.0-flash",        # last resort
 ]
 
@@ -179,7 +178,10 @@ def ask(user_message: str, market_context: dict = None) -> str:
                 continue
             r.raise_for_status()
             data = r.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            parts = data["candidates"][0]["content"]["parts"]
+            # Thinking models put reasoning in parts with "thought": true — skip those
+            answer = next((p["text"] for p in parts if not p.get("thought")), parts[0]["text"])
+            return answer.strip()
         except Exception as e:
             print(f"[llm_router] {model} failed: {e}")
             last_err = str(e)
