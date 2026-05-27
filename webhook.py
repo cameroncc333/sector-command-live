@@ -333,12 +333,13 @@ def webhook():
 @app.route("/", methods=["GET"])
 def dashboard():
     try:
-        # Pass empty prices to skip yfinance on page load — avoids Vercel timeout.
-        # JS polls /api/portfolio every 3 min for live prices.
         portfolio = pt.portfolio_summary(current_prices={})
     except Exception:
         portfolio = {}
-    return render_template("dashboard.html", portfolio=portfolio)
+    resp = app.make_response(render_template("dashboard.html", portfolio=portfolio))
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    resp.headers["Pragma"] = "no-cache"
+    return resp
 
 
 @app.route("/reports/<path:filename>")
