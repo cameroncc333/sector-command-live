@@ -564,6 +564,17 @@ def cron_alerts():
     return jsonify({"status": r.status_code})
 
 
+@app.route("/debug-balance", methods=["GET"])
+def debug_balance():
+    env_bal = os.environ.get("DEFAULT_BALANCE", "NOT SET")
+    db_bal = pt.get_balance()
+    return jsonify({
+        "DEFAULT_BALANCE_env": env_bal,
+        "get_balance_result": db_bal,
+        "db_path": pt.db_path,
+    })
+
+
 @app.route("/health", methods=["GET"])
 def health():
     gemini_key = os.environ.get("GEMINI_API_KEY", "")
