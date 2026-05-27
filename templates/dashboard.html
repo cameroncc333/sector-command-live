@@ -618,8 +618,7 @@ function renderCrypto(cryptoData) {
 function renderPortfolio(portfolio) {
   const el = document.getElementById('portfolio-body');
   if (!portfolio || portfolio.balance == null) {
-    el.innerHTML = '<span style="color:var(--muted)">Set balance via Telegram: <code>BALANCE 12500</code></span>';
-    return;
+    return; // leave server-rendered content intact — don't overwrite with placeholder
   }
   const { balance, holdings, total_invested, total_current, unrealized_pnl, unrealized_pct, cash_remaining } = portfolio;
 
