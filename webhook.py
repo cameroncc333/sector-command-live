@@ -333,7 +333,9 @@ def webhook():
 @app.route("/", methods=["GET"])
 def dashboard():
     try:
-        portfolio = pt.portfolio_summary()
+        # Pass empty prices to skip yfinance on page load — avoids Vercel timeout.
+        # JS polls /api/portfolio every 3 min for live prices.
+        portfolio = pt.portfolio_summary(current_prices={})
     except Exception:
         portfolio = {}
     return render_template("dashboard.html", portfolio=portfolio)
@@ -573,7 +575,7 @@ def debug_balance():
     env_bal = os.environ.get("DEFAULT_BALANCE", "NOT SET")
     db_bal = pt.get_balance()
     try:
-        summary = pt.portfolio_summary()
+        summary = pt.portfolio_summary(current_prices={})
         summary_err = None
     except Exception as e:
         summary = None

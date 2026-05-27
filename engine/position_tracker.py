@@ -226,7 +226,7 @@ class PositionTracker:
         import math
         try:
             import yfinance as yf
-            data = yf.download(tickers, period="2d", progress=False, auto_adjust=True)
+            data = yf.download(tickers, period="2d", progress=False, auto_adjust=True, timeout=8)
             has_levels = hasattr(data.columns, "get_level_values")
             close = data["Close"] if (has_levels and "Close" in data.columns.get_level_values(0)) else data
             out = {}
