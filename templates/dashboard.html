@@ -686,34 +686,36 @@ async function loadAll() {
     api('/api/rotation'),
   ]);
 
-  renderStatus(status);
-  renderCorr(status);
-  renderFomc(status);
-  renderMacro(risk);
-  renderRotation(rotation);
-  renderSectors(sectors?.sectors);
-  renderCrypto(crypto?.crypto);
-  renderPortfolio(portfolio);
-  renderDecisions(decisions?.decisions);
-  renderPerf(perf);
-  renderAlpaca(alpaca);
-
-  // equity chart
-  if (perf?.history) renderEquityChart(perf.history);
-
-  // news sentiment stat
-  if (status?.news_sentiment != null) {
-    const ns = status.news_sentiment;
-    document.getElementById('news-sent').style.color = sentColor(ns);
-    document.getElementById('news-sent').textContent =
-      (ns >= 0 ? '+' : '') + ns.toFixed(3);
-    document.getElementById('news-label').textContent =
-      ns > 0.15 ? 'Bullish' : ns < -0.15 ? 'Bearish' : 'Neutral';
+  const renders = [
+    () => renderStatus(status),
+    () => renderCorr(status),
+    () => renderFomc(status),
+    () => renderMacro(risk),
+    () => renderRotation(rotation),
+    () => renderSectors(sectors?.sectors),
+    () => renderCrypto(crypto?.crypto),
+    () => renderPortfolio(portfolio),
+    () => renderDecisions(decisions?.decisions),
+    () => renderPerf(perf),
+    () => renderAlpaca(alpaca),
+    () => { if (perf?.history) renderEquityChart(perf.history); },
+    () => {
+      if (status?.news_sentiment != null) {
+        const ns = status.news_sentiment;
+        document.getElementById('news-sent').style.color = sentColor(ns);
+        document.getElementById('news-sent').textContent = (ns >= 0 ? '+' : '') + ns.toFixed(3);
+        document.getElementById('news-label').textContent =
+          ns > 0.15 ? 'Bullish' : ns < -0.15 ? 'Bearish' : 'Neutral';
+      }
+    },
+    () => {
+      if (status?.confidence != null)
+        document.getElementById('avg-conf').textContent = status.confidence + '%';
+    },
+  ];
+  for (const fn of renders) {
+    try { fn(); } catch (e) { console.warn('render error:', e); }
   }
-
-  // avg confidence stat
-  if (status?.confidence != null)
-    document.getElementById('avg-conf').textContent = status.confidence + '%';
 }
 
 // Load on start + refresh every 3 minutes
