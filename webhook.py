@@ -572,10 +572,18 @@ def cron_alerts():
 def debug_balance():
     env_bal = os.environ.get("DEFAULT_BALANCE", "NOT SET")
     db_bal = pt.get_balance()
+    try:
+        summary = pt.portfolio_summary()
+        summary_err = None
+    except Exception as e:
+        summary = None
+        summary_err = str(e)
     return jsonify({
         "DEFAULT_BALANCE_env": env_bal,
         "get_balance_result": db_bal,
         "db_path": pt.db_path,
+        "portfolio_summary": summary,
+        "portfolio_summary_error": summary_err,
     })
 
 
