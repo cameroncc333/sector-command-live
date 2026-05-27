@@ -530,6 +530,40 @@ def api_macro():
         return jsonify({"error": str(e)})
 
 
+@app.route("/cron/briefing", methods=["GET"])
+def cron_briefing():
+    """Called by cron-job.org to trigger the daily briefing workflow on GitHub Actions."""
+    import requests as _req
+    secret = os.environ.get("CRON_SECRET", "")
+    if secret and request.args.get("key") != secret:
+        return jsonify({"error": "unauthorized"}), 401
+    token = os.environ.get("GITHUB_PAT", "")
+    if not token:
+        return jsonify({"error": "GITHUB_PAT not set"}), 500
+    url = "https://api.github.com/repos/cameroncc333/sector-command-live/actions/workflows/daily-signals.yml/dispatches"
+    r = _req.post(url, json={"ref": "main"},
+                  headers={"Authorization": f"Bearer {token}",
+                           "Accept": "application/vnd.github+json"}, timeout=10)
+    return jsonify({"status": r.status_code})
+
+
+@app.route("/cron/alerts", methods=["GET"])
+def cron_alerts():
+    """Called by cron-job.org to trigger the 30-min event alert workflow."""
+    import requests as _req
+    secret = os.environ.get("CRON_SECRET", "")
+    if secret and request.args.get("key") != secret:
+        return jsonify({"error": "unauthorized"}), 401
+    token = os.environ.get("GITHUB_PAT", "")
+    if not token:
+        return jsonify({"error": "GITHUB_PAT not set"}), 500
+    url = "https://api.github.com/repos/cameroncc333/sector-command-live/actions/workflows/event-alerts.yml/dispatches"
+    r = _req.post(url, json={"ref": "main"},
+                  headers={"Authorization": f"Bearer {token}",
+                           "Accept": "application/vnd.github+json"}, timeout=10)
+    return jsonify({"status": r.status_code})
+
+
 @app.route("/health", methods=["GET"])
 def health():
     gemini_key = os.environ.get("GEMINI_API_KEY", "")
