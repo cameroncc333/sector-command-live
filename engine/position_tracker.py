@@ -56,10 +56,25 @@ class PositionTracker:
         con.commit()
         con.close()
 
+    # ── Redis helpers (Upstash — persists across Vercel cold starts) ─────
+
+    def _redis(self, *cmd):
+        """Run a Redis command via Upstash REST API. Silent no-op if not configured."""
+        url   = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+        token = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+        if not url or not token:
+            return None
+        try:
+            import requests as _req
+            r = _req.post(url, json=list(cmd),
+                          headers={"Authorization": f"Bearer {token}"}, timeout=4)
+            return r.json().get("result")
+        except Exception:
+            return None
+
     # ── balance ──────────────────────────────────────────────────────────
 
     def set_balance(self, amount: float):
-        """Set the user's total portfolio cash/investable balance."""
         ts = datetime.datetime.now(datetime.timezone.utc).isoformat()
         con = sqlite3.connect(self.db_path)
         con.execute("""
@@ -69,6 +84,7 @@ class PositionTracker:
         """, (str(amount), ts))
         con.commit()
         con.close()
+        self._redis("SET", "sc:balance", str(amount))
 
     def get_balance(self):
         con = sqlite3.connect(self.db_path)
@@ -76,7 +92,11 @@ class PositionTracker:
         con.close()
         if row:
             return float(row[0])
-        # Vercel /tmp is wiped on cold starts — fall back to env var so balance persists
+        # Try Redis (survives Vercel cold starts)
+        val = self._redis("GET", "sc:balance")
+        if val:
+            return float(val)
+        # Final fallback: DEFAULT_BALANCE env var
         env_bal = os.environ.get("DEFAULT_BALANCE")
         return float(env_bal) if env_bal else None
 
@@ -85,11 +105,6 @@ class PositionTracker:
     def add_position(self, ticker: str, shares: float = None,
                      avg_cost: float = None, dollar_value: float = None,
                      notes: str = None):
-        """
-        Record a new or updated position. Either provide shares+avg_cost
-        or just dollar_value (when you buy a round-dollar amount).
-        Replaces any existing position for the same ticker.
-        """
         self.remove_position(ticker)
         ts = datetime.date.today().isoformat()
         con = sqlite3.connect(self.db_path)
@@ -99,19 +114,39 @@ class PositionTracker:
         """, (ticker.upper(), shares, avg_cost, dollar_value, ts, notes))
         con.commit()
         con.close()
+        self._sync_holdings_to_redis()
 
     def remove_position(self, ticker: str):
         con = sqlite3.connect(self.db_path)
         con.execute("DELETE FROM holdings WHERE ticker=?", (ticker.upper(),))
         con.commit()
         con.close()
+        self._sync_holdings_to_redis()
 
-    def get_holdings(self):
+    def _sync_holdings_to_redis(self):
+        """Push current SQLite holdings to Redis so they survive cold starts."""
+        holdings = self._get_holdings_from_sqlite()
+        self._redis("SET", "sc:holdings", json.dumps(holdings))
+
+    def _get_holdings_from_sqlite(self):
         con = sqlite3.connect(self.db_path)
         con.row_factory = sqlite3.Row
         rows = con.execute("SELECT * FROM holdings ORDER BY date_bought DESC").fetchall()
         con.close()
         return [dict(r) for r in rows]
+
+    def get_holdings(self):
+        rows = self._get_holdings_from_sqlite()
+        if rows:
+            return rows
+        # SQLite empty (cold start) — restore from Redis
+        val = self._redis("GET", "sc:holdings")
+        if val:
+            try:
+                return json.loads(val)
+            except Exception:
+                pass
+        return []
 
     # ── portfolio summary ─────────────────────────────────────────────────
 
