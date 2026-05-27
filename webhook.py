@@ -332,7 +332,11 @@ def webhook():
 
 @app.route("/", methods=["GET"])
 def dashboard():
-    return render_template("dashboard.html")
+    try:
+        portfolio = pt.portfolio_summary()
+    except Exception:
+        portfolio = {}
+    return render_template("dashboard.html", portfolio=portfolio)
 
 
 @app.route("/reports/<path:filename>")

@@ -282,7 +282,39 @@
   <div class="card full-width" style="margin-bottom:16px">
     <div class="card-title">Your Portfolio</div>
     <div id="portfolio-body" style="font-size:12px;line-height:1.8">
-      <div class="loading">Set balance via Telegram: BALANCE 12500</div>
+      {% set p = portfolio %}
+      {% if p and p.balance %}
+        <div style="margin-bottom:10px">
+          Balance: <strong>${{ "{:,.0f}".format(p.balance) }}</strong> &nbsp;·&nbsp;
+          Invested: <strong>${{ "{:,.0f}".format(p.total_invested or 0) }}</strong> &nbsp;·&nbsp;
+          Cash: <strong>${{ "{:,.0f}".format(p.cash_remaining or 0) }}</strong> &nbsp;·&nbsp;
+          P&amp;L: <strong style="color:{% if (p.unrealized_pnl or 0) >= 0 %}var(--green){% else %}var(--red){% endif %}">
+            {{ "+$" if (p.unrealized_pnl or 0) >= 0 else "-$" }}{{ "{:,.2f}".format((p.unrealized_pnl or 0)|abs) }}
+            ({{ "{:+.1f}".format(p.unrealized_pct or 0) }}%)
+          </strong>
+        </div>
+        {% if p.holdings %}
+        <table>
+          <thead><tr><th>Ticker</th><th>Cost</th><th>Current</th><th>P&amp;L</th><th>Alloc</th><th>Date</th></tr></thead>
+          <tbody>
+          {% for h in p.holdings %}
+            <tr>
+              <td><strong>{{ h.ticker }}</strong></td>
+              <td>${{ "{:,.0f}".format(h.cost_basis or 0) }}</td>
+              <td>${{ "{:,.0f}".format(h.current_value or 0) }}</td>
+              <td style="color:{% if (h.pnl_pct or 0) >= 0 %}var(--green){% else %}var(--red){% endif %}">{{ "{:+.1f}".format(h.pnl_pct or 0) }}%</td>
+              <td style="color:var(--muted)">{{ "{:.1f}".format(h.alloc_pct or 0) }}%</td>
+              <td style="color:var(--muted);font-size:11px">{{ h.date_bought or '' }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div style="color:var(--muted)">No positions yet. Log trades via Telegram: <code>BOUGHT XLE 5 47.50</code></div>
+        {% endif %}
+      {% else %}
+      <span style="color:var(--muted)">Set balance via Telegram: <code>BALANCE 12500</code></span>
+      {% endif %}
     </div>
   </div>
 
