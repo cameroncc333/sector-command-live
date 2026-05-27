@@ -616,7 +616,8 @@ def parse_command(text: str) -> dict:
         return {"command": "QUESTION", "ticker": None, "reason": raw, "raw": raw}
 
     if cmd_word not in KNOWN_COMMANDS:
-        return {"command": "UNKNOWN", "ticker": None, "reason": raw, "raw": raw}
+        # Route anything unrecognized to Gemini rather than showing command list
+        return {"command": "QUESTION", "ticker": None, "reason": raw, "raw": raw}
 
     ticker = None
     amount = None

@@ -61,6 +61,6 @@ jobs:
         run: |
           git config user.name "sector-command-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add data/sector_command.db data/rl_signal.json 2>/dev/null || true
+          git add data/sector_command.db data/rl_signal.json data/last_briefing.json 2>/dev/null || true
           git diff --cached --quiet || git commit -m "log: $(date -u +%F) signal run"
           git push || echo "push skipped (no changes or no remote)"
