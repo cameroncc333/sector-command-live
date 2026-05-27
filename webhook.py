@@ -311,7 +311,7 @@ def webhook():
             ctx["portfolio_summary"] = summary
             ctx["balance"] = summary["balance"]
         reply = llm_ask(text, ctx)
-        bot.send_message(reply, parse_mode=None)
+        bot.send_message(reply, parse_mode="")
 
     else:
         bot.send_message(

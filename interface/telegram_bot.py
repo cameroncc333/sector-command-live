@@ -77,14 +77,14 @@ class TelegramBot:
 
         results = []
         for chunk in _chunk(text, 4000):
-            payload = {
-                "chat_id": self.chat_id,
-                "text": chunk,
-                "parse_mode": parse_mode,
-                "disable_web_page_preview": disable_preview,
-            }
+            payload = {"chat_id": self.chat_id, "text": chunk,
+                       "disable_web_page_preview": disable_preview}
+            if parse_mode:  # omit parse_mode entirely when None/empty — Telegram rejects null
+                payload["parse_mode"] = parse_mode
             try:
                 r = requests.post(f"{self.api_base}/sendMessage", json=payload, timeout=20)
+                if not r.ok:
+                    print(f"[telegram_bot] send failed {r.status_code}: {r.text[:120]}")
                 results.append(r.json())
             except Exception as e:
                 print(f"[telegram_bot] send failed: {e}")
