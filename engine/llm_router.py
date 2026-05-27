@@ -21,9 +21,12 @@ import datetime
 
 # Models tried in order; first 200-response wins (avoids 429 quota exhaustion)
 MODELS = [
-    "gemini-2.5-flash",        # fast, capable, not a thinking model
-    "gemini-2.0-flash-lite",   # free-tier quota fallback
-    "gemini-2.0-flash",        # last resort
+    "gemini-2.5-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-2.0-flash",
+    "gemini-2.5-pro",
+    "gemini-flash-latest",
+    "gemini-pro-latest",
 ]
 
 SYSTEM_PROMPT = """You are Sector Command, a personal quant trading assistant built by Cameron Camarotti.
@@ -161,29 +164,38 @@ def ask(user_message: str, market_context: dict = None) -> str:
                    f"{ctx_block}\n\n"
                    f"=== USER QUESTION ===\n{user_message}")
 
-    payload = {
-        "contents": [{"parts": [{"text": full_prompt}]}],
-        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 900},
-    }
-
     last_err = None
     for model in MODELS:
+        # Disable thinking for 2.5 models so they respond like normal chat models
+        thinking_off = model.startswith("gemini-2.5")
+        payload = {
+            "contents": [{"parts": [{"text": full_prompt}]}],
+            "generationConfig": {
+                "temperature": 0.4,
+                "maxOutputTokens": 900,
+                **({"thinkingConfig": {"thinkingBudget": 0}} if thinking_off else {}),
+            },
+        }
         try:
             url = (f"https://generativelanguage.googleapis.com/v1beta/models/{model}"
                    f":generateContent?key={GEMINI_API_KEY}")
             r = _requests.post(url, json=payload, timeout=30)
             if r.status_code == 429:
-                print(f"[llm_router] {model} quota exceeded, trying next model")
+                print(f"[llm_router] {model} quota exceeded, trying next")
                 last_err = f"{model} quota exceeded"
                 continue
-            r.raise_for_status()
+            if r.status_code >= 400:
+                err_msg = r.json().get("error", {}).get("message", r.text[:80])
+                print(f"[llm_router] {model} error {r.status_code}: {err_msg}")
+                last_err = f"{model} {r.status_code}: {err_msg}"
+                continue
             data = r.json()
             parts = data["candidates"][0]["content"]["parts"]
-            # Thinking models put reasoning in parts with "thought": true — skip those
+            # Skip thought parts (thinking models); take first non-thought text
             answer = next((p["text"] for p in parts if not p.get("thought")), parts[0]["text"])
             return answer.strip()
         except Exception as e:
-            print(f"[llm_router] {model} failed: {e}")
+            print(f"[llm_router] {model} exception: {e}")
             last_err = str(e)
             continue
 
