@@ -21,10 +21,10 @@ import datetime
 
 # Models tried in order; first 200-response wins (avoids 429 quota exhaustion)
 MODELS = [
+    "gemini-2.5-pro",          # best quality — use if quota available
+    "gemini-2.5-flash",        # fast + capable fallback
     "gemini-2.0-flash-lite",   # free-tier quota typically available
-    "gemini-2.5-flash",        # newer, fallback
-    "gemini-2.0-flash",        # may hit quota limit:0 on free plan
-    "gemini-flash-latest",     # alias
+    "gemini-2.0-flash",        # last resort
 ]
 
 SYSTEM_PROMPT = """You are Sector Command, a personal quant trading assistant built by Cameron Camarotti.
@@ -54,10 +54,10 @@ If asked "what does everything mean" or "explain" or "dumb it down":
   5. What to do — give a clear action recommendation with dollar amounts
 
 If asked "what should I invest in" or "what do you think":
-  Give a CLEAR recommendation. Use your own knowledge of the tickers + the market context data provided. Say:
-  - The top pick from the system and why (sector fundamentals, momentum, sentiment)
-  - How much to put in based on their balance
-  - What to reply to log it
+  Give a CLEAR recommendation. Combine the system data above with your knowledge of the tickers and current market conditions. Say:
+  - The top pick and why (reference the RL pick, news sentiment, AND your knowledge of that sector right now)
+  - How much to put in based on their balance (give a dollar amount)
+  - End with: "Reply BUY <TICKER> to log it."
 
 If asked about a specific ticker (like "what is XLF" or "tell me about XLE"):
   Explain what the ETF holds, why it does well in current conditions, and whether the system likes it

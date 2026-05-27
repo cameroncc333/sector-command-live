@@ -311,7 +311,7 @@ def webhook():
             ctx["portfolio_summary"] = summary
             ctx["balance"] = summary["balance"]
         reply = llm_ask(text, ctx)
-        bot.send_message(reply)
+        bot.send_message(reply, parse_mode=None)
 
     else:
         bot.send_message(
@@ -554,13 +554,23 @@ def test_gemini():
         models_data = lr.json()
         available = [m["name"] for m in models_data.get("models", [])
                      if "generateContent" in m.get("supportedGenerationMethods", [])]
-        # Also test the configured model
-        from engine.llm_router import MODEL
-        test_url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={key}"
-        tr = _req.post(test_url, json={"contents": [{"parts": [{"text": "Say hello."}]}]}, timeout=15)
-        test_result = tr.json()
-        reply = test_result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "no text")
-        return jsonify({"available_models": available, "model_tested": MODEL, "reply": reply, "status": tr.status_code})
+        # Test each model to find one that works
+        results = {}
+        test_payload = {"contents": [{"parts": [{"text": "Say hi."}]}]}
+        for m in available[:8]:  # test first 8 to avoid timeout
+            name = m.replace("models/", "")
+            test_url = f"https://generativelanguage.googleapis.com/v1beta/models/{name}:generateContent?key={key}"
+            try:
+                tr = _req.post(test_url, json=test_payload, timeout=8)
+                data = tr.json()
+                if tr.status_code == 200:
+                    reply = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                    results[name] = f"✅ WORKS: {reply[:40]}"
+                else:
+                    results[name] = f"❌ {tr.status_code}: {data.get('error',{}).get('message','?')[:60]}"
+            except Exception as ex:
+                results[name] = f"⚠️ timeout/error"
+        return jsonify({"results": results})
     except Exception as e:
         return jsonify({"error": str(e)})
 
