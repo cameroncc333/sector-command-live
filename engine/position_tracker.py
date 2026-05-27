@@ -74,7 +74,11 @@ class PositionTracker:
         con = sqlite3.connect(self.db_path)
         row = con.execute("SELECT value FROM user_config WHERE key='balance'").fetchone()
         con.close()
-        return float(row[0]) if row else None
+        if row:
+            return float(row[0])
+        # Vercel /tmp is wiped on cold starts — fall back to env var so balance persists
+        env_bal = os.environ.get("DEFAULT_BALANCE")
+        return float(env_bal) if env_bal else None
 
     # ── positions ────────────────────────────────────────────────────────
 

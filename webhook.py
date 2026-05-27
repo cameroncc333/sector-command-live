@@ -233,7 +233,8 @@ def webhook():
             pt.set_balance(amount)
             bot.send_message(
                 f"✅ Balance set to <b>${amount:,.0f}</b>\n"
-                f"Now I can give you dollar-amount position sizes in every briefing.\n"
+                f"To make this permanent across restarts, set DEFAULT_BALANCE={int(amount)} "
+                f"in your Vercel environment variables.\n"
                 f"Reply <code>PORTFOLIO</code> to see your holdings."
             )
         else:
