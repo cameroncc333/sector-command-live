@@ -1,5 +1,6 @@
-# Vercel webhook — lean dependencies only (must stay under 250MB bundle)
+# Core dependencies (Vercel + Railway)
 flask>=3.0.0
+gunicorn>=21.0.0
 requests>=2.31.0
 pandas>=2.0.0
 numpy>=1.24.0

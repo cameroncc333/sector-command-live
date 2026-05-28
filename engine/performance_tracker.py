@@ -17,13 +17,11 @@ import json
 import sqlite3
 import datetime
 
+_default_db = os.path.join(os.path.dirname(__file__), "..", "data", "sector_command.db")
 if os.environ.get("VERCEL"):
     DB_PATH = "/tmp/sector_command.db"
 else:
-    DB_PATH = os.environ.get(
-        "JOURNAL_DB",
-        os.path.join(os.path.dirname(__file__), "..", "data", "sector_command.db"),
-    )
+    DB_PATH = os.environ.get("JOURNAL_DB", _default_db)
 
 
 def _get_decisions(db_path=DB_PATH, n=None):

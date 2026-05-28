@@ -18,10 +18,13 @@ import base64
 import sqlite3
 import datetime
 
+_default_db = os.path.join(os.path.dirname(__file__), "..", "data", "sector_command.db")
 if os.environ.get("VERCEL"):
+    # Vercel serverless: filesystem is read-only except /tmp; seed from committed file
     DB_PATH = "/tmp/sector_command.db"
 else:
-    DB_PATH = os.environ.get("JOURNAL_DB", os.path.join(os.path.dirname(__file__), "..", "data", "sector_command.db"))
+    # Railway / local: use the real file (persists, writable)
+    DB_PATH = os.environ.get("JOURNAL_DB", _default_db)
 
 
 class Journal:
