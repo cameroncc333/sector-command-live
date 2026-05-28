@@ -1,11 +1,8 @@
 name: Sector Command — Event Alerts
 
-# Runs every 30 minutes during US market hours (9:00–17:00 EDT = 13:00–21:00 UTC).
-# Catches fast moves (VIX spikes, regime flips, position drops >5%) between the
-# 4 scheduled briefings. Lightweight — no RL inference, no FinBERT.
+# Triggered by cron-job.org Market Alerts job (4×/day via /cron/alerts endpoint).
+# Schedule removed to prevent duplicate runs.
 on:
-  schedule:
-    - cron: "0,30 13-20 * * 1-5"   # every 30 min, 9:00–16:30 EDT Mon–Fri
   workflow_dispatch: {}
 
 jobs:

@@ -54,11 +54,25 @@ class Journal:
 
     def log_decision(self, briefing: dict, research_context: dict = None):
         ts = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        # Use top ranked opportunity as the displayed recommendation when one exists
+        ranked = briefing.get("ranked_opportunities") or []
+        top_ranked = ranked[0] if ranked else {}
+        rec_ticker = (top_ranked.get("ticker") if isinstance(top_ranked, dict)
+                      else getattr(top_ranked, "ticker", None)) or briefing.get("ticker")
+        rec_conf   = (top_ranked.get("score") if isinstance(top_ranked, dict)
+                      else getattr(top_ranked, "score", None))
+        if rec_conf is not None:
+            try:
+                rec_conf = int(float(rec_conf) * 100) if float(rec_conf) <= 1 else int(float(rec_conf))
+            except Exception:
+                rec_conf = briefing.get("confidence")
+        else:
+            rec_conf = briefing.get("confidence")
         row = (
             ts, briefing.get("date"), briefing.get("regime"), briefing.get("vix"),
             briefing.get("action"), briefing.get("ticker"),
-            briefing.get("action"), briefing.get("ticker"),
-            briefing.get("confidence"), briefing.get("abstain_reason"),
+            briefing.get("action"), rec_ticker,
+            rec_conf, briefing.get("abstain_reason"),
             briefing.get("news_sentiment"), briefing.get("news_headline"),
             briefing.get("political_note"),
             json.dumps(briefing.get("why_trace", [])),

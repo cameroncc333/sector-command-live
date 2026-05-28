@@ -1,13 +1,8 @@
 name: Sector Command Live — Daily Signals
 
-# Runs 4× per trading day (pre-open, midday, pre-close, EOD), US Eastern.
-# Cron is UTC. EDT = UTC-4.
+# Triggered by cron-job.org (4×/day via /cron/briefing endpoint).
+# Schedule removed to prevent duplicate runs alongside cron-job.org.
 on:
-  schedule:
-    - cron: "0 13 * * 1-5"   # 09:00 EDT  pre-open
-    - cron: "0 16 * * 1-5"   # 12:00 EDT  midday
-    - cron: "30 19 * * 1-5"  # 15:30 EDT  pre-close
-    - cron: "30 20 * * 1-5"  # 16:30 EDT  EOD summary
   workflow_dispatch: {}
 
 jobs:
