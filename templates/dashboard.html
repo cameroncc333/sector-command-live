@@ -174,6 +174,9 @@
     </div>
   </div>
 
+  <!-- ── Herd market warning ──────────────────────── -->
+  <div id="herd-warning" style="display:none;background:rgba(255,179,0,0.12);border:1px solid rgba(255,179,0,0.35);border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:13px;color:var(--yellow);line-height:1.5"></div>
+
   <!-- ── Stat row ───────────────────────────────── -->
   <div class="stat-row">
     <div class="card">
@@ -185,6 +188,7 @@
       <div class="card-title">Alpha vs SPY</div>
       <div class="stat-val accent" id="alpha-val">—%</div>
       <div class="stat-sub" id="alpha-sub">0 trades</div>
+      <div class="stat-sub" id="ir-sub" style="margin-top:3px;font-size:10px;color:var(--muted)"></div>
     </div>
     <div class="card">
       <div class="card-title">Alpaca Account</div>
@@ -410,6 +414,20 @@ function renderStatus(s) {
   document.getElementById('freshness-stamp').innerHTML =
     `RL: <strong style="color:${src === 'LIVE' ? 'var(--green)' : 'var(--red)'}">${src}</strong>
      &nbsp;·&nbsp; ${s.freshness?.generated_utc || ''}`;
+
+  // Herd market warning from RL signal dispersion
+  const herdEl = document.getElementById('herd-warning');
+  if (herdEl) {
+    const herd = s.herd_market_warning;
+    const dp = s.dispersion_percentile;
+    if (herd) {
+      herdEl.style.display = 'block';
+      herdEl.innerHTML = `⚠ <strong>Herd Market</strong> — stocks moving together (dispersion p${dp ?? '?'}). ` +
+        `RL alpha is weaker when all sectors correlate. Wait for dispersion to recover before sizing up.`;
+    } else {
+      herdEl.style.display = 'none';
+    }
+  }
 
   // votes
   const vl = document.getElementById('vote-list');
@@ -708,6 +726,12 @@ function renderPerf(perf) {
     `<span style="color:${pctColor(al)}">${al >= 0 ? '+' : ''}${al.toFixed(2)}%</span>`;
   document.getElementById('alpha-sub').textContent =
     `${nTrades} trade${nTrades !== 1 ? 's' : ''} · ${perf.days_running || 0}d`;
+  const ir = perf.information_ratio;
+  const irEl = document.getElementById('ir-sub');
+  if (irEl && ir != null) {
+    const irColor = ir > 0.3 ? 'var(--green)' : ir > 0 ? 'var(--accent)' : 'var(--red)';
+    irEl.innerHTML = `IR: <span style="color:${irColor}">${ir >= 0 ? '+' : ''}${ir.toFixed(2)}</span>`;
+  }
 }
 
 // ── Alpaca ──────────────────────────────────────────────────────────

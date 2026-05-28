@@ -442,6 +442,10 @@ def api_status():
         "repo_detail":    briefing.get("repo_detail") or {},
         "fomc_live":      fomc_live,
         "freshness":      freshness,
+        # RL signal dispersion metrics (populated after retrain with new generate_rl_signal.py)
+        "herd_market_warning":          rl.get("herd_market_warning", False),
+        "dispersion_percentile":        rl.get("dispersion_percentile"),
+        "cross_sectional_dispersion":   rl.get("cross_sectional_dispersion"),
     })
 
 

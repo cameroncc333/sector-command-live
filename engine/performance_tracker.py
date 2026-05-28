@@ -160,6 +160,25 @@ class PaperPortfolio:
             pass
 
         alpha_pct = ((port_value / ghost_value) - 1) * 100
+        port_return_pct = (port_value / self.INITIAL - 1) * 100
+        spy_return_pct  = (ghost_value / self.INITIAL - 1) * 100
+
+        # Information Ratio = active_return / tracking_error (annualized)
+        # Active return per day approximated from total returns and days
+        information_ratio = None
+        tracking_error = None
+        if days_running > 5:
+            try:
+                ann_factor = 252 / days_running
+                active_daily = (port_return_pct - spy_return_pct) / 100 / days_running
+                # Tracking error approximated as |active_return| * sqrt(252)
+                # (we don't have daily trade returns, so this is an approximation)
+                tracking_error = abs(active_daily) * (days_running ** 0.5) * 100
+                if tracking_error > 0.001:
+                    annualized_active = (port_return_pct - spy_return_pct) * ann_factor
+                    information_ratio = round(annualized_active / (tracking_error * ann_factor ** 0.5 + 1e-8), 2)
+            except Exception:
+                pass
 
         return {
             "portfolio_value": round(port_value, 2),
@@ -170,8 +189,10 @@ class PaperPortfolio:
             "start_date": start_date,
             "days_running": days_running,
             "current_ticker": entry_ticker,
-            "portfolio_return_pct": round((port_value / self.INITIAL - 1) * 100, 2),
-            "spy_return_pct": round((ghost_value / self.INITIAL - 1) * 100, 2),
+            "portfolio_return_pct": round(port_return_pct, 2),
+            "spy_return_pct": round(spy_return_pct, 2),
+            "information_ratio": information_ratio,
+            "tracking_error": round(tracking_error, 2) if tracking_error else None,
         }
 
     def ghost_alpha(self):
@@ -207,6 +228,10 @@ def format_performance_block(perf: dict) -> str:
     lines.append(f"  Alpha vs SPY: {alpha_emoji} {alpha:+.2f}%  ({n} trades, {days}d)")
     if win is not None:
         lines.append(f"  Win rate: {win:.0f}%")
+    ir = perf.get("information_ratio")
+    if ir is not None:
+        ir_emoji = "🟢" if ir > 0.3 else ("🟡" if ir > 0 else "🔴")
+        lines.append(f"  Info Ratio: {ir_emoji} {ir:+.2f}")
 
     return "\n".join(lines)
 

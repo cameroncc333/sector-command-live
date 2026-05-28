@@ -4,5 +4,10 @@
   ],
   "routes": [
     { "src": "/(.*)", "dest": "webhook.py" }
-  ]
+  ],
+  "functions": {
+    "webhook.py": {
+      "maxDuration": 60
+    }
+  }
 }
