@@ -65,32 +65,8 @@ jobs:
       - name: Export data for GitHub Pages dashboard
         run: |
           mkdir -p docs
-          # Copy briefing JSON for the dashboard
           cp data/last_briefing.json docs/briefing.json 2>/dev/null || true
-          # Export last 30 journal entries to JSON so the Journal tab works
-          python3 - <<'PYEOF'
-import sqlite3, json, os
-db = "data/sector_command.db"
-if os.path.exists(db):
-    con = sqlite3.connect(db)
-    con.row_factory = sqlite3.Row
-    rows = con.execute("SELECT * FROM decisions ORDER BY id DESC LIMIT 30").fetchall()
-    con.close()
-    data = []
-    for r in rows:
-        d = dict(r)
-        try:
-            d["why_trace"] = json.loads(d.get("why_trace") or "[]")
-        except Exception:
-            pass
-        data.append(d)
-    os.makedirs("docs", exist_ok=True)
-    with open("docs/journal.json", "w") as f:
-        json.dump(data, f)
-    print(f"[dashboard] exported {len(data)} journal entries")
-else:
-    print("[dashboard] no journal DB yet")
-PYEOF
+          python3 scripts/export_journal.py
 
       - name: Persist journal DB and RL signal to repo
         run: |
