@@ -17,6 +17,42 @@ import json
 import datetime
 from flask import Flask, request, jsonify, render_template, send_from_directory
 
+
+# ── Redis cache helpers ───────────────────────────────────────────────────
+# Used to cache slow API responses (yfinance, NewsFeeder) across cold starts.
+# All endpoints that make external calls cache their result for CACHE_TTL seconds.
+# This keeps Vercel response times <500ms even on cold starts.
+
+CACHE_TTL = 300  # 5 minutes
+
+
+def _rcache_get(key: str):
+    url   = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+    token = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+    if not url or not token:
+        return None
+    try:
+        import requests as _req
+        r = _req.post(url, json=["GET", key],
+                      headers={"Authorization": f"Bearer {token}"}, timeout=3)
+        raw = r.json().get("result")
+        return json.loads(raw) if raw else None
+    except Exception:
+        return None
+
+
+def _rcache_set(key: str, value, ttl: int = CACHE_TTL):
+    url   = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+    token = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+    if not url or not token:
+        return
+    try:
+        import requests as _req
+        _req.post(url, json=["SETEX", key, ttl, json.dumps(value, default=str)],
+                  headers={"Authorization": f"Bearer {token}"}, timeout=3)
+    except Exception:
+        pass
+
 from interface.telegram_bot import (
     TelegramBot, parse_command,
     format_crypto_briefing, format_portfolio, format_sizing_guide,
@@ -110,6 +146,8 @@ def webhook():
         confidence = recent[0]["confidence"] if recent else 50
 
         decision_id = journal.attach_human_reply(command, cmd.get("reason") or "(no reason given)")
+        # Bust status cache so dashboard reflects the new reply immediately
+        _rcache_set("sc:api_status", None, ttl=1)
 
         alpaca_result = {"executed": False}
         if command in ("BUY", "SELL") and ticker:
@@ -369,6 +407,14 @@ def serve_report(filename):
 
 @app.route("/api/status", methods=["GET"])
 def api_status():
+    # Return Redis-cached response if fresh (prevents cold-start timeout from
+    # yfinance/NewsFeeder calls). Pass ?bust=1 to force a refresh.
+    bust = request.args.get("bust")
+    if not bust:
+        cached = _rcache_get("sc:api_status")
+        if cached:
+            return jsonify(cached)
+
     # Prefer last_briefing.json (updated each run) over rl_signal.json (only on retrain)
     briefing = {}
     briefing_path = os.path.join(os.path.dirname(__file__), "data", "last_briefing.json")
@@ -427,7 +473,7 @@ def api_status():
         "generated_utc": rl.get("_generated_utc", "—"),
     }
 
-    return jsonify({
+    result = {
         "action":         briefing.get("action") or rl.get("action"),
         "ticker":         target,
         "confidence":     briefing.get("confidence") or rl.get("confidence"),
@@ -442,15 +488,21 @@ def api_status():
         "repo_detail":    briefing.get("repo_detail") or {},
         "fomc_live":      fomc_live,
         "freshness":      freshness,
-        # RL signal dispersion metrics (populated after retrain with new generate_rl_signal.py)
         "herd_market_warning":          rl.get("herd_market_warning", False),
         "dispersion_percentile":        rl.get("dispersion_percentile"),
         "cross_sectional_dispersion":   rl.get("cross_sectional_dispersion"),
-    })
+    }
+    _rcache_set("sc:api_status", result, ttl=CACHE_TTL)
+    return jsonify(result)
 
 
 @app.route("/api/sectors", methods=["GET"])
 def api_sectors():
+    bust = request.args.get("bust")
+    if not bust:
+        cached = _rcache_get("sc:api_sectors")
+        if cached:
+            return jsonify(cached)
     try:
         tech = sector_technicals()
         algo = algo_composite_signal()
@@ -479,7 +531,9 @@ def api_sectors():
                 "algo_eligible": a.get("eligible"),
                 "news_sentiment": news_by_sector.get(ticker),
             })
-        return jsonify({"sectors": sectors})
+        result = {"sectors": sectors}
+        _rcache_set("sc:api_sectors", result, ttl=CACHE_TTL)
+        return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e), "sectors": []})
 
