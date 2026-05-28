@@ -320,10 +320,10 @@ def run(dry_run=False):
     )
     briefing = decide(state, gov)
 
-    # Portfolio snapshot for plain English summary
+    # Portfolio snapshot — fetch live prices so P&L is real, not zero
     portfolio_snap = {}
     try:
-        portfolio_snap = pt.portfolio_summary(current_prices={})
+        portfolio_snap = pt.portfolio_summary()
     except Exception:
         portfolio_snap = {"balance": balance}
 
@@ -354,8 +354,9 @@ def run(dry_run=False):
     else:
         bot.send_briefing(briefing)
 
-    # 12) Log
+    # 12) Log — replay any human replies stored via Vercel webhook before writing
     journal = Journal()
+    journal._restore_replies_from_redis()
     journal.log_decision(briefing, research_context={
         "news_mode":              news["mode"],
         "news_headlines_scanned": news["n_headlines"],

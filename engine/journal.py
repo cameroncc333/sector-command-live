@@ -94,15 +94,7 @@ class Journal:
         top_ranked = ranked[0] if ranked else {}
         rec_ticker = (top_ranked.get("ticker") if isinstance(top_ranked, dict)
                       else getattr(top_ranked, "ticker", None)) or briefing.get("ticker")
-        rec_conf   = (top_ranked.get("score") if isinstance(top_ranked, dict)
-                      else getattr(top_ranked, "score", None))
-        if rec_conf is not None:
-            try:
-                rec_conf = int(float(rec_conf) * 100) if float(rec_conf) <= 1 else int(float(rec_conf))
-            except Exception:
-                rec_conf = briefing.get("confidence")
-        else:
-            rec_conf = briefing.get("confidence")
+        rec_conf   = briefing.get("confidence")  # decision engine's confidence (0-100)
         row = (
             ts, briefing.get("date"), briefing.get("regime"), briefing.get("vix"),
             briefing.get("action"), briefing.get("ticker"),

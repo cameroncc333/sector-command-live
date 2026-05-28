@@ -591,7 +591,6 @@ function renderPortfolio(b) {
   // Holdings table
   const holdRows = holdings.map(h=>{
     const pnlCls = h.pnl_dollar>=0?"green":"red";
-    const barW = h.alloc_pct ? Math.min(100,h.alloc_pct*3) : 0;
     return `
     <tr>
       <td><strong>${h.ticker}</strong><br><span class="small muted">${SNAMES[h.ticker]||""}</span></td>
@@ -645,7 +644,7 @@ function renderPortfolio(b) {
       <div class="small muted" style="margin-top:12px">Log positions: send <strong>BOUGHT XLF 500</strong> in Telegram. Remove: <strong>SOLD XLF</strong>.</div>
     </div>`
     :`<div class="card"><div class="empty">No open positions. Send <strong>BOUGHT XLF 500</strong> in Telegram to log a position.</div></div>`}
-    ${perfContent(b)!==`<div class="empty">No trades logged yet. Reply BUY to a briefing to start tracking.</div>`?`<div class="card"><h2>Paper P&L vs SPY</h2>${perfContent(b)}</div>`:""}
+    ${(()=>{ const p=perfContent(b); return p.includes('No trades logged')?'':`<div class="card"><h2>Paper P&L vs SPY</h2>${p}</div>`; })()}
     ${freshnessBar(b)}`;
 }
 
