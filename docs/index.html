@@ -11,120 +11,148 @@
   --text:#e6edf3;--muted:#8b949e;
   --green:#3fb950;--red:#f85149;--yellow:#d29922;
   --blue:#58a6ff;--orange:#f0883e;--purple:#b084ff;
+  --card2:#1c2128;
 }
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh}
 a{color:var(--blue);text-decoration:none}
 
-/* ── header ─────────────────────────────── */
+/* header */
 header{background:var(--card);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;position:sticky;top:0;z-index:10}
-.logo{font-size:17px;font-weight:700;letter-spacing:1px}
-.header-right{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo{font-size:17px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+.header-right{display:flex;align-items:center;gap:12px}
 .updated{color:var(--muted);font-size:12px}
-.refresh-btn{background:none;border:1px solid var(--border);color:var(--blue);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px}
+.refresh-btn{background:none;border:1px solid var(--border);color:var(--blue);padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px}
 .refresh-btn:hover{background:#21262d}
 
-/* ── tabs ───────────────────────────────── */
-.tab-bar{background:var(--card);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:4px;overflow-x:auto}
-.tab{padding:10px 16px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap}
+/* tabs */
+.tab-bar{background:var(--card);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab{padding:11px 18px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s}
 .tab.active{color:var(--text);border-bottom-color:var(--blue)}
 .tab:hover{color:var(--text)}
 .tab-content{display:none}
 .tab-content.active{display:block}
 
-/* ── layout ─────────────────────────────── */
+/* page layout */
 .page{max-width:1100px;margin:0 auto;padding:20px 16px;display:grid;gap:16px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px}
-.card h2{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:14px}
+.card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:14px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
 @media(max-width:720px){.grid2,.grid3{grid-template-columns:1fr}}
 
-/* ── call card ───────────────────────────── */
-.call-ticker{font-size:40px;font-weight:800;letter-spacing:-1px;line-height:1}
-.call-name{color:var(--muted);font-size:14px;margin:4px 0 14px}
-.conf-bar-bg{background:#21262d;border-radius:6px;height:10px;margin:6px 0 4px;overflow:hidden}
-.conf-bar{height:10px;border-radius:6px;transition:width .6s}
-.conf-label{font-size:14px;font-weight:700;margin-bottom:10px}
-.call-size{color:var(--muted);font-size:13px}
-.abstain-box{background:#21262d;border-left:3px solid var(--yellow);padding:9px 12px;border-radius:0 6px 6px 0;font-size:12px;color:var(--yellow);margin-top:10px}
-.crisis-box{background:#21262d;border-left:3px solid var(--red);padding:9px 12px;border-radius:0 6px 6px 0;font-size:13px;color:var(--red)}
+/* big call card */
+.call-ticker{font-size:44px;font-weight:800;letter-spacing:-2px;line-height:1;margin-bottom:4px}
+.call-name{color:var(--muted);font-size:13px;margin-bottom:16px}
+.conf-bar-bg{background:#21262d;border-radius:6px;height:12px;margin:6px 0 5px;overflow:hidden}
+.conf-bar{height:12px;border-radius:6px;transition:width .8s ease}
+.conf-label{font-size:15px;font-weight:700;margin-bottom:10px}
+.call-size{background:#21262d;border-radius:6px;padding:8px 12px;font-size:13px;margin-top:8px}
+.abstain-box{background:#21262d;border-left:3px solid var(--yellow);padding:10px 12px;border-radius:0 6px 6px 0;font-size:13px;color:var(--yellow);margin-top:12px}
+.crisis-box{background:#1e0a0a;border:1px solid var(--red);border-radius:8px;padding:12px;font-size:14px;color:var(--red);font-weight:600;margin-top:8px}
 
-/* ── market stats ────────────────────────── */
-.stat-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px}
+/* stat row */
+.stat-row{display:flex;gap:20px;flex-wrap:wrap}
 .stat{display:flex;flex-direction:column;gap:2px}
-.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
-.stat-value{font-size:22px;font-weight:700}
-.stat-value.sm{font-size:16px}
+.stat-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.stat-val{font-size:22px;font-weight:700;line-height:1.1}
+.stat-val.sm{font-size:15px}
 
-/* ── tags ─────────────────────────────────── */
+/* signal list */
+.sig{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid #21262d}
+.sig:last-child{border-bottom:none}
+.sig-k{font-size:12px;color:var(--muted);flex-shrink:0;padding-right:8px}
+.sig-v{font-size:12px;font-weight:600;text-align:right}
+
+/* tags / pills */
 .tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase}
-.tag-high{background:#1a4a1a;color:var(--green)}
+.tag-high{background:#1a3d1a;color:var(--green)}
 .tag-med{background:#3a2f00;color:var(--yellow)}
 .tag-low{background:#0d2040;color:var(--blue)}
 .tag-spec{background:#2a1a40;color:var(--purple)}
-.tag-red{background:#3d1a1a;color:var(--red)}
-
-/* ── opportunities ───────────────────────── */
-.opp{border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
-.opp:last-child{margin-bottom:0}
-.opp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
-.opp-label{font-size:12px;color:var(--muted);font-weight:600}
-.opp-ticker{font-size:20px;font-weight:800}
-.opp-name{font-size:12px;color:var(--muted)}
-.opp-size{font-size:13px;margin-top:6px}
-.opp-reasons{margin-top:6px;list-style:none}
-.opp-reasons li{font-size:12px;color:var(--muted);padding:2px 0 2px 12px;position:relative}
-.opp-reasons li::before{content:"•";position:absolute;left:0}
-
-/* ── alpha picks ─────────────────────────── */
-.alpha-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #21262d}
-.alpha-row:last-child{border-bottom:none}
-.alpha-lft{display:flex;flex-direction:column;gap:3px}
-.alpha-ticker{font-weight:700;font-size:15px}
-.alpha-sub{font-size:11px;color:var(--muted)}
-.alpha-rgt{text-align:right;font-size:12px}
-.alpha-tagline{color:var(--muted);font-size:11px;margin-top:2px}
-
-/* ── signals ──────────────────────────────── */
-.sig{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #21262d}
-.sig:last-child{border-bottom:none}
-.sig-k{font-size:12px;color:var(--muted)}
-.sig-v{font-size:12px;font-weight:600;text-align:right;max-width:60%}
-
-/* ── portfolio ────────────────────────────── */
-.bal-row{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px}
-.bal-stat .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
-.bal-stat .val{font-size:26px;font-weight:800}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{text-align:left;padding:6px 10px;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
-tbody td{padding:8px 10px;border-bottom:1px solid #21262d}
-tbody tr:last-child td{border-bottom:none}
-tbody tr:hover{background:#1c2128}
-.alloc-bar{height:6px;border-radius:3px;margin-top:3px}
-
-/* ── journal ──────────────────────────────── */
-.jrow{border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px}
-.jrow:last-child{margin-bottom:0}
-.jrow-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;margin-bottom:8px}
-.jrow-date{font-size:12px;color:var(--muted)}
-.jrow-rec{font-weight:700;font-size:14px}
-.jrow-reply{font-size:13px;margin-top:6px}
-.jrow-why{margin-top:8px}
-.jrow-why-item{font-size:12px;color:var(--muted);padding:2px 0;border-bottom:1px solid #21262d}
-.jrow-why-item:last-child{border-bottom:none}
-.why-toggle{color:var(--blue);cursor:pointer;font-size:12px;margin-top:4px}
-
-/* ── misc ─────────────────────────────────── */
-.divider{border:none;border-top:1px solid var(--border);margin:12px 0}
-.pill{display:inline-block;padding:1px 6px;border-radius:6px;font-size:11px}
+.tag-avoid{background:#3d1a1a;color:var(--red)}
+.pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
 .pill-green{background:#1a3a1a;color:var(--green)}
 .pill-red{background:#3a1a1a;color:var(--red)}
 .pill-yellow{background:#3a2f00;color:var(--yellow)}
-.empty{color:var(--muted);font-size:13px;padding:12px 0}
-.green{color:var(--green)} .red{color:var(--red)} .yellow{color:var(--yellow)} .blue{color:var(--blue)}
-.muted{color:var(--muted)} .bold{font-weight:700} .small{font-size:12px}
-.sell-banner{background:#2d1818;border:1px solid var(--red);border-radius:8px;padding:12px;margin-bottom:10px}
-.sell-banner .title{font-weight:700;color:var(--red);margin-bottom:4px}
+.pill-blue{background:#0d2040;color:var(--blue)}
+
+/* opportunity cards */
+.opp{border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;transition:border-color .15s}
+.opp:last-child{margin-bottom:0}
+.opp:hover{border-color:#444c56}
+.opp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+.opp-ticker{font-size:22px;font-weight:800;line-height:1}
+.opp-label{font-size:12px;color:var(--muted);font-weight:600}
+.opp-name{font-size:12px;color:var(--muted);margin-top:2px}
+.opp-size{font-size:13px;margin:6px 0}
+.opp-reasons{list-style:none;margin-top:6px}
+.opp-reasons li{font-size:12px;color:var(--muted);padding:2px 0 2px 14px;position:relative;line-height:1.4}
+.opp-reasons li::before{content:"›";position:absolute;left:0;color:var(--blue)}
+
+/* stocks / alpha */
+.alpha-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #21262d}
+.alpha-row:last-child{border-bottom:none}
+.alpha-lft{flex:1;min-width:0}
+.alpha-ticker{font-weight:700;font-size:15px}
+.alpha-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.alpha-tagline{font-size:11px;color:var(--blue);margin-top:3px}
+.alpha-rgt{text-align:right;flex-shrink:0;padding-left:12px}
+
+/* portfolio */
+.bal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:18px}
+.bal-card{background:var(--card2);border-radius:8px;padding:12px}
+.bal-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.bal-val{font-size:22px;font-weight:800;line-height:1.1}
+.bal-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* alloc bar */
+.alloc-bar-wrap{margin:16px 0 4px}
+.alloc-bar-track{height:18px;border-radius:9px;overflow:hidden;display:flex;background:#21262d;margin:6px 0}
+.alloc-seg{height:100%;transition:width .6s ease}
+.alloc-legend{display:flex;gap:16px;flex-wrap:wrap}
+.alloc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+
+/* holdings table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600}
+tbody td{padding:9px 10px;border-bottom:1px solid #21262d;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#1c2128}
+
+/* journal */
+.jrow{border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;transition:border-color .15s}
+.jrow:last-child{margin-bottom:0}
+.jrow:hover{border-color:#444c56}
+.jrow-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.jrow-meta{font-size:12px;color:var(--muted)}
+.jrow-rec{font-size:16px;font-weight:700;margin-bottom:4px}
+.jrow-rec .ticker{font-size:20px}
+.jrow-headline{font-size:12px;color:var(--muted);font-style:italic;margin-top:4px}
+.jrow-reply{margin-top:8px;padding:8px 10px;background:var(--card2);border-radius:6px;font-size:12px}
+.trace-toggle{color:var(--blue);cursor:pointer;font-size:12px;margin-top:8px;display:inline-flex;align-items:center;gap:4px;user-select:none}
+.trace-body{margin-top:8px;display:none}
+.trace-item{font-size:12px;color:var(--muted);padding:3px 0;border-bottom:1px solid #21262d;line-height:1.5}
+.trace-item:last-child{border-bottom:none}
+
+/* alerts */
+.alert-banner{background:#200a0a;border:1px solid var(--red);border-radius:8px;padding:12px;margin-bottom:10px}
+.alert-banner .alert-title{font-weight:700;color:var(--red);font-size:13px;margin-bottom:4px}
+
+/* perf numbers */
+.perf-row{display:flex;gap:20px;flex-wrap:wrap}
+.perf-stat .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
+.perf-stat .val{font-size:24px;font-weight:800}
+
+/* misc */
+.divider{border:none;border-top:1px solid var(--border);margin:12px 0}
+.empty{color:var(--muted);font-size:13px;padding:16px 0;line-height:1.6}
+.empty-icon{font-size:28px;margin-bottom:8px}
+.green{color:var(--green)} .red{color:var(--red)} .yellow{color:var(--yellow)}
+.blue{color:var(--blue)} .muted{color:var(--muted)} .bold{font-weight:700}
+.small{font-size:12px} .mono{font-family:monospace}
+.freshness{text-align:center;padding:4px 0 18px;color:var(--muted);font-size:12px}
+code{background:#21262d;padding:1px 5px;border-radius:4px;font-size:12px;font-family:monospace}
 </style>
 </head>
 <body>
@@ -145,14 +173,14 @@ tbody tr:hover{background:#1c2128}
   <div class="tab" onclick="switchTab('journal',this)">📋 Journal</div>
 </div>
 
-<div id="tab-today"   class="tab-content active"><div class="page" id="pg-today"></div></div>
+<div id="tab-today"        class="tab-content active"><div class="page" id="pg-today"></div></div>
 <div id="tab-opportunities" class="tab-content"><div class="page" id="pg-opps"></div></div>
-<div id="tab-stocks"  class="tab-content"><div class="page" id="pg-stocks"></div></div>
-<div id="tab-portfolio" class="tab-content"><div class="page" id="pg-portfolio"></div></div>
-<div id="tab-journal" class="tab-content"><div class="page" id="pg-journal"></div></div>
+<div id="tab-stocks"       class="tab-content"><div class="page" id="pg-stocks"></div></div>
+<div id="tab-portfolio"    class="tab-content"><div class="page" id="pg-portfolio"></div></div>
+<div id="tab-journal"      class="tab-content"><div class="page" id="pg-journal"></div></div>
 
 <script>
-// ── Tab switching ────────────────────────────────────────────────
+// ── Tab switching ─────────────────────────────────────────────────────
 function switchTab(name, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -160,31 +188,31 @@ function switchTab(name, el) {
   document.getElementById('tab-' + name).classList.add('active');
 }
 
-// ── Sector name lookup ───────────────────────────────────────────
+// ── Lookups ───────────────────────────────────────────────────────────
 const SNAMES = {
-  XLF:"Financials",XLK:"Technology",XLE:"Energy",XLV:"Health Care",
-  XLY:"Consumer Disc.",XLP:"Consumer Staples",XLI:"Industrials",XLB:"Materials",
-  XLRE:"Real Estate",XLU:"Utilities",XLC:"Comm. Services",
-  SPY:"S&P 500",QQQ:"Nasdaq 100",BIL:"T-Bills (Cash)",TLT:"Long Bonds",
-  GLD:"Gold","BTC-USD":"Bitcoin","ETH-USD":"Ethereum"
+  XLF:"Financials", XLK:"Technology", XLE:"Energy", XLV:"Health Care",
+  XLY:"Consumer Disc.", XLP:"Consumer Staples", XLI:"Industrials", XLB:"Materials",
+  XLRE:"Real Estate", XLU:"Utilities", XLC:"Comm. Services",
+  SPY:"S&P 500 Index", QQQ:"Nasdaq 100", BIL:"T-Bills (Cash)",
+  TLT:"Long-Term Bonds", GLD:"Gold", "BTC-USD":"Bitcoin", "ETH-USD":"Ethereum"
 };
+const COLORS = ["#58a6ff","#3fb950","#b084ff","#f0883e","#d29922"];
 
-// ── Data loading ─────────────────────────────────────────────────
+// ── Data fetching ─────────────────────────────────────────────────────
 const REPO = "cameroncc333/sector-command-live";
-
-async function fetchJSON(localPath, githubPath) {
+async function fetchJSON(local, ghPath) {
   try {
-    const r = await fetch(localPath + "?" + Date.now(), {cache:"no-cache"});
+    const r = await fetch(local + "?" + Date.now(), {cache:"no-cache"});
     if (r.ok) return await r.json();
-  } catch(_) {}
-  if (githubPath) {
+  } catch(_){}
+  if (ghPath) {
     try {
       const r = await fetch(
-        `https://api.github.com/repos/${REPO}/contents/${githubPath}`,
+        `https://api.github.com/repos/${REPO}/contents/${ghPath}`,
         {headers:{Accept:"application/vnd.github.raw+json"}, cache:"no-cache"}
       );
       if (r.ok) return await r.json();
-    } catch(_) {}
+    } catch(_){}
   }
   return null;
 }
@@ -196,531 +224,528 @@ async function init() {
   ]);
 
   if (!briefing) {
-    ['pg-today','pg-opps','pg-stocks','pg-portfolio','pg-journal'].forEach(id => {
-      document.getElementById(id).innerHTML =
-        '<div style="padding:60px 20px;text-align:center;color:var(--muted)">No data yet — waiting for the first daily briefing run.<br><br><span class="small">GitHub Actions will populate this on the next scheduled run.</span></div>';
-    });
+    const msg = `<div class="card" style="text-align:center;padding:40px 20px">
+      <div class="empty-icon">⏳</div>
+      <div class="bold" style="font-size:16px;margin-bottom:8px">Waiting for first briefing</div>
+      <div class="muted">GitHub Actions runs the signal engine at 9AM, 10:30AM, 12PM, 2PM, 3:30PM &amp; 4:30PM EDT on weekdays.<br><br>
+      To trigger one now: go to your GitHub repo → Actions → "Sector Command Live — Daily Signals" → Run workflow.</div>
+    </div>`;
+    ['pg-today','pg-opps','pg-stocks','pg-portfolio'].forEach(id =>
+      document.getElementById(id).innerHTML = msg
+    );
+    document.getElementById('pg-journal').innerHTML = emptyJournalCard([]);
+    document.getElementById('updated-ts').textContent = 'No data yet';
     return;
   }
 
   const gen = (briefing.freshness||{}).generated_utc || briefing.date || '—';
-  document.getElementById('updated-ts').textContent = 'Updated: ' + gen;
+  document.getElementById('updated-ts').textContent = 'Last run: ' + gen;
 
   renderToday(briefing);
   renderOpportunities(briefing);
   renderStocks(briefing);
   renderPortfolio(briefing);
-  renderJournal(journal || []);
+  renderJournal(Array.isArray(journal) ? journal : []);
+}
+
+// ── helpers ───────────────────────────────────────────────────────────
+function h(n){return n>=0?`<span class="green">+${n.toFixed(1)}%</span>`:`<span class="red">${n.toFixed(1)}%</span>`}
+function hd(n){return n>=0?`<span class="green">+$${Math.abs(n).toLocaleString()}</span>`:`<span class="red">-$${Math.abs(n).toLocaleString()}</span>`}
+function fmt$(n){return n!=null?'$'+parseFloat(n).toLocaleString():'—'}
+function confColor(c){return c>=80?"var(--green)":c>=65?"var(--green)":c>=50?"var(--yellow)":c>=35?"var(--orange)":"var(--red)"}
+function confText(c){return c>=80?`${c}% — MUST BUY 🔥`:c>=65?`${c}% — DEFINITELY BUY ✅`:c>=50?`${c}% — PROBABLY — solid signal 🟡`:c>=35?`${c}% — MAYBE — weak signal ⚠️`:`${c}% — SKIP ❌`}
+function tagClass(cv){return{HIGH:"tag-high",MEDIUM:"tag-med",LOW:"tag-low",SPECULATIVE:"tag-spec",AVOID:"tag-avoid"}[cv]||"tag-low"}
+function freshBar(b){
+  const fr=b.freshness||{};
+  const stub=fr.rl_source!=="LIVE"?` &nbsp;<span class="red bold">⚠️ RL STUB — run generate_rl_signal.py</span>`:"";
+  return `<div class="freshness">
+    RL: <strong>${fr.rl_source||"?"}</strong>${stub} &nbsp;·&nbsp;
+    Market data: <strong>${fr.market_data||"?"}</strong> &nbsp;·&nbsp;
+    News: <strong>${fr.news||"?"}</strong> &nbsp;·&nbsp;
+    Generated: <strong>${fr.generated_utc||"—"}</strong>
+  </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TAB 1: TODAY
+// TAB 1 — TODAY
 // ═══════════════════════════════════════════════════════════════════
 function renderToday(b) {
-  const el = document.getElementById('pg-today');
-  el.innerHTML = `
-    ${callAndMarket(b)}
-    ${sellAlertsSection(b)}
+  document.getElementById('pg-today').innerHTML = `
+    ${alertsSection(b)}
+    <div class="grid2" style="align-items:start">
+      ${callCard(b)}
+      ${marketCard(b)}
+    </div>
     <div class="grid2">
       ${signalsCard(b)}
       ${macroCard(b)}
     </div>
-    ${agentsAndTrace(b)}
-    ${freshnessBar(b)}
+    ${agentVotesCard(b)}
+    ${decisionTraceCard(b)}
+    ${freshBar(b)}
   `;
 }
 
-function callAndMarket(b) {
-  const conf   = parseInt(b.confidence) || 50;
-  const ticker = b.ticker || "—";
-  const abstain= b.abstain_reason || "";
-  const vix    = parseFloat(b.vix) || 0;
-  const regime = (b.regime||"NORMAL").toUpperCase();
+function callCard(b) {
+  const conf   = parseInt(b.confidence)||50;
+  const ticker = b.ticker||"—";
+  const abstain= b.abstain_reason||"";
+  const ranked = b.ranked_opportunities||[];
+  const top    = ranked[0]||{};
+  const sname  = SNAMES[ticker]||ticker;
 
-  // Confidence styling
-  let confColor, confText, confClass;
-  if (conf>=80){confColor="var(--green)"; confText=`${conf}% — MUST BUY`; confClass="green";}
-  else if(conf>=65){confColor="var(--green)"; confText=`${conf}% — DEFINITELY BUY`; confClass="green";}
-  else if(conf>=50){confColor="var(--yellow)"; confText=`${conf}% — PROBABLY — good signal`; confClass="yellow";}
-  else if(conf>=35){confColor="var(--orange)"; confText=`${conf}% — MAYBE — weak, small position or wait`; confClass="yellow";}
-  else{confColor="var(--red)"; confText=`${conf}% — SKIP — too low to act`; confClass="red";}
-
-  const sectorName = SNAMES[ticker] || ticker;
-
-  // Market condition
-  const vts = (b.macro||{}).vix_term_structure || {};
-  let mktEmoji, mktText, mktClass;
-  if(vts.ts_regime==="BACKWARDATION"){mktEmoji="🔴";mktText="FEAR SPIKE";mktClass="red";}
-  else if(vix<15||vts.ts_regime==="STEEP_CONTANGO"){mktEmoji="🟢";mktText="CALM";mktClass="green";}
-  else if(vix<22){mktEmoji="🟡";mktText="NORMAL";mktClass="yellow";}
-  else if(vix<30){mktEmoji="🟠";mktText="CHOPPY";mktClass="orange";}
-  else{mktEmoji="🔴";mktText="STRESSED";mktClass="red";}
-
-  // Sizing from top ranked op
-  const top = (b.ranked_opportunities||[])[0]||{};
   const sizeStr = top.suggested_dollar
-    ? `~$${top.suggested_dollar.toLocaleString()} (${top.suggested_pct||9}% of balance)`
-    : top.suggested_pct ? `~${top.suggested_pct}% of your balance` : "";
+    ? `Suggested size: <strong>${fmt$(top.suggested_dollar)}</strong> (~${top.suggested_pct||9}% of balance)`
+    : top.suggested_pct ? `Suggested size: ~${top.suggested_pct}% of balance` : "";
 
-  // Build call body
-  let callBody;
-  if (ticker === "BIL") {
-    callBody = `<div class="crisis-box">⛔ CRISIS MODE — VIX ${vix.toFixed(0)} is dangerously high. System forces cash. Do not buy anything.</div>`;
-  } else if (ticker === "SPY" && abstain) {
-    callBody = `
-      <div class="call-ticker blue">SPY</div>
-      <div class="call-name">S&P 500 — no strong sector conviction</div>
-      <div class="abstain-box">⚠️ ${abstain}</div>`;
+  let body;
+  if (ticker==="BIL") {
+    body = `<div class="crisis-box">⛔ CRISIS MODE — VIX is dangerously high. System forces cash. Do not buy anything.</div>`;
+  } else if (ticker==="SPY" && abstain) {
+    body = `
+      <div class="call-ticker blue">${ticker}</div>
+      <div class="call-name">${sname}</div>
+      <div class="abstain-box">⚠️ No strong sector conviction today<br><span class="small">${abstain}</span></div>`;
   } else {
-    callBody = `
-      <div class="call-ticker">${ticker}</div>
-      <div class="call-name">${sectorName}</div>
-      <div class="conf-bar-bg"><div class="conf-bar" style="width:${Math.min(100,conf)}%;background:${confColor}"></div></div>
-      <div class="conf-label ${confClass}">${confText}</div>
-      ${sizeStr ? `<div class="call-size">Suggested size: <strong>${sizeStr}</strong></div>` : ""}
-      ${abstain ? `<div class="abstain-box" style="margin-top:10px;font-size:12px">ℹ️ ${abstain}</div>` : ""}`;
+    body = `
+      <div class="call-ticker" style="color:${confColor(conf)}">${ticker}</div>
+      <div class="call-name">${sname}</div>
+      <div class="conf-bar-bg"><div class="conf-bar" style="width:${Math.min(100,conf)}%;background:${confColor(conf)}"></div></div>
+      <div class="conf-label" style="color:${confColor(conf)}">${confText(conf)}</div>
+      ${sizeStr?`<div class="call-size">${sizeStr}</div>`:""}`;
   }
 
-  // Options PCR
-  const opts = b.options_signals||{};
-  const spy_pcr = opts.SPY||opts.QQQ;
-  const pcrLine = spy_pcr
-    ? `<div class="divider"></div><div class="small muted">${{FEARFUL:"😰",COMPLACENT:"😎",NEUTRAL:"😐"}[spy_pcr.signal]||"❓"} PCR: <strong>${spy_pcr.signal}</strong> — ${spy_pcr.interpretation||""}</div>`
-    : "";
+  const replyGuide = ticker!=="BIL" ? `
+    <div class="divider"></div>
+    <div class="small muted">Reply in Telegram: &nbsp;<code>BUY A</code> &nbsp;<code>SKIP</code> &nbsp;<code>BUY ${ticker}</code></div>` : "";
 
-  // VIX term structure
-  const vtsLine = vts.ts_regime
-    ? `<div class="divider"></div><div class="small muted">${vts.ts_regime==="BACKWARDATION"?"🔴":vts.ts_regime==="STEEP_CONTANGO"?"🟢":"🟡"} VIX structure: <strong>${vts.ts_regime}</strong> (ratio ${vts.ratio||"?"})</div>`
-    : "";
-
-  const regEmoji = {CALM:"🟢",NORMAL:"🟡",STRESSED:"🔴"}[regime]||"⚪";
-
-  return `
-  <div class="grid2" style="align-items:start">
-    <div class="card">
-      <h2>Today's Call</h2>
-      ${callBody}
-    </div>
-    <div class="card">
-      <h2>Market Status</h2>
-      <div class="stat-row">
-        <div class="stat">
-          <div class="stat-label">VIX</div>
-          <div class="stat-value ${mktClass}">${vix.toFixed(1)}</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Regime</div>
-          <div class="stat-value sm">${regEmoji} ${regime}</div>
-        </div>
-        <div class="stat">
-          <div class="stat-label">Market</div>
-          <div class="stat-value sm ${mktClass}">${mktEmoji} ${mktText}</div>
-        </div>
-        ${b.rsi?`<div class="stat"><div class="stat-label">RSI</div><div class="stat-value sm">${Math.round(b.rsi)}</div></div>`:""}
-      </div>
-      ${pcrLine}
-      ${vtsLine}
-      ${fomcLine(b)}
-    </div>
+  return `<div class="card">
+    <div class="card-title">Today's Call</div>
+    ${body}
+    ${replyGuide}
   </div>`;
 }
 
-function fomcLine(b) {
-  const f = b.fomc_live;
-  if (!f||!f.active) return "";
-  const emoji = {DOVISH:"🕊️",HAWKISH:"🦅",NEUTRAL:"⚖️"}[f.label]||"⏳";
-  const cls   = {DOVISH:"green",HAWKISH:"red",NEUTRAL:"yellow"}[f.label]||"muted";
-  return `<div class="divider"></div><div class="small">🏦 FOMC <span class="${cls}">${emoji} <strong>${f.label}</strong></span> ${f.note||""}</div>`;
-}
+function marketCard(b) {
+  const vix    = parseFloat(b.vix)||0;
+  const regime = (b.regime||"NORMAL").toUpperCase();
+  const vts    = (b.macro||{}).vix_term_structure||{};
+  const opts   = b.options_signals||{};
+  const fomc   = b.fomc_live||{};
 
-function sellAlertsSection(b) {
-  const sells = b.sell_alerts||"";
-  const exits = b.equity_alpha_exit_alerts||[];
-  const earn  = b.earnings_warning||"";
-  if (!sells&&!exits.length&&!earn) return "";
-  const items = exits.map(e => `
-    <div class="sell-banner">
-      <div class="title">${e.urgency==="URGENT"?"🔴":"🟡"} ${e.ticker} — ${e.signal_type}</div>
-      <div class="small muted">${e.detail||""}</div>
-    </div>`).join("");
-  const sellClean = sells.replace(/<[^>]*>/g,"").trim();
-  const earnClean = earn.replace(/<[^>]*>/g,"").trim();
-  return `
-  <div class="card" style="border-color:var(--red)">
-    <h2 style="color:var(--red)">⚠️ Alerts — Action Required</h2>
-    ${items}
-    ${sellClean?`<div class="small" style="white-space:pre-line">${sellClean}</div>`:""}
-    ${earnClean?`<div class="small muted" style="margin-top:8px">${earnClean}</div>`:""}
+  let mktColor,mktLabel;
+  if(vts.ts_regime==="BACKWARDATION"){mktColor="var(--red)";mktLabel="⚠️ Fear Spike";}
+  else if(vix<15||vts.ts_regime==="STEEP_CONTANGO"){mktColor="var(--green)";mktLabel="✅ Calm";}
+  else if(vix<22){mktColor="var(--yellow)";mktLabel="🟡 Normal";}
+  else if(vix<30){mktColor="var(--orange)";mktLabel="🟠 Choppy";}
+  else{mktColor="var(--red)";mktLabel="🔴 Stressed";}
+
+  const regColor={CALM:"var(--green)",NORMAL:"var(--yellow)",STRESSED:"var(--red)"}[regime]||"var(--muted)";
+  const spy_pcr = opts.SPY||opts.QQQ;
+  const pcrLine = spy_pcr
+    ? `<div class="sig"><span class="sig-k">Put/Call Ratio</span><span class="sig-v">${{FEARFUL:"😰 Fearful",COMPLACENT:"😎 Complacent",NEUTRAL:"😐 Neutral"}[spy_pcr.signal]||spy_pcr.signal}</span></div>`
+    : "";
+  const vtsLine = vts.ts_regime
+    ? `<div class="sig"><span class="sig-k">VIX Term Structure</span><span class="sig-v" style="color:${vts.ts_regime==="BACKWARDATION"?"var(--red)":vts.ts_regime==="STEEP_CONTANGO"?"var(--green)":"var(--yellow)"}">${vts.ts_regime} (ratio ${vts.ratio||"?"})</span></div>`
+    : "";
+  const fomcLine = fomc.active
+    ? `<div class="sig"><span class="sig-k">FOMC Live</span><span class="sig-v" style="color:${fomc.label==="HAWKISH"?"var(--red)":fomc.label==="DOVISH"?"var(--green)":"var(--yellow)"}">${{"DOVISH":"🕊️","HAWKISH":"🦅","NEUTRAL":"⚖️"}[fomc.label]||"⏳"} ${fomc.label||""}</span></div>`
+    : "";
+
+  return `<div class="card">
+    <div class="card-title">Market Status</div>
+    <div class="stat-row" style="margin-bottom:16px">
+      <div class="stat">
+        <div class="stat-lbl">VIX</div>
+        <div class="stat-val" style="color:${mktColor}">${vix.toFixed(1)}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Regime</div>
+        <div class="stat-val sm" style="color:${regColor}">${regime}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Conditions</div>
+        <div class="stat-val sm" style="color:${mktColor}">${mktLabel}</div>
+      </div>
+      ${b.rsi?`<div class="stat"><div class="stat-lbl">RSI</div><div class="stat-val sm">${Math.round(b.rsi)}</div></div>`:""}
+    </div>
+    ${pcrLine}${vtsLine}${fomcLine}
   </div>`;
 }
 
 function signalsCard(b) {
-  const rows = [];
-  const ns = b.news_sentiment;
-  if (ns!=null) {
-    const tone = ns>0.15?"Bullish":ns<-0.15?"Bearish":"Neutral";
-    const cls  = ns>0.15?"green":ns<-0.15?"red":"muted";
-    rows.push(["News Sentiment", `<span class="${cls}">${ns>=0?"+":""}${ns.toFixed(2)} ${tone}</span>`]);
+  const rows=[];
+  const ns=b.news_sentiment;
+  if(ns!=null){
+    const tone=ns>0.15?"Bullish 🟢":ns<-0.15?"Bearish 🔴":"Neutral ⚪";
+    const cls=ns>0.15?"green":ns<-0.15?"red":"muted";
+    rows.push(["News Sentiment (FinBERT)",`<span class="${cls}">${ns>=0?"+":""}${ns.toFixed(2)} — ${tone}</span>`]);
   }
-  if (b.news_headline) rows.push(["Top Headline",`<span class="muted">"${b.news_headline.slice(0,65)}${b.news_headline.length>65?"…":""}"</span>`]);
-  if (b.rsi) rows.push(["RSI(14)", `${Math.round(b.rsi)}`]);
-  if (b.rel_strength!=null) {
-    const rs = b.rel_strength;
-    rows.push(["Rel-Strength vs SPY", `<span class="${rs>=0?"green":"red"}">${rs>=0?"+":""}${(rs*100).toFixed(1)}%</span>`]);
+  if(b.news_headline) rows.push(["Top Headline",`<em class="muted">"${b.news_headline.slice(0,70)}${b.news_headline.length>70?"…":""}"</em>`]);
+  if(b.rel_strength!=null){
+    const rs=b.rel_strength;
+    rows.push(["Rel-Strength vs SPY",`<span class="${rs>=0?"green":"red"}">${rs>=0?"+":""}${(rs*100).toFixed(1)}%</span>`]);
   }
-  const ag = (b.repo_detail||{}).agreement||{};
-  if (ag.total>0) {
+  const ag=(b.repo_detail||{}).agreement||{};
+  if(ag.total>0){
     const ratio=ag.agree/ag.total;
-    rows.push(["Cross-Repo Agree", `<span class="${ratio>=.66?"green":ratio===0?"red":"yellow"}">${ag.agree}/${ag.total} systems</span>`]);
+    rows.push(["Multi-Repo Corroboration",`<span class="${ratio>=.66?"green":ratio===0?"red":"yellow"}">${ag.agree}/${ag.total} strategies agree</span>`]);
   }
-  const soc = b.social_sentiment||{};
+  const soc=b.social_sentiment||{};
   Object.entries(soc).slice(0,2).forEach(([t,s])=>{
-    const emoji={BULLISH:"🟢",BEARISH:"🔴"}[s.signal]||"⚪";
-    rows.push([`StockTwits ${t}`, `${emoji} ${s.signal} (${(s.score||0)>=0?"+":""}${(s.score||0).toFixed(2)})`]);
+    const cls={BULLISH:"green",BEARISH:"red"}[s.signal]||"muted";
+    rows.push([`StockTwits ${t}`,`<span class="${cls}">${s.signal} (${(s.score||0)>=0?"+":""}${(s.score||0).toFixed(2)})</span>`]);
   });
-
-  const html = rows.map(([k,v])=>`<div class="sig"><span class="sig-k">${k}</span><span class="sig-v">${v}</span></div>`).join("");
-  return `<div class="card"><h2>Signals & Sentiment</h2>${html||'<div class="empty">No signal data yet.</div>'}</div>`;
+  const html=rows.map(([k,v])=>`<div class="sig"><span class="sig-k">${k}</span><span class="sig-v">${v}</span></div>`).join("");
+  return `<div class="card"><div class="card-title">Signals &amp; Sentiment</div>${html||'<div class="empty">No signal data yet.</div>'}</div>`;
 }
 
 function macroCard(b) {
-  const macro = b.macro||{};
-  const yc=macro.yield_curve||{}, dxy=macro.dollar||{};
+  const macro=b.macro||{};
+  const yc=macro.yield_curve||{};
+  const dxy=macro.dollar||{};
   const rows=[];
-  if (yc.spread!=null) {
-    const inv=yc.inverted?" ⚠️ INVERTED":"";
+  if(yc.spread!=null){
     const cls=yc.inverted?"red":yc.spread<0.5?"yellow":"green";
-    rows.push(["Yield Curve",`<span class="${cls}">${yc.spread}%${inv}</span><span class="muted small"> (10yr ${yc.ten_yr}%)</span>`]);
+    const inv=yc.inverted?" ⚠️ INVERTED":"";
+    rows.push(["Yield Curve (10yr-2yr)",`<span class="${cls}">${yc.spread}%${inv}</span><span class="muted small"> · 10yr ${yc.ten_yr}%</span>`]);
   }
-  if (dxy.dxy!=null) {
+  if(dxy.dxy!=null){
     const chg=dxy.dxy_change||0;
-    rows.push(["Dollar (DXY)",`${dxy.dxy} <span class="${chg>=0?"green":"red"}">(${chg>=0?"+":""}${chg.toFixed(2)}%)</span>`]);
+    rows.push(["US Dollar (DXY)",`${dxy.dxy} <span class="${chg>=0?"green":"red"}">${chg>=0?"+":""}${chg.toFixed(2)}%</span>`]);
   }
   const vts=(macro.vix_term_structure||{});
-  if (vts.ts_regime) rows.push(["VIX Structure",`<span class="${vts.ts_regime==="BACKWARDATION"?"red":vts.ts_regime==="STEEP_CONTANGO"?"green":"yellow"}">${vts.ts_regime}</span> ratio ${vts.ratio||"?"}`]);
-
+  if(vts.vix&&vts.vix3m){
+    rows.push(["VIX / VIX3M",`${vts.vix} / ${vts.vix3m}`]);
+  }
   const html=rows.map(([k,v])=>`<div class="sig"><span class="sig-k">${k}</span><span class="sig-v">${v}</span></div>`).join("");
-  return `<div class="card"><h2>Macro Indicators</h2>${html||'<div class="empty">No macro data.</div>'}</div>`;
+  return `<div class="card"><div class="card-title">Macro Indicators</div>${html||'<div class="empty">No macro data yet.</div>'}</div>`;
 }
 
-function agentsAndTrace(b) {
-  const votes = b.rl_votes||{};
-  const trace = (b.why_trace||[]).slice(0,15);
-  const voteHtml = Object.entries(votes).map(([a,v])=>`<span class="pill pill-yellow" style="margin:3px">${a}: ${v}</span>`).join("");
-  const traceHtml = trace.map(t=>`<div class="jrow-why-item">${t}</div>`).join("");
-  return `
-  <div class="grid2">
-    <div class="card">
-      <h2>RL Agent Votes</h2>
-      <div style="margin-bottom:10px">${voteHtml||'<span class="muted small">No vote data</span>'}</div>
-      <div class="small muted">PPO / A2C / SAC each use different algorithms and often pick different sectors. Disagreement = lower confidence, not a stop. 3/3 agreement is rare but very bullish.</div>
-    </div>
-    <div class="card">
-      <h2>Decision Trace (Why This Call)</h2>
-      ${traceHtml||'<div class="empty">No trace data yet.</div>'}
-    </div>
+function agentVotesCard(b) {
+  const votes=b.rl_votes||{};
+  if(!Object.keys(votes).length) return "";
+  const voteHtml=Object.entries(votes).map(([agent,vote])=>
+    `<div class="sig"><span class="sig-k bold">${agent}</span><span class="sig-v">${vote}</span></div>`
+  ).join("");
+  return `<div class="card"><div class="card-title">RL Agent Votes (PPO / A2C / SAC)</div>
+    ${voteHtml}
+    <div class="small muted" style="margin-top:10px">Each agent uses a different algorithm and may pick different sectors. 3/3 agreement is rare but high conviction. 1/3 lowers confidence by −10 pts but does not block the trade.</div>
   </div>`;
 }
 
-function freshnessBar(b) {
-  const fr=b.freshness||{};
-  const stubWarn=fr.rl_source!=="LIVE"?` <span class="red">⚠️ RL IS STUB — push a fresh rl_signal.json</span>`:"";
-  return `<div class="small muted" style="text-align:center;padding:4px 0 16px">
-    RL: <strong>${fr.rl_source||"?"}</strong>${stubWarn} &nbsp;·&nbsp;
-    Market: <strong>${fr.market_data||"?"}</strong> &nbsp;·&nbsp;
-    News: <strong>${fr.news||"?"}</strong> &nbsp;·&nbsp;
-    Generated: ${fr.generated_utc||"—"}
+function decisionTraceCard(b) {
+  const trace=(b.why_trace||[]).slice(0,20);
+  if(!trace.length) return "";
+  const id="trace-today";
+  return `<div class="card"><div class="card-title">Decision Trace — Why This Call</div>
+    <div id="${id}" style="display:none">${trace.map(t=>`<div class="trace-item">${t}</div>`).join("")}</div>
+    <div class="trace-toggle" onclick="toggleEl('${id}',this)">▶ Show ${trace.length} reasoning steps</div>
+  </div>`;
+}
+
+function alertsSection(b) {
+  const exits=b.equity_alpha_exit_alerts||[];
+  const sells=(b.sell_alerts||"").replace(/<[^>]*>/g,"").trim();
+  const earn=(b.earnings_warning||"").replace(/<[^>]*>/g,"").trim();
+  if(!exits.length&&!sells&&!earn) return "";
+  const items=exits.map(e=>`
+    <div class="alert-banner">
+      <div class="alert-title">${e.urgency==="URGENT"?"🔴":"🟡"} ${e.ticker} — ${e.signal_type}</div>
+      <div class="small muted">${e.detail||""}</div>
+    </div>`).join("");
+  return `<div class="card" style="border-color:var(--red)">
+    <div class="card-title" style="color:var(--red)">⚠️ Alerts — Review Required</div>
+    ${items}
+    ${sells?`<div class="small" style="white-space:pre-line;margin-bottom:8px">${sells}</div>`:""}
+    ${earn?`<div class="small muted">${earn}</div>`:""}
   </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TAB 2: OPPORTUNITIES
+// TAB 2 — OPPORTUNITIES
 // ═══════════════════════════════════════════════════════════════════
 function renderOpportunities(b) {
-  const el = document.getElementById('pg-opps');
-  const ranked = b.ranked_opportunities||[];
-  const labels = ["A","B","C","D","E"];
-  const tagMap  = {HIGH:"tag-high",MEDIUM:"tag-med",LOW:"tag-low",SPECULATIVE:"tag-spec",AVOID:"tag-red"};
+  const ranked=b.ranked_opportunities||[];
+  const labels=["A","B","C","D","E"];
+  const perf=b.performance||{};
 
-  if (!ranked.length) {
-    el.innerHTML = `<div class="card"><div class="empty">No ranked opportunities in this briefing. They'll appear on the next run.</div></div>`;
-    return;
-  }
-
-  const oppsHtml = ranked.map((o,i)=>{
-    const conv = o.conviction||"LOW";
-    const dollar = o.suggested_dollar ? ` → <strong class="green">$${o.suggested_dollar.toLocaleString()}</strong>` : "";
-    const kelly  = o.kelly_pct ? ` · Kelly: ${o.kelly_pct}%` : "";
-    const reasons = (o.rationale||[]).slice(0,3).map(r=>`<li>${r}</li>`).join("");
-    return `
-    <div class="opp">
+  const oppsHtml=ranked.length?ranked.map((o,i)=>{
+    const conv=o.conviction||"LOW";
+    const dollar=o.suggested_dollar?` → <strong class="green">${fmt$(o.suggested_dollar)}</strong>`:"";
+    const kelly=o.kelly_pct?` · Kelly ${o.kelly_pct}%`:"";
+    const reasons=(o.rationale||[]).slice(0,3).map(r=>`<li>${r}</li>`).join("");
+    return `<div class="opp">
       <div class="opp-head">
         <div>
-          <span class="muted small bold">Option ${labels[i]}</span>
-          <span class="opp-ticker" style="margin-left:8px">${o.ticker}</span>
-          <span class="opp-name" style="margin-left:6px">${o.name}</span>
+          <span class="opp-label">Option ${labels[i]}</span>
+          <div class="opp-ticker">${o.ticker}</div>
+          <div class="opp-name">${o.name||SNAMES[o.ticker]||""}</div>
         </div>
-        <span class="tag ${tagMap[conv]||"tag-low"}">${conv}</span>
+        <span class="tag ${tagClass(conv)}">${conv}</span>
       </div>
       <div class="opp-size">${o.suggested_pct||9}% of portfolio${dollar}${kelly}</div>
       ${reasons?`<ul class="opp-reasons">${reasons}</ul>`:""}
     </div>`;
-  }).join("");
+  }).join(""):`<div class="empty"><div class="empty-icon">📭</div>No ranked opportunities yet. They'll appear on the next briefing run.</div>`;
 
-  el.innerHTML = `
+  let perfHtml="";
+  if(perf.portfolio_return_pct!=null){
+    const pr=perf.portfolio_return_pct,sr=perf.spy_return_pct||0,al=perf.alpha_pct||0;
+    perfHtml=`<div class="perf-row" style="margin-bottom:12px">
+      <div class="perf-stat"><div class="lbl">Paper Portfolio</div><div class="val ${pr>=0?"green":"red"}">${pr>=0?"+":""}${pr.toFixed(1)}%</div></div>
+      <div class="perf-stat"><div class="lbl">SPY Benchmark</div><div class="val ${sr>=0?"green":"red"}">${sr>=0?"+":""}${sr.toFixed(1)}%</div></div>
+      <div class="perf-stat"><div class="lbl">Alpha</div><div class="val ${al>=0?"green":"red"}">${al>=0?"+":""}${al.toFixed(2)}%</div></div>
+    </div>
+    <div class="small muted">${perf.n_trades||0} trades · ${perf.days_running||0} days running</div>`;
+  } else {
+    perfHtml=`<div class="empty"><div class="empty-icon">📊</div>Paper P&amp;L tracking starts once you reply <strong>BUY</strong> to a briefing in Telegram.<br><br>Each BUY reply is logged and compared against SPY over the same period.</div>`;
+  }
+
+  document.getElementById('pg-opps').innerHTML=`
     <div class="card">
-      <h2>Ranked Opportunities — Reply BUY A, BUY B, etc. in Telegram</h2>
+      <div class="card-title">Ranked Opportunities — Reply BUY A, BUY B, etc. in Telegram</div>
       ${oppsHtml}
     </div>
     <div class="card">
-      <h2>Performance vs Benchmark</h2>
-      ${perfContent(b)}
+      <div class="card-title">Paper Trading P&amp;L vs SPY Benchmark</div>
+      ${perfHtml}
     </div>
-    ${freshnessBar(b)}`;
-}
-
-function perfContent(b) {
-  const perf=b.performance||{};
-  if (perf.portfolio_return_pct==null&&perf.portfolio_return_pct!==0)
-    return `<div class="empty">No trades logged yet. Reply BUY to a briefing to start tracking.</div>`;
-  const portR=perf.portfolio_return_pct||0, spyR=perf.spy_return_pct||0, alpha=perf.alpha_pct||0;
-  return `
-  <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:8px">
-    ${[["Portfolio",portR],[" vs SPY",spyR],["Alpha",alpha]].map(([lbl,v])=>`
-    <div>
-      <div class="small muted">${lbl}</div>
-      <div style="font-size:22px;font-weight:800" class="${v>=0?"green":"red"}">${v>=0?"+":""}${v.toFixed(1)}%</div>
-    </div>`).join("")}
-  </div>
-  <div class="small muted">${perf.n_trades||0} trades · ${perf.days_running||0} days running</div>`;
+    ${freshBar(b)}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TAB 3: STOCKS (EQUITY ALPHA)
+// TAB 3 — STOCKS (EQUITY ALPHA)
 // ═══════════════════════════════════════════════════════════════════
 function renderStocks(b) {
-  const el = document.getElementById('pg-stocks');
-  const picks = b.equity_alpha_picks||[];
-  const exits = b.equity_alpha_exit_alerts||[];
+  const picks=b.equity_alpha_picks||[];
+  const exits=b.equity_alpha_exit_alerts||[];
+  const EMOJI={HIGH:"🔥",MEDIUM:"✅",LOW:"🔵"};
 
-  const convEmoji = {HIGH:"🔥",MEDIUM:"✅",LOW:"🔵"};
-  const tagMap    = {HIGH:"tag-high",MEDIUM:"tag-med",LOW:"tag-low"};
+  const exitHtml=exits.length?`<div class="card" style="border-color:var(--red);margin-bottom:0">
+    <div class="card-title" style="color:var(--red)">🚨 Exit Signals — Review These Positions</div>
+    ${exits.map(e=>`<div class="alert-banner"><div class="alert-title">${e.urgency==="URGENT"?"🔴":"🟡"} ${e.ticker} — ${e.signal_type}</div><div class="small muted">${e.detail||""}</div></div>`).join("")}
+  </div>`:"";
 
-  if (!picks.length && !exits.length) {
-    el.innerHTML = `
-      <div class="card">
-        <h2>Individual Stock Picks</h2>
-        <div class="empty">Equity alpha picks will appear here on the next GitHub Actions run.<br><br>
-        The factor model ranks ~80 large-cap S&P 500 stocks across value, quality, momentum, technical, and low-volatility factors.</div>
-      </div>`;
-    return;
-  }
-
-  // Exit alerts
-  const exitHtml = exits.length ? `
-    <div class="card" style="border-color:var(--red);margin-bottom:0">
-      <h2 style="color:var(--red)">Exit Signals — Review These Positions</h2>
-      ${exits.map(e=>`
-        <div class="sell-banner">
-          <div class="title">${e.urgency==="URGENT"?"🔴":"🟡"} ${e.ticker} — ${e.signal_type}</div>
-          <div class="small muted">${e.detail||""}</div>
-        </div>`).join("")}
-    </div>` : "";
-
-  // Pick cards
-  const pickRows = picks.map(p=>{
-    const emoji = convEmoji[p.conviction]||"⚪";
-    const conv  = p.conviction||"LOW";
-    const score = Math.round(p.composite_score||0);
-    const dollar = p.suggested_dollar ? `<span class="green bold">$${p.suggested_dollar.toLocaleString()}</span>` : "";
-    const tagline = p.conviction_tagline||"";
-    return `
-    <div class="alpha-row">
+  const pickRows=picks.length?picks.map(p=>{
+    const conv=p.conviction||"LOW";
+    const score=Math.round(p.composite_score||0);
+    const dollar=p.suggested_dollar?`<div class="green bold" style="font-size:15px">${fmt$(p.suggested_dollar)}</div>`:"";
+    const tagline=p.conviction_tagline||"";
+    return `<div class="alpha-row">
       <div class="alpha-lft">
-        <div class="alpha-ticker">${emoji} ${p.ticker} <span class="tag ${tagMap[conv]||"tag-low"}" style="font-size:10px;vertical-align:middle">${conv}</span></div>
-        <div class="alpha-sub">${p.sector_name||""} · composite score ${score}/100</div>
-        ${tagline?`<div class="alpha-sub" style="color:var(--muted)">${tagline}</div>`:""}
+        <div class="alpha-ticker">${EMOJI[conv]||"⚪"} ${p.ticker} <span class="tag ${tagClass(conv)}" style="font-size:10px;vertical-align:middle">${conv}</span></div>
+        <div class="alpha-meta">${p.sector_name||""} · Score: <strong>${score}/100</strong></div>
+        ${tagline?`<div class="alpha-tagline">💡 ${tagline}</div>`:""}
       </div>
       <div class="alpha-rgt">
         ${dollar}
-        <div class="alpha-tagline">${p.suggested_pct?`${p.suggested_pct}% of balance`:"—"}</div>
+        ${p.suggested_pct?`<div class="small muted">${p.suggested_pct}% of balance</div>`:""}
       </div>
     </div>`;
-  }).join("");
+  }).join(""):`<div class="empty"><div class="empty-icon">🔬</div>Individual stock picks are generated with each daily briefing.<br><br>The factor model ranks ~80 large-cap S&P 500 stocks across Value (20%), Quality (25%), Momentum (30%), Technical (15%), and Low-Vol (10%) factors. Scores are Z-scored within sector.</div>`;
 
-  el.innerHTML = `
+  document.getElementById('pg-stocks').innerHTML=`
     ${exitHtml}
     <div class="card">
-      <h2>Factor Model Stock Picks (Cross-Sectional Alpha)</h2>
-      <div class="small muted" style="margin-bottom:14px">Ranked by composite score: Value 20% · Quality 25% · Momentum 30% · Technical 15% · Low-Vol 10%. Scores are Z-scored within sector — a score of 80 means that stock beats other stocks in its sector, not the whole market.</div>
+      <div class="card-title">Cross-Sectional Factor Model — Individual Stock Alpha</div>
       ${pickRows}
     </div>
-    ${freshnessBar(b)}`;
+    ${freshBar(b)}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TAB 4: PORTFOLIO
+// TAB 4 — PORTFOLIO
 // ═══════════════════════════════════════════════════════════════════
 function renderPortfolio(b) {
-  const el = document.getElementById('pg-portfolio');
-  const port = b.portfolio_snap||{};
-  const balance   = port.balance;
-  const holdings  = port.holdings||[];
-  const invested  = port.total_invested||0;
-  const totalCur  = port.total_current||0;
-  const unrealPnl = port.unrealized_pnl||0;
-  const unrealPct = port.unrealized_pct||0;
-  const cashLeft  = port.cash_remaining;
+  const port=b.portfolio_snap||{};
+  const balance=port.balance;
+  const holdings=port.holdings||[];
+  const invested=port.total_invested||0;
+  const cur=port.total_current||0;
+  const upnl=port.unrealized_pnl||0;
+  const upct=port.unrealized_pct||0;
+  const cash=port.cash_remaining;
+  const perf=b.performance||{};
 
-  if (!balance) {
-    el.innerHTML = `
+  if(!balance){
+    document.getElementById('pg-portfolio').innerHTML=`
       <div class="card">
-        <h2>Portfolio</h2>
-        <div class="empty">No balance set yet.<br><br>
-        Send <strong>BALANCE 12500</strong> to your Telegram bot to set your starting balance.<br>
-        Then send <strong>BOUGHT XLF 500</strong> (for example) to log a position.</div>
+        <div class="card-title">Portfolio</div>
+        <div class="empty">
+          <div class="empty-icon">💼</div>
+          <strong>No balance set yet.</strong><br><br>
+          Send <code>BALANCE 12500</code> to your Telegram bot to set your starting balance.<br>
+          Then send <code>BOUGHT XLF 500</code> to log a real-money position.<br><br>
+          Paper trading is tracked automatically once you reply BUY to a briefing.
+        </div>
       </div>`;
     return;
   }
 
-  // Summary stats
-  const cashPct = balance ? Math.round((cashLeft||0)/balance*100) : 0;
-  const investPct = balance ? Math.round(invested/balance*100) : 0;
-  const pnlClass = unrealPnl>=0?"green":"red";
+  const cashPct  = balance?Math.round((cash||0)/balance*100):0;
+  const investPct= balance?Math.round(invested/balance*100):0;
+
+  // Balance summary cards
+  const summaryCards=[
+    {lbl:"Total Balance",    val:fmt$(balance),                         sub:"Starting capital"},
+    {lbl:"Invested",         val:fmt$(invested),                        sub:`${investPct}% of balance`},
+    {lbl:"Cash Available",   val:cash!=null?fmt$(cash):"—",             sub:`${cashPct}% remaining`},
+    {lbl:"Unrealized P&L",   val:upnl!==0?hd(upnl):"$0",               sub:upnl!==0?`${upnl>=0?"+":""}${upct.toFixed(1)}%`:"No open P&L"},
+  ].map(s=>`<div class="bal-card"><div class="bal-lbl">${s.lbl}</div><div class="bal-val">${s.val}</div><div class="bal-sub">${s.sub}</div></div>`).join("");
+
+  // Allocation bar
+  const allocBar = holdings.length?`
+    <div class="alloc-bar-wrap">
+      <div class="small muted" style="margin-bottom:6px">Portfolio allocation</div>
+      <div class="alloc-bar-track">
+        ${holdings.map((h,i)=>{
+          const w=h.alloc_pct?Math.min(h.alloc_pct,100):0;
+          return `<div class="alloc-seg" style="width:${w}%;background:${COLORS[i%COLORS.length]};opacity:.9"></div>`;
+        }).join("")}
+        <div class="alloc-seg" style="width:${cashPct}%;background:#30363d"></div>
+      </div>
+      <div class="alloc-legend">
+        ${holdings.map((h,i)=>`<div style="display:flex;align-items:center;gap:5px;font-size:12px"><div class="alloc-dot" style="background:${COLORS[i%COLORS.length]}"></div>${h.ticker} ${h.alloc_pct||0}%</div>`).join("")}
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px"><div class="alloc-dot" style="background:#30363d"></div>Cash ${cashPct}%</div>
+      </div>
+    </div>`:"";;
 
   // Holdings table
-  const holdRows = holdings.map(h=>{
-    const pnlCls = h.pnl_dollar>=0?"green":"red";
-    return `
-    <tr>
-      <td><strong>${h.ticker}</strong><br><span class="small muted">${SNAMES[h.ticker]||""}</span></td>
+  const holdRows=holdings.map(h=>{
+    const pnlCls=h.pnl_dollar>=0?"green":"red";
+    return `<tr>
+      <td><strong>${h.ticker}</strong><div class="small muted">${SNAMES[h.ticker]||""}</div></td>
       <td>${h.date_bought||"—"}</td>
-      <td>$${(h.avg_cost||0).toFixed(2)}</td>
+      <td>${h.avg_cost!=null?"$"+h.avg_cost.toFixed(2):"—"}</td>
       <td>${h.current_price!=null?"$"+h.current_price.toFixed(2):"—"}</td>
-      <td>$${(h.cost_basis||0).toLocaleString()}</td>
+      <td>${fmt$(h.cost_basis)}</td>
       <td><span class="${pnlCls}">${h.pnl_dollar>=0?"+":""}$${(h.pnl_dollar||0).toFixed(0)}</span><br>
           <span class="${pnlCls} small">(${h.pnl_pct>=0?"+":""}${(h.pnl_pct||0).toFixed(1)}%)</span></td>
-      <td>${h.alloc_pct!=null?`${h.alloc_pct}%`:"—"}</td>
+      <td>${h.alloc_pct!=null?h.alloc_pct+"%":"—"}</td>
     </tr>`;
   }).join("");
 
-  // Allocation bar
-  const allocBar = `
-    <div style="margin-top:16px">
-      <div class="small muted" style="margin-bottom:6px">Allocation breakdown</div>
-      <div style="height:16px;border-radius:8px;overflow:hidden;display:flex;background:#21262d">
-        <div style="width:${investPct}%;background:var(--blue);height:100%"></div>
-        <div style="width:${cashPct}%;background:#30363d;height:100%"></div>
+  // Paper P&L section
+  let paperHtml="";
+  if(perf.portfolio_return_pct!=null){
+    const pr=perf.portfolio_return_pct,sr=perf.spy_return_pct||0,al=perf.alpha_pct||0;
+    paperHtml=`<div class="card">
+      <div class="card-title">Paper Trading P&amp;L vs SPY Benchmark</div>
+      <div class="perf-row" style="margin-bottom:10px">
+        <div class="perf-stat"><div class="lbl">Paper Return</div><div class="val ${pr>=0?"green":"red"}">${pr>=0?"+":""}${pr.toFixed(1)}%</div></div>
+        <div class="perf-stat"><div class="lbl">SPY Return</div><div class="val ${sr>=0?"green":"red"}">${sr>=0?"+":""}${sr.toFixed(1)}%</div></div>
+        <div class="perf-stat"><div class="lbl">Alpha vs Market</div><div class="val ${al>=0?"green":"red"}">${al>=0?"+":""}${al.toFixed(2)}%</div></div>
       </div>
-      <div style="display:flex;gap:16px;margin-top:6px">
-        <span class="small"><span style="color:var(--blue)">■</span> Invested ${investPct}%</span>
-        <span class="small muted"><span>■</span> Cash ${cashPct}%</span>
-      </div>
+      <div class="small muted">${perf.n_trades||0} paper trades · ${perf.days_running||0} days · Paper mode active — auto-executes on Alpaca paper account when you reply BUY</div>
     </div>`;
+  }
 
-  el.innerHTML = `
+  document.getElementById('pg-portfolio').innerHTML=`
     <div class="card">
-      <h2>Balance Overview</h2>
-      <div class="bal-row">
-        <div class="bal-stat"><div class="lbl">Total Balance</div><div class="val">$${balance.toLocaleString()}</div></div>
-        <div class="bal-stat"><div class="lbl">Invested</div><div class="val">$${invested.toLocaleString()}</div></div>
-        <div class="bal-stat"><div class="lbl">Cash</div><div class="val">${cashLeft!=null?"$"+cashLeft.toLocaleString():"—"}</div></div>
-        ${unrealPnl!==0?`<div class="bal-stat"><div class="lbl">Unrealized P&amp;L</div><div class="val ${pnlClass}">${unrealPnl>=0?"+":""}$${unrealPnl.toFixed(0)} (${unrealPct>=0?"+":""}${unrealPct.toFixed(1)}%)</div></div>`:""}
-      </div>
+      <div class="card-title">Balance Overview</div>
+      <div class="bal-grid">${summaryCards}</div>
       ${allocBar}
     </div>
     ${holdings.length?`
     <div class="card">
-      <h2>Open Positions</h2>
+      <div class="card-title">Open Positions — Real Money</div>
       <div style="overflow-x:auto">
         <table>
           <thead><tr>
-            <th>Ticker</th><th>Bought</th><th>Avg Cost</th><th>Current</th>
-            <th>Cost Basis</th><th>P&amp;L</th><th>Alloc</th>
+            <th>Ticker</th><th>Date Bought</th><th>Avg Cost</th><th>Current Price</th>
+            <th>Cost Basis</th><th>Unrealized P&amp;L</th><th>Allocation</th>
           </tr></thead>
           <tbody>${holdRows}</tbody>
         </table>
       </div>
-      <div class="small muted" style="margin-top:12px">Log positions: send <strong>BOUGHT XLF 500</strong> in Telegram. Remove: <strong>SOLD XLF</strong>.</div>
+      <div class="small muted" style="margin-top:10px">
+        Log a position: <code>BOUGHT XLF 500</code> &nbsp;·&nbsp; Remove: <code>SOLD XLF</code>
+      </div>
     </div>`
-    :`<div class="card"><div class="empty">No open positions. Send <strong>BOUGHT XLF 500</strong> in Telegram to log a position.</div></div>`}
-    ${(()=>{ const p=perfContent(b); return p.includes('No trades logged')?'':`<div class="card"><h2>Paper P&L vs SPY</h2>${p}</div>`; })()}
-    ${freshnessBar(b)}`;
+    :`<div class="card"><div class="empty"><div class="empty-icon">📭</div>No real-money positions logged yet.<br>Send <code>BOUGHT XLF 500</code> in Telegram to log a position.</div></div>`}
+    ${paperHtml}
+    ${freshBar(b)}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TAB 5: JOURNAL
+// TAB 5 — JOURNAL
 // ═══════════════════════════════════════════════════════════════════
+function emptyJournalCard(rows) {
+  if(rows.length) return "";
+  return `<div class="card">
+    <div class="card-title">Decision Journal</div>
+    <div class="empty">
+      <div class="empty-icon">📋</div>
+      <strong>No entries yet.</strong><br><br>
+      Every daily briefing is automatically logged here with the full reasoning trace.<br>
+      When you reply <strong>BUY</strong>, <strong>SKIP</strong>, or <strong>SELL</strong> in Telegram, that decision is recorded too.<br><br>
+      Entries will appear after the next GitHub Actions run.
+    </div>
+  </div>`;
+}
+
 function renderJournal(rows) {
-  const el = document.getElementById('pg-journal');
-  if (!rows.length) {
-    el.innerHTML = `<div class="card"><div class="empty">No journal entries yet. The journal records every daily briefing and your BUY/SKIP decisions.<br><br>Once GitHub Actions runs the first briefing it will appear here.</div></div>`;
-    return;
-  }
+  const el=document.getElementById('pg-journal');
+  if(!rows||!rows.length){el.innerHTML=emptyJournalCard([]);return;}
 
-  const jHtml = rows.map(r=>{
-    const ticker = r.recommended_ticker || r.rl_target || "—";
-    const action = r.recommended_action || r.rl_action || "—";
-    const conf   = r.confidence || "—";
-    const regime = r.regime||"?";
-    const vix    = r.vix ? r.vix.toFixed(1) : "?";
-    const human  = r.human_command;
-    const humanReason = r.human_reason||"";
+  const REPLY_BADGE={
+    BUY:`<span class="pill pill-green">✅ BUY</span>`,
+    SELL:`<span class="pill pill-red">📉 SELL</span>`,
+    SKIP:`<span class="pill" style="background:#21262d;color:var(--muted)">⏭️ SKIP</span>`,
+    HOLD:`<span class="pill pill-blue">⏸️ HOLD</span>`,
+  };
 
-    // Human reply badge
-    let replyBadge = "";
-    if (human==="BUY")  replyBadge = `<span class="pill pill-green">✅ BUY</span>`;
-    else if(human==="SELL") replyBadge = `<span class="pill pill-red">📉 SELL</span>`;
-    else if(human==="SKIP") replyBadge = `<span class="pill" style="background:#21262d">⏭️ SKIP</span>`;
+  const html=rows.map(r=>{
+    const ticker=r.recommended_ticker||r.rl_target||"—";
+    const action=r.recommended_action||r.rl_action||"—";
+    const conf  =r.confidence||"—";
+    const vix   =r.vix?parseFloat(r.vix).toFixed(1):"?";
+    const regime=r.regime||"?";
+    const date  =r.date||"—";
+    const human =r.human_command;
 
-    // Why trace
-    let trace = [];
-    try { trace = typeof r.why_trace==="string" ? JSON.parse(r.why_trace) : (r.why_trace||[]); } catch(_){}
-    const traceId = "trace_"+r.id;
-    const traceHtml = trace.length ? `
-      <div class="why-toggle" onclick="toggleTrace('${traceId}')">▶ Show decision trace (${trace.length} steps)</div>
-      <div id="${traceId}" style="display:none;margin-top:6px">${trace.map(t=>`<div class="jrow-why-item">${t}</div>`).join("")}</div>` : "";
+    let trace=[];
+    try{trace=typeof r.why_trace==="string"?JSON.parse(r.why_trace):(r.why_trace||[]);}catch(_){}
+    const tId="t"+r.id;
 
-    return `
-    <div class="jrow">
-      <div class="jrow-head">
+    const actionColor=ticker==="BIL"?"var(--red)":ticker==="SPY"?"var(--muted)":"var(--text)";
+    const confDisp=conf!=="—"?`<span class="small muted" style="margin-left:8px">${conf}% confidence</span>`:"";
+
+    return `<div class="jrow">
+      <div class="jrow-header">
         <div>
-          <span class="jrow-date">${r.date||r.ts?.slice(0,10)||"—"}</span>
-          <span style="margin-left:10px" class="muted small">${regime} · VIX ${vix}</span>
+          <div class="jrow-meta">${date} &nbsp;·&nbsp; ${regime} &nbsp;·&nbsp; VIX ${vix}</div>
+          <div class="jrow-rec"><span class="ticker" style="color:${actionColor}">${action} ${ticker}</span>${confDisp}</div>
+          ${r.abstain_reason?`<div class="small muted" style="margin-top:3px">ℹ️ ${r.abstain_reason}</div>`:""}
         </div>
-        <div style="display:flex;gap:6px;align-items:center">${replyBadge}</div>
+        <div>${human&&REPLY_BADGE[human]?REPLY_BADGE[human]:""}</div>
       </div>
-      <div class="jrow-rec">${action} <strong>${ticker}</strong> @ ${conf}%</div>
-      ${r.abstain_reason?`<div class="small muted" style="margin-top:4px">ℹ️ ${r.abstain_reason}</div>`:""}
-      ${r.news_headline?`<div class="small muted" style="margin-top:4px">"${r.news_headline}"</div>`:""}
-      ${humanReason?`<div class="jrow-reply">💬 ${humanReason}</div>`:""}
-      <div class="jrow-why">${traceHtml}</div>
+      ${r.news_headline?`<div class="jrow-headline">"${r.news_headline.slice(0,90)}${r.news_headline.length>90?"…":""}"</div>`:""}
+      ${r.human_command?`<div class="jrow-reply"><strong>${r.human_command}</strong>${r.human_reason&&r.human_reason!=="(no reason given)"?` — ${r.human_reason}`:""}</div>`:""}
+      ${trace.length?`
+        <div class="trace-toggle" onclick="toggleEl('${tId}',this)">▶ Show decision trace (${trace.length} steps)</div>
+        <div id="${tId}" class="trace-body">${trace.map(t=>`<div class="trace-item">${t}</div>`).join("")}</div>`:""}
     </div>`;
   }).join("");
 
-  el.innerHTML = `
-    <div class="card">
-      <h2>Decision Journal — Last ${rows.length} Entries</h2>
-      <div class="small muted" style="margin-bottom:14px">Every daily briefing is logged here with the full reasoning trace. Reply BUY/SKIP in Telegram and it shows up.</div>
-      ${jHtml}
-    </div>`;
+  el.innerHTML=`<div class="card">
+    <div class="card-title">Decision Journal — Last ${rows.length} Entries</div>
+    <div class="small muted" style="margin-bottom:14px">Every daily briefing is logged here with the full reasoning trace. Your BUY/SKIP replies appear under each entry once logged via Telegram.</div>
+    ${html}
+  </div>`;
 }
 
-function toggleTrace(id) {
-  const el = document.getElementById(id);
-  const btn = el.previousElementSibling;
-  if (el.style.display==="none") {
-    el.style.display="block";
-    btn.textContent = btn.textContent.replace("▶","▼");
-  } else {
-    el.style.display="none";
-    btn.textContent = btn.textContent.replace("▼","▶");
-  }
+function toggleEl(id,btn){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const open=el.style.display!=="none"&&el.style.display!=="";
+  if(open){el.style.display="none";btn.textContent=btn.textContent.replace("▼","▶");}
+  else{el.style.display="block";btn.textContent=btn.textContent.replace("▶","▼");}
 }
 
 // ── Boot ──────────────────────────────────────────────────────────
 init();
-// Auto-refresh every 10 minutes
 setTimeout(()=>location.reload(), 10*60*1000);
 </script>
 </body>
