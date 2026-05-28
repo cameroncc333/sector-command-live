@@ -507,13 +507,15 @@ def _plain_english_summary(b: dict) -> str:
         name       = top.get("name", "?")
         pct        = top.get("suggested_pct") or 9
         conviction = top.get("conviction", "LOW")
-        conv_words = {"HIGH": "high — this is a strong signal",
-                      "MEDIUM": "moderate — reasonable signal",
-                      "LOW": "low — cautious, small position only",
-                      "SPECULATIVE": "speculative — small size only"}.get(conviction, "moderate")
+        dollar     = top.get("suggested_dollar")
+        size_str   = f"${dollar:,.0f}" if dollar else f"~{pct:.0f}% of your balance"
+        conv_words = {"HIGH": "high — strong signal",
+                      "MEDIUM": "moderate — decent signal",
+                      "LOW": "low — cautious, small size only",
+                      "SPECULATIVE": "speculative — very small size only"}.get(conviction, "moderate")
         lines.append(
-            f"🤖 <b>What the AI decided:</b> Best opportunity right now is <b>{ticker} ({name})</b>. "
-            f"Conviction is {conv_words}. Suggested size: about {pct:.0f}% of your portfolio."
+            f"🤖 <b>What the AI decided:</b> Best pick right now is <b>{ticker} ({name})</b>. "
+            f"Conviction is {conv_words}. Suggested amount: <b>{size_str}</b>."
         )
 
     # What to do
@@ -521,29 +523,35 @@ def _plain_english_summary(b: dict) -> str:
     lines.append("✅ <b>What you should do:</b>")
     if abstain:
         lines.append(
-            "No strong edge today. Options: (1) reply <code>SKIP</code> and wait, "
-            "(2) reply <code>BUY SPY</code> to go broad market, "
-            "(3) ask me anything about your portfolio."
+            "→ Reply <code>SKIP</code> for now (no strong edge today)\n"
+            "→ Or reply <code>BUY SPY</code> to go broad market instead\n"
+            "→ Or just ask me anything about your money"
         )
     elif ranked:
         top        = ranked[0] if isinstance(ranked[0], dict) else {}
         ticker     = top.get("ticker", "?")
         conviction = top.get("conviction", "LOW")
+        dollar     = top.get("suggested_dollar")
+        size_str   = f"${dollar:,.0f}" if dollar else "a small amount"
         if conviction == "HIGH":
             lines.append(
-                f"Strong signal today. Reply <code>BUY A</code> to take the {ticker} pick. "
-                f"Reply <code>SKIP</code> if you want to sit it out."
+                f"→ Reply <code>BUY A</code> to buy {size_str} of {ticker} — strong signal today\n"
+                f"→ Then send <code>BOUGHT {ticker} {int(dollar) if dollar else '[amount]'}</code> "
+                f"to log it as real money\n"
+                f"→ Or reply <code>SKIP</code> to sit out"
             )
         elif conviction == "MEDIUM":
             lines.append(
-                f"Decent signal. Reply <code>BUY A</code> for {ticker} if you want to act, "
-                f"or <code>SKIP</code> to pass. No pressure either way."
+                f"→ Reply <code>BUY A</code> for {size_str} of {ticker} — decent signal\n"
+                f"→ Then send <code>BOUGHT {ticker} {int(dollar) if dollar else '[amount]'}</code> "
+                f"to log it as real money\n"
+                f"→ Or reply <code>SKIP</code> — no pressure either way"
             )
         else:
             lines.append(
-                f"Weak signal — the system sees something but isn't confident. "
-                f"Reply <code>BUY A</code> for a small position in {ticker}, or <code>SKIP</code>. "
-                f"Leaning toward skip unless you have a reason to like it."
+                f"→ Reply <code>SKIP</code> — signal is weak, leaning toward waiting\n"
+                f"→ Or reply <code>BUY A</code> for a very small amount ({size_str}) of {ticker} "
+                f"if you want exposure"
             )
 
     # Macro plain English

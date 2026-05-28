@@ -121,10 +121,16 @@ def webhook():
         elif not os.environ.get("ALPACA_API_KEY"):
             alpaca_line = "\n(Add ALPACA_API_KEY to auto-execute paper orders)"
 
+        bought_reminder = ""
+        if command == "BUY" and ticker:
+            bought_reminder = (f"\n\n💡 If you spent real money, log it:\n"
+                               f"<code>BOUGHT {ticker} [dollar amount]</code>\n"
+                               f"Example: <code>BOUGHT {ticker} 30</code>")
         reply = (f"✅ Logged: {command} {ticker or ''}".rstrip() +
                  (f"\nReason: {cmd['reason']}" if cmd.get("reason") else "") +
                  alpaca_line +
-                 "\n📊 Paper mode active")
+                 "\n📊 Paper mode active" +
+                 bought_reminder)
         bot.send_message(reply)
 
     # ── STATUS ────────────────────────────────────────────────────────────
@@ -248,6 +254,16 @@ def webhook():
     elif command == "BOUGHT":
         parsed = PositionTracker.parse_bought_command(cmd.get("tokens", []))
         if parsed:
+            # Dollar-only buy: auto-fetch current price so P&L can be tracked
+            if parsed.get("dollar_value") and not parsed.get("avg_cost"):
+                try:
+                    prices = pt._fetch_prices([parsed["ticker"]])
+                    if prices.get(parsed["ticker"]):
+                        p = round(prices[parsed["ticker"]], 4)
+                        parsed["avg_cost"] = p
+                        parsed["shares"]   = round(parsed["dollar_value"] / p, 4)
+                except Exception:
+                    pass
             pt.add_position(
                 ticker=parsed["ticker"],
                 shares=parsed.get("shares"),
@@ -255,11 +271,12 @@ def webhook():
                 dollar_value=parsed.get("dollar_value"),
             )
             dollar = parsed.get("dollar_value") or 0
+            price_note = (f"  ({parsed['shares']:.4f} shares @ ${parsed['avg_cost']:.2f})"
+                          if parsed.get("shares") and parsed.get("avg_cost") else "")
             bot.send_message(
                 f"✅ Position logged: <b>{parsed['ticker']}</b>\n"
-                f"Amount: ${dollar:,.0f}" +
-                (f"  ({parsed['shares']} shares @ ${parsed['avg_cost']})" if parsed.get('shares') else "") +
-                f"\nReply <code>PORTFOLIO</code> to see your full holdings."
+                f"Amount: ${dollar:,.0f}{price_note}\n"
+                f"Reply <code>PORTFOLIO</code> to see your full holdings."
             )
         else:
             bot.send_message(
