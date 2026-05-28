@@ -660,29 +660,46 @@ function renderPortfolio(portfolio) {
 function renderDecisions(decisions) {
   const tbody = document.getElementById('decision-tbody');
   if (!decisions || decisions.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="loading">No decisions logged yet</td></tr>'; return;
+    tbody.innerHTML = '<tr><td colspan="6" class="loading">No decisions yet — waiting for next briefing run</td></tr>'; return;
   }
   tbody.innerHTML = decisions.map(d => {
     const cmd = d.human_command || '—';
     const cmdClass = cmd === 'BUY' ? 'cmd-buy' : cmd === 'SELL' ? 'cmd-sell' : cmd === 'SKIP' ? 'cmd-skip' : '';
     const regimeIcon = {'CALM':'🟢','NORMAL':'🟡','STRESSED':'🔴'}[(d.regime||'').toUpperCase()] || '⚪';
+    const abstainNote = d.abstain_reason ? '<span style="color:var(--yellow);font-size:10px">⚠️ abstained</span>' : '';
+    const yourCall = cmd !== '—' ? `<span class="${cmdClass}">${cmd}</span>` :
+                     `<span style="color:var(--muted);font-size:11px">no reply yet</span>`;
     return `<tr class="decision-row">
       <td>${d.date || '—'}</td>
       <td>${regimeIcon} ${d.regime || '—'}</td>
-      <td><strong>${d.recommended_ticker || '—'}</strong></td>
+      <td><strong>${d.recommended_ticker || '—'}</strong> ${abstainNote}</td>
       <td>${d.confidence ?? '—'}%</td>
-      <td class="${cmdClass}">${cmd}</td>
-      <td style="color:var(--muted);font-size:11px">${d.abstain_reason ? '⚠️ ' + d.abstain_reason.substring(0,50) + '…' : ''}</td>
+      <td>${yourCall}</td>
+      <td style="color:var(--muted);font-size:11px">${d.abstain_reason ? d.abstain_reason.substring(0,60) : ''}</td>
     </tr>`;
   }).join('');
 }
 
 // ── Performance ─────────────────────────────────────────────────────
 function renderPerf(perf) {
-  if (!perf) return;
+  if (!perf || perf.n_trades == null) return;
   const pr = perf.portfolio_return_pct ?? 0;
   const sr = perf.spy_return_pct ?? 0;
   const al = perf.alpha_pct ?? 0;
+  const nTrades = perf.n_trades || 0;
+
+  if (nTrades === 0) {
+    document.getElementById('port-pnl').innerHTML =
+      `<span style="color:var(--muted);font-size:13px">no trades yet</span>`;
+    document.getElementById('spy-pnl').innerHTML =
+      `<span style="color:var(--muted)">—</span>`;
+    document.getElementById('alpha-val').innerHTML =
+      `<span style="color:var(--muted)">—</span>`;
+    document.getElementById('alpha-sub').innerHTML =
+      `<span style="color:var(--muted);font-size:11px">Reply BUY to a briefing to start tracking</span>`;
+    return;
+  }
+
   document.getElementById('port-pnl').innerHTML =
     `<span style="color:${pctColor(pr)}">${pr >= 0 ? '+' : ''}${pr.toFixed(1)}%</span>`;
   document.getElementById('spy-pnl').innerHTML =
@@ -690,7 +707,7 @@ function renderPerf(perf) {
   document.getElementById('alpha-val').innerHTML =
     `<span style="color:${pctColor(al)}">${al >= 0 ? '+' : ''}${al.toFixed(2)}%</span>`;
   document.getElementById('alpha-sub').textContent =
-    `${perf.n_trades || 0} trades · ${perf.days_running || 0}d`;
+    `${nTrades} trade${nTrades !== 1 ? 's' : ''} · ${perf.days_running || 0}d`;
 }
 
 // ── Alpaca ──────────────────────────────────────────────────────────
