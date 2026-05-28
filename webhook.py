@@ -469,22 +469,13 @@ def api_status():
     except Exception:
         pass
 
-    news_sentiment, top_headline, news_by_sector = None, None, {}
-    try:
-        from feeders.news_feeder import NewsFeeder
-        news = NewsFeeder().daily_sector_sentiment(limit=30)
-        news_sentiment  = news["by_sector"].get(target)
-        top_headline    = news.get("top_headline")
-        news_by_sector  = news["by_sector"]
-    except Exception:
-        pass
-
-    fomc_live = briefing.get("fomc_live") or {"active": False}
-    try:
-        from feeders.fomc_live_feeder import get_fomc_conviction
-        fomc_live = get_fomc_conviction()
-    except Exception:
-        pass
+    # Use news + FOMC from the Redis briefing (fresh from last GitHub Actions run).
+    # Do NOT re-run NewsFeeder / FOMC on each status poll — those are slow network calls
+    # (FinBERT inference, HuggingFace) that cause Railway timeouts. The briefing data
+    # is already the most recent scheduled run; the dashboard polls every 3 min.
+    news_sentiment  = briefing.get("news_sentiment")
+    top_headline    = briefing.get("news_headline")
+    fomc_live       = briefing.get("fomc_live") or {"active": False}
 
     freshness = briefing.get("freshness") or {
         "rl_source":     rl.get("_source", "STUB"),

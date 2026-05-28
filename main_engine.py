@@ -102,7 +102,9 @@ def run(dry_run=False):
     pol           = PoliticalFeeder()
     political_note = pol.briefing_note(rl["target"])
 
-    # 4) Multi-repo corroboration
+    # 4) Multi-repo corroboration — computes sector_technicals + algo_composite once.
+    # The full per-sector dicts are stored in repo_corr["tech_all"] / ["algo_all"] so
+    # the ranker can reuse them without a second yfinance download.
     repo_corr = collect_all(rl["target"], news_by_sector=news["by_sector"])
 
     # 5) Crypto + macro signals
@@ -119,6 +121,8 @@ def run(dry_run=False):
     try:
         ops = ranker.rank(
             rl_signal      = rl,
+            sector_tech    = repo_corr.get("tech_all"),   # reuse — no second download
+            algo_signals   = repo_corr.get("algo_all"),   # reuse — no second download
             crypto_signals = crypto_signals,
             news_by_sector = news["by_sector"],
             vix            = rl["vix"],

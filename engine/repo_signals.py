@@ -162,26 +162,32 @@ def fomc_sentiment(news_by_sector=None):
 
 
 # ---- the aggregator the engine calls ---------------------------------
-def collect_all(rl_target, news_by_sector=None):
+def collect_all(rl_target, news_by_sector=None, sector_tech=None, algo_signals=None):
     """
     Pull every repo's live signal for the RL's chosen target and return a single
     dict of corroboration the decision engine consumes. Network-free safe.
+
+    sector_tech / algo_signals: pass pre-computed dicts to avoid a duplicate download
+    (main_engine computes these once and shares them with the ranker).
     """
-    closes = _safe_download(SECTORS + ["SPY"], period="2y")
-    tech = sector_technicals(closes)
-    algo = algo_composite_signal(closes)
-    fed = fed_regime_context()
+    if sector_tech is None or algo_signals is None:
+        closes = _safe_download(SECTORS + ["SPY"], period="2y")
+        sector_tech = sector_tech or sector_technicals(closes)
+        algo_signals = algo_signals or algo_composite_signal(closes)
+    fed  = fed_regime_context()
     fomc = fomc_sentiment(news_by_sector)
 
-    t = tech.get(rl_target, {})
-    a = algo["by_sector"].get(rl_target, {})
+    t = sector_tech.get(rl_target, {})
+    a = algo_signals["by_sector"].get(rl_target, {})
     return {
-        "equity_analyzer": t or None,                       # rsi/mom/sharpe/rel
-        "algo_system": a or None,                           # composite score + eligible
-        "algo_top_pick": algo.get("top"),                   # what the rules-based system likes
-        "fed_context": fed,                                 # easing/hold/tightening + bias lists
-        "fomc_sentiment": fomc,                             # market mood proxy
-        "agreement": _corroboration(rl_target, t, a, algo.get("top"), fed),
+        "equity_analyzer": t or None,
+        "algo_system":     a or None,
+        "algo_top_pick":   algo_signals.get("top"),
+        "tech_all":        sector_tech,        # full per-sector dict — shared with ranker
+        "algo_all":        algo_signals,        # full per-sector dict — shared with ranker
+        "fed_context":     fed,
+        "fomc_sentiment":  fomc,
+        "agreement":       _corroboration(rl_target, t, a, algo_signals.get("top"), fed),
     }
 
 
