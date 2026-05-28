@@ -215,6 +215,14 @@ def run(dry_run=False):
         repo_corroboration = repo_corr.get("agreement"),
     )
     briefing = decide(state, gov)
+
+    # Portfolio snapshot for plain English summary
+    portfolio_snap = {}
+    try:
+        portfolio_snap = pt.portfolio_summary(current_prices={})
+    except Exception:
+        portfolio_snap = {"balance": balance}
+
     briefing.update({
         "freshness":            freshness,
         "repo_detail":          repo_corr,
@@ -227,6 +235,7 @@ def run(dry_run=False):
         "earnings_warning":     earnings_warning,
         "sell_alerts":          sell_alerts_text,
         "var_data":             var_data,
+        "portfolio_snap":       portfolio_snap,
     })
 
     # 11) Notify

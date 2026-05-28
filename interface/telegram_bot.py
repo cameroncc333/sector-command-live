@@ -466,117 +466,136 @@ def answer_question(question: str, briefing: dict = None) -> str:
 
 def _plain_english_summary(b: dict) -> str:
     """Plain English TL;DR appended to every briefing."""
-    g = b.get
+    g       = b.get
     vix     = g("vix") or 16
-    regime  = str(g("regime", "NORMAL")).upper()
     ranked  = g("ranked_opportunities") or []
     abstain = g("abstain_reason")
     macro   = g("macro") or {}
     yc      = macro.get("yield_curve") or {}
+    port    = g("portfolio_snap") or {}
 
     lines = ["", "─────────────────────────────",
-             "📋 <b>PLAIN ENGLISH — WHAT THIS MEANS</b>", ""]
+             "📋 <b>PLAIN ENGLISH</b>", ""]
 
-    # Market state
+    # ── Portfolio snapshot ─────────────────────────────────────────────
+    bal       = port.get("balance")
+    invested  = port.get("total_invested") or 0
+    cash_left = port.get("cash_remaining")
+    holdings  = port.get("holdings") or []
+    if bal:
+        held_str = ""
+        if holdings:
+            parts = [f"${h['cost_basis']:,.0f} in {h['ticker']}" for h in holdings]
+            held_str = " (" + ", ".join(parts) + ")"
+        cash_str = f"${cash_left:,.0f} cash left" if cash_left is not None else ""
+        port_line = f"💼 <b>Your money:</b> ${bal:,.0f} total"
+        if invested:
+            port_line += f" · ${invested:,.0f} invested{held_str}"
+        if cash_str:
+            port_line += f" · {cash_str}"
+        lines.append(port_line)
+        lines.append("")
+
+    # ── Market conditions ──────────────────────────────────────────────
     try:
         vix_f = float(vix)
     except Exception:
         vix_f = 16.0
     if vix_f < 15:
-        market_line = "Markets are calm. Good conditions to enter positions."
+        market_line = "🟢 Calm — good day to consider new positions"
     elif vix_f < 22:
-        market_line = "Markets are normal. Nothing unusual — proceed as planned."
+        market_line = "🟡 Normal — nothing unusual, proceed as planned"
     elif vix_f < 30:
-        market_line = "Markets are a bit choppy. Keep position sizes on the smaller side."
+        market_line = "🟠 Choppy — keep sizes smaller than usual"
     else:
-        market_line = "⚠️ Markets are in stress mode. Hold more cash than normal, be cautious."
-    lines.append(f"📊 <b>Market right now:</b> {market_line}")
+        market_line = "🔴 STRESSED — hold extra cash, be very careful"
+    lines.append(f"📊 <b>Market:</b> {market_line}  (VIX {vix_f:.1f})")
 
-    # What the system decided
+    # ── Confidence meter ───────────────────────────────────────────────
+    def _conf_label(conf_pct):
+        if conf_pct >= 75:
+            return f"🔥 {conf_pct}% — VERY HIGH confidence, strong signal"
+        elif conf_pct >= 60:
+            return f"✅ {conf_pct}% — HIGH confidence, good signal"
+        elif conf_pct >= 50:
+            return f"🟡 {conf_pct}% — MODERATE, decent but not certain"
+        elif conf_pct >= 40:
+            return f"⚠️ {conf_pct}% — LOW confidence, lean toward skip"
+        else:
+            return f"❌ {conf_pct}% — VERY LOW, skip this one"
+
+    # ── What to do ─────────────────────────────────────────────────────
     lines.append("")
     if abstain:
         lines.append(
-            "🤖 <b>What the AI decided:</b> The three RL models couldn't agree on one sector, "
-            "so the system is NOT making a specific bet today — it's pointing to SPY (the whole "
-            "S&P 500) instead. This is intentional. When models disagree, staying broad is the "
-            "safe move. It's not broken, it's being disciplined."
+            "🤖 <b>AI verdict:</b> The 3 RL models couldn't agree — only 1 out of 3 picked "
+            "the same sector. System is sitting out of specific bets. This is intentional."
         )
-    elif ranked:
-        top = ranked[0] if isinstance(ranked[0], dict) else {}
-        ticker     = top.get("ticker", "?")
-        name       = top.get("name", "?")
-        pct        = top.get("suggested_pct") or 9
-        conviction = top.get("conviction", "LOW")
-        dollar     = top.get("suggested_dollar")
-        size_str   = f"${dollar:,.0f}" if dollar else f"~{pct:.0f}% of your balance"
-        conv_words = {"HIGH": "high — strong signal",
-                      "MEDIUM": "moderate — decent signal",
-                      "LOW": "low — cautious, small size only",
-                      "SPECULATIVE": "speculative — very small size only"}.get(conviction, "moderate")
+        lines.append("")
         lines.append(
-            f"🤖 <b>What the AI decided:</b> Best pick right now is <b>{ticker} ({name})</b>. "
-            f"Conviction is {conv_words}. Suggested amount: <b>{size_str}</b>."
-        )
-
-    # What to do
-    lines.append("")
-    lines.append("✅ <b>What you should do:</b>")
-    if abstain:
-        lines.append(
-            "→ Reply <code>SKIP</code> for now (no strong edge today)\n"
-            "→ Or reply <code>BUY SPY</code> to go broad market instead\n"
-            "→ Or just ask me anything about your money"
+            "✅ <b>Your move:</b>\n"
+            "→ Reply <code>SKIP</code> — recommended (no edge today)\n"
+            "→ Or <code>BUY SPY</code> to go broad market if you want to deploy cash\n"
+            "→ Or just ask anything — \"is XLE still worth holding?\""
         )
     elif ranked:
         top        = ranked[0] if isinstance(ranked[0], dict) else {}
         ticker     = top.get("ticker", "?")
+        name       = top.get("name", "?")
         conviction = top.get("conviction", "LOW")
         dollar     = top.get("suggested_dollar")
-        size_str   = f"${dollar:,.0f}" if dollar else "a small amount"
-        if conviction == "HIGH":
+        pct        = top.get("suggested_pct") or 9
+        conf       = top.get("score")
+        # Convert score (0-1 or raw) to a confidence percentage
+        try:
+            conf_pct = int(float(conf) * 100) if conf and float(conf) <= 1 else int(float(conf or 50))
+        except Exception:
+            conv_map = {"HIGH": 70, "MEDIUM": 55, "LOW": 42, "SPECULATIVE": 35}
+            conf_pct = conv_map.get(conviction, 50)
+        size_str  = f"${dollar:,.0f}" if dollar else f"~${int(bal * pct / 100):,}" if bal else f"~{pct:.0f}% of balance"
+        amt_int   = int(dollar) if dollar else (int(bal * pct / 100) if bal else None)
+
+        lines.append(
+            f"🤖 <b>AI verdict:</b> Best pick is <b>{ticker} ({name})</b>\n"
+            f"Confidence: {_conf_label(conf_pct)}\n"
+            f"Suggested amount: <b>{size_str}</b>"
+        )
+        lines.append("")
+
+        if conviction in ("HIGH", "MEDIUM"):
+            buy_cmd  = f"<code>BUY A</code>"
+            log_cmd  = f"<code>BOUGHT {ticker} {amt_int if amt_int else '[amount]'}</code>"
             lines.append(
-                f"→ Reply <code>BUY A</code> to buy {size_str} of {ticker} — strong signal today\n"
-                f"→ Then send <code>BOUGHT {ticker} {int(dollar) if dollar else '[amount]'}</code> "
-                f"to log it as real money\n"
-                f"→ Or reply <code>SKIP</code> to sit out"
-            )
-        elif conviction == "MEDIUM":
-            lines.append(
-                f"→ Reply <code>BUY A</code> for {size_str} of {ticker} — decent signal\n"
-                f"→ Then send <code>BOUGHT {ticker} {int(dollar) if dollar else '[amount]'}</code> "
-                f"to log it as real money\n"
-                f"→ Or reply <code>SKIP</code> — no pressure either way"
+                f"✅ <b>Your move:</b>\n"
+                f"1️⃣ Reply {buy_cmd} to log the decision\n"
+                f"2️⃣ If you actually bought it, also send {log_cmd}\n"
+                f"→ Or reply <code>SKIP</code> — no pressure"
             )
         else:
             lines.append(
-                f"→ Reply <code>SKIP</code> — signal is weak, leaning toward waiting\n"
-                f"→ Or reply <code>BUY A</code> for a very small amount ({size_str}) of {ticker} "
-                f"if you want exposure"
+                f"✅ <b>Your move:</b>\n"
+                f"→ Reply <code>SKIP</code> — signal is weak, lean toward waiting\n"
+                f"→ Or <code>BUY A</code> for a tiny amount ({size_str}) if you want exposure"
             )
 
-    # Macro plain English
+    # ── Macro flag ─────────────────────────────────────────────────────
     if yc:
         try:
-            spread   = float(str(yc.get("spread", 1)).replace("%", ""))
             inverted = yc.get("inverted", False)
+            spread   = float(str(yc.get("spread", 1)).replace("%", ""))
             if inverted:
                 lines.append(
-                    "\n⚠️ <b>Macro warning:</b> The yield curve is inverted — short-term interest "
-                    "rates are higher than long-term ones. This has historically come before recessions. "
-                    "Not an immediate sell signal, but don't make large new bets right now."
+                    "\n⚠️ <b>Macro flag:</b> Yield curve is inverted — historically a recession "
+                    "warning. Don't make big new bets until this clears."
                 )
             elif spread < 0.5:
-                lines.append(
-                    "\n📉 <b>Macro note:</b> The yield curve is nearly flat. Watch for it going negative "
-                    "(inverted) — that's a yellow flag for the economy."
-                )
+                lines.append("\n📉 <b>Macro note:</b> Yield curve nearly flat — watch for inversion.")
         except Exception:
             pass
 
     lines.append(
-        "\n💬 <b>Ask me anything in plain English</b> — \"what is XLF?\", "
-        "\"should I add more to crypto?\", \"what does the yield curve mean?\" — "
-        "Gemini AI will answer with full context from today's market data."
+        "\n💬 Ask me anything: \"should I sell XLE?\", \"what is XLF?\", "
+        "\"is this a good time to buy crypto?\" — Gemini answers with today's live data."
     )
 
     return "\n".join(lines)
