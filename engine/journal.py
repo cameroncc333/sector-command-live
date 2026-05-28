@@ -27,7 +27,13 @@ else:
 class Journal:
     def __init__(self, db_path=None):
         self.db_path = db_path or DB_PATH
-        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        os.makedirs(os.path.dirname(os.path.abspath(self.db_path)), exist_ok=True)
+        # On Vercel cold starts /tmp is empty — seed from the deployed DB snapshot
+        if os.environ.get("VERCEL") and not os.path.exists(self.db_path):
+            import shutil
+            deployed = os.path.join(os.path.dirname(__file__), "..", "data", "sector_command.db")
+            if os.path.exists(deployed):
+                shutil.copy2(deployed, self.db_path)
         self._init_db()
 
     def _init_db(self):
