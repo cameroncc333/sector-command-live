@@ -369,6 +369,16 @@ def serve_report(filename):
 
 @app.route("/api/status", methods=["GET"])
 def api_status():
+    # Prefer last_briefing.json (updated each run) over rl_signal.json (only on retrain)
+    briefing = {}
+    briefing_path = os.path.join(os.path.dirname(__file__), "data", "last_briefing.json")
+    if os.path.exists(briefing_path):
+        try:
+            with open(briefing_path) as f:
+                briefing = json.load(f)
+        except Exception:
+            pass
+
     rl_path = os.environ.get("RL_SIGNAL_JSON", os.path.join("data", "rl_signal.json"))
     rl = {}
     if os.path.exists(rl_path):
@@ -378,7 +388,23 @@ def api_status():
         except Exception:
             pass
 
-    target = rl.get("target", "XLK")
+    # Top ranked opportunity from last briefing (what was actually recommended)
+    ranked = briefing.get("ranked_opportunities") or []
+    top = ranked[0] if ranked else {}
+    target = (top.get("ticker") if isinstance(top, dict) else None) or briefing.get("ticker") or rl.get("target", "XLK")
+
+    # Live VIX — fast single-ticker fetch (~1s), overrides stale file value
+    live_vix = briefing.get("vix") or rl.get("vix")
+    try:
+        import yfinance as _yf
+        _vd = _yf.download("^VIX", period="2d", progress=False, auto_adjust=True)
+        _vc = _vd["Close"] if hasattr(_vd.columns, "get_level_values") else _vd
+        if hasattr(_vc, "columns"):
+            _vc = _vc.iloc[:, 0]
+        live_vix = round(float(_vc.dropna().iloc[-1]), 1)
+    except Exception:
+        pass
+
     news_sentiment, top_headline, news_by_sector = None, None, {}
     try:
         from feeders.news_feeder import NewsFeeder
@@ -389,38 +415,33 @@ def api_status():
     except Exception:
         pass
 
-    repo = {}
-    try:
-        repo = collect_all(target, news_by_sector=news_by_sector)
-    except Exception:
-        pass
-
-    fomc_live = {"active": False}
+    fomc_live = briefing.get("fomc_live") or {"active": False}
     try:
         from feeders.fomc_live_feeder import get_fomc_conviction
         fomc_live = get_fomc_conviction()
     except Exception:
         pass
 
+    freshness = briefing.get("freshness") or {
+        "rl_source":     rl.get("_source", "STUB"),
+        "generated_utc": rl.get("_generated_utc", "—"),
+    }
+
     return jsonify({
-        "action":         rl.get("action"),
+        "action":         briefing.get("action") or rl.get("action"),
         "ticker":         target,
-        "confidence":     rl.get("confidence"),
-        "regime":         rl.get("regime"),
-        "vix":            rl.get("vix"),
-        "rsi":            rl.get("rsi"),
-        "rel_strength":   rl.get("rel_strength"),
+        "confidence":     briefing.get("confidence") or rl.get("confidence"),
+        "regime":         briefing.get("regime") or rl.get("regime"),
+        "vix":            live_vix,
+        "rsi":            briefing.get("rsi") or rl.get("rsi"),
+        "rel_strength":   briefing.get("rel_strength") or rl.get("rel_strength"),
         "votes":          rl.get("votes"),
-        "abstain_reason": None,
+        "abstain_reason": briefing.get("abstain_reason"),
         "news_sentiment": news_sentiment,
         "top_headline":   top_headline,
-        "repo_detail":    repo,
+        "repo_detail":    briefing.get("repo_detail") or {},
         "fomc_live":      fomc_live,
-        "freshness": {
-            "rl_source":    rl.get("_source", "STUB"),
-            "generated_utc": rl.get("_generated_utc", "—"),
-            "models":       rl.get("_models", "—"),
-        },
+        "freshness":      freshness,
     })
 
 
