@@ -20,11 +20,10 @@ import json
 import sqlite3
 import datetime
 
-if os.environ.get("VERCEL"):
-    DB_PATH = "/tmp/holdings.db"
-else:
-    DB_PATH = os.environ.get("HOLDINGS_DB",
-        os.path.join(os.path.dirname(__file__), "..", "data", "holdings.db"))
+DB_PATH = os.environ.get(
+    "HOLDINGS_DB",
+    os.path.join(os.path.dirname(__file__), "..", "data", "holdings.db"),
+)
 
 
 class PositionTracker:
@@ -56,7 +55,7 @@ class PositionTracker:
         con.commit()
         con.close()
 
-    # ── Redis helpers (Upstash — persists across Vercel cold starts) ─────
+    # ── Redis helpers (Upstash — persists across Railway restarts) ──────
 
     def _redis(self, *cmd):
         """Run a Redis command via Upstash REST API. Silent no-op if not configured."""
@@ -92,7 +91,7 @@ class PositionTracker:
         con.close()
         if row:
             return float(row[0])
-        # Try Redis (survives Vercel cold starts)
+        # Try Redis (survives Railway restarts)
         val = self._redis("GET", "sc:balance")
         if val:
             return float(val)

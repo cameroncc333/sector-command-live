@@ -18,26 +18,16 @@ import base64
 import sqlite3
 import datetime
 
-_default_db = os.path.join(os.path.dirname(__file__), "..", "data", "sector_command.db")
-if os.environ.get("VERCEL"):
-    # Vercel serverless: filesystem is read-only except /tmp; seed from committed file
-    DB_PATH = "/tmp/sector_command.db"
-else:
-    # Railway / local: use the real file (persists, writable)
-    DB_PATH = os.environ.get("JOURNAL_DB", _default_db)
+DB_PATH = os.environ.get(
+    "JOURNAL_DB",
+    os.path.join(os.path.dirname(__file__), "..", "data", "sector_command.db"),
+)
 
 
 class Journal:
     def __init__(self, db_path=None):
         self.db_path = db_path or DB_PATH
         os.makedirs(os.path.dirname(os.path.abspath(self.db_path)), exist_ok=True)
-        # On Vercel cold starts /tmp is empty — seed from the deployed DB snapshot
-        if os.environ.get("VERCEL") and not os.path.exists(self.db_path):
-            import shutil
-            deployed = os.path.join(os.path.dirname(__file__), "..", "data", "sector_command.db")
-            if os.path.exists(deployed):
-                shutil.copy2(deployed, self.db_path)
-            self._restore_replies_from_redis()
         self._init_db()
 
     def _redis(self, *cmd):
@@ -157,7 +147,7 @@ class Journal:
             con.commit()
         con.close()
 
-        # Persist to Redis so reply survives Vercel cold starts
+        # Persist to Redis so reply survives Railway restarts
         if decision_date:
             try:
                 raw = self._redis("GET", "sc:journal_replies")

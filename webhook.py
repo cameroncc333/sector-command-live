@@ -1,12 +1,12 @@
 """
 webhook.py — Sector Command Live: Telegram webhook + live dashboard + API
 
-Two things in one Flask app (deploy together on Vercel):
+Two things in one Flask app (deploy together on Railway):
   1. POST /api/webhook     — Telegram reply handler (all commands)
   2. GET  /                — live trading dashboard
   3. GET  /api/*           — JSON endpoints the dashboard polls every 3 minutes
 
-Dashboard URL: https://your-vercel-url.vercel.app/
+Dashboard URL: https://your-railway-app.up.railway.app/
 Set webhook:   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://your-url/api/webhook
 
 Full command list: see interface/telegram_bot.py docstring
@@ -21,7 +21,7 @@ from flask import Flask, request, jsonify, render_template, send_from_directory
 # ── Redis cache helpers ───────────────────────────────────────────────────
 # Used to cache slow API responses (yfinance, NewsFeeder) across cold starts.
 # All endpoints that make external calls cache their result for CACHE_TTL seconds.
-# This keeps Vercel response times <500ms even on cold starts.
+# This keeps Railway response times <500ms even after idle restarts.
 
 CACHE_TTL = 300  # 5 minutes
 
@@ -163,7 +163,7 @@ def webhook():
         if command == "BUY" and ticker:
             bought_reminder = (f"\n\n💡 If you spent real money, log it:\n"
                                f"<code>BOUGHT {ticker} [dollar amount]</code>\n"
-                               f"Example: <code>BOUGHT {ticker} 30</code>")
+                               f"Example: <code>BOUGHT {ticker} 500</code>")
         reply = (f"✅ Logged: {command} {ticker or ''}".rstrip() +
                  (f"\nReason: {cmd['reason']}" if cmd.get("reason") else "") +
                  alpaca_line +
@@ -189,16 +189,25 @@ def webhook():
     elif command == "WHY":
         recent = journal.recent(1)
         if recent and recent[0].get("why_trace"):
-            trace = json.loads(recent[0]["why_trace"])
-            bot.send_message("🧠 <b>Reasoning:</b>\n" + "\n".join(f"• {t}" for t in trace))
+            raw_trace = recent[0]["why_trace"]
+            try:
+                trace = json.loads(raw_trace) if isinstance(raw_trace, str) else raw_trace
+                if not isinstance(trace, list):
+                    trace = str(raw_trace).split(" | ")
+            except Exception:
+                trace = str(raw_trace).split(" | ")
+            bot.send_message("🧠 <b>Reasoning:</b>\n" + "\n".join(f"• {t}" for t in trace if t))
         else:
             bot.send_message("No reasoning trace available.")
 
     # ── PERF ──────────────────────────────────────────────────────────────
     elif command == "PERF":
+        if PaperPortfolio is None:
+            bot.send_message("⚠️ Performance tracker unavailable.")
+            return jsonify({"ok": True})
         pp    = PaperPortfolio()
         perf  = pp.compute()
-        alpaca = portfolio_summary()
+        alpaca = portfolio_summary() if portfolio_summary else {}
         lines = ["📈 <b>Performance Summary</b>"]
         if perf.get("portfolio_value") is not None:
             lines += [
@@ -278,7 +287,7 @@ def webhook():
             bot.send_message(
                 f"✅ Balance set to <b>${amount:,.0f}</b>\n"
                 f"To make this permanent across restarts, set DEFAULT_BALANCE={int(amount)} "
-                f"in your Vercel environment variables.\n"
+                f"in your Railway environment variables.\n"
                 f"Reply <code>PORTFOLIO</code> to see your holdings."
             )
         else:
@@ -358,23 +367,38 @@ def webhook():
         else:
             bot.send_message("Format: <code>HOW MUCH XLE</code>")
 
+    # ── ALPHA — individual stock picks ────────────────────────────────
+    elif command == "ALPHA":
+        b     = _load_latest_briefing()
+        picks = b.get("equity_alpha_picks", [])
+        if picks:
+            from engine.equity_alpha import format_equity_alpha_telegram
+            bot.send_message(format_equity_alpha_telegram(picks, n=5))
+        else:
+            bot.send_message(
+                "📊 <b>Equity Alpha</b>\n\nNo stock picks yet — they're generated with each daily briefing.\n"
+                "Run the daily briefing or wait for the next scheduled run."
+            )
+
     # ── Natural language question (routed through Gemini) ────────────────
     elif command == "QUESTION":
-        ctx = load_market_context_from_disk()
-        # Attach live portfolio if balance is set
-        summary = pt.portfolio_summary()
-        if summary.get("balance"):
-            ctx["portfolio_summary"] = summary
-            ctx["balance"] = summary["balance"]
-        reply = llm_ask(text, ctx)
-        bot.send_message(reply, parse_mode="")
+        if llm_ask is None or load_market_context_from_disk is None:
+            bot.send_message(answer_question(text, _load_latest_briefing()))
+        else:
+            ctx = load_market_context_from_disk()
+            summary = pt.portfolio_summary()
+            if summary.get("balance"):
+                ctx["portfolio_summary"] = summary
+                ctx["balance"] = summary["balance"]
+            reply = llm_ask(text, ctx)
+            bot.send_message(reply, parse_mode="")
 
     else:
         bot.send_message(
             "Commands:\n"
             "<code>BUY A</code> <code>BUY XLF</code> <code>SELL</code> <code>SKIP</code>\n"
             "<code>STATUS</code> <code>WHY</code> <code>PERF</code> <code>RISK</code>\n"
-            "<code>CRYPTO</code> <code>GOLD</code> <code>PORTFOLIO</code> <code>REPORT</code>\n"
+            "<code>CRYPTO</code> <code>GOLD</code> <code>ALPHA</code> <code>PORTFOLIO</code> <code>REPORT</code>\n"
             "<code>BALANCE 12500</code> <code>BOUGHT XLE 5 47.50</code> <code>SOLD XLE</code>\n"
             "<code>EXPLAIN XLF</code> <code>HOW MUCH XLF</code>\n"
             "Or ask any question in plain English."
@@ -415,17 +439,11 @@ def api_status():
         if cached:
             return jsonify(cached)
 
-    # Prefer last_briefing.json (updated each run) over rl_signal.json (only on retrain)
-    briefing = {}
-    briefing_path = os.path.join(os.path.dirname(__file__), "data", "last_briefing.json")
-    if os.path.exists(briefing_path):
-        try:
-            with open(briefing_path) as f:
-                briefing = json.load(f)
-        except Exception:
-            pass
+    # Prefer Redis briefing (always fresh on Railway) over local JSON file
+    briefing = _load_latest_briefing()
 
-    rl_path = os.environ.get("RL_SIGNAL_JSON", os.path.join("data", "rl_signal.json"))
+    rl_path = os.environ.get("RL_SIGNAL_JSON",
+                             os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "rl_signal.json"))
     rl = {}
     if os.path.exists(rl_path):
         try:
@@ -491,6 +509,13 @@ def api_status():
         "herd_market_warning":          rl.get("herd_market_warning", False),
         "dispersion_percentile":        rl.get("dispersion_percentile"),
         "cross_sectional_dispersion":   rl.get("cross_sectional_dispersion"),
+        "social_sentiment":             briefing.get("social_sentiment") or {},
+        "macro":                        briefing.get("macro") or {},
+        "options_signals":              briefing.get("options_signals") or {},
+        "ranked_opportunities":         briefing.get("ranked_opportunities") or [],
+        "sell_alerts":                  briefing.get("sell_alerts") or "",
+        "earnings_warning":             briefing.get("earnings_warning") or "",
+        "why_trace":                    briefing.get("why_trace") or [],
     }
     _rcache_set("sc:api_status", result, ttl=CACHE_TTL)
     return jsonify(result)
@@ -504,6 +529,8 @@ def api_sectors():
         if cached:
             return jsonify(cached)
     try:
+        if sector_technicals is None or algo_composite_signal is None:
+            return jsonify({"error": "repo_signals unavailable", "sectors": []})
         tech = sector_technicals()
         algo = algo_composite_signal()
         news_by_sector = {}
@@ -567,10 +594,31 @@ def api_performance():
             ts   = hist.get("timestamp", [])
             eq   = hist.get("equity", [])
             if ts and eq:
-                start  = eq[0] or 1
-                dates  = [datetime.datetime.fromtimestamp(t).strftime("%m/%d") for t in ts]
+                start    = eq[0] or 1
+                dates    = [datetime.datetime.fromtimestamp(t).strftime("%m/%d") for t in ts]
                 port_pct = [round((v / start - 1) * 100, 2) for v in eq]
-                perf["history"] = {"dates": dates, "portfolio": port_pct, "spy": [0.0]*len(dates)}
+                # Fetch real SPY returns over same window for a meaningful benchmark line
+                spy_pct = [0.0] * len(dates)
+                try:
+                    import yfinance as _yf
+                    _start = datetime.datetime.fromtimestamp(ts[0]).strftime("%Y-%m-%d")
+                    _end   = (datetime.datetime.fromtimestamp(ts[-1]) +
+                               datetime.timedelta(days=3)).strftime("%Y-%m-%d")
+                    _raw   = _yf.download("SPY", start=_start, end=_end,
+                                          progress=False, auto_adjust=True)
+                    _c = _raw["Close"] if hasattr(_raw.columns, "get_level_values") else _raw
+                    if hasattr(_c, "columns"):
+                        _c = _c.iloc[:, 0]
+                    _vals = _c.dropna()
+                    if len(_vals) > 0:
+                        _base    = float(_vals.iloc[0])
+                        _spy_raw = [round((float(v) / _base - 1) * 100, 2) for v in _vals]
+                        spy_pct  = _spy_raw[:len(dates)]
+                        while len(spy_pct) < len(dates):
+                            spy_pct.append(spy_pct[-1])
+                except Exception:
+                    pass
+                perf["history"] = {"dates": dates, "portfolio": port_pct, "spy": spy_pct}
         except Exception:
             perf["history"] = None
         return jsonify(perf)
@@ -600,6 +648,8 @@ def api_alpaca():
 def api_risk():
     """VaR, CVaR, macro snapshot for the dashboard risk panel."""
     try:
+        if portfolio_var is None or macro_snapshot is None:
+            return jsonify({"error": "risk_metrics unavailable", "var": {}, "macro": {}})
         holdings = pt.get_holdings()
         var_data = portfolio_var(holdings) if holdings else {}
         macro    = macro_snapshot()
@@ -624,11 +674,42 @@ def api_rotation():
         return jsonify({"error": str(e), "rotation": []})
 
 
+@app.route("/api/equity-alpha", methods=["GET"])
+def api_equity_alpha():
+    """Top individual stock picks from the cross-sectional factor model.
+
+    Never triggers live compute — that runs in main_engine.py (GitHub Actions).
+    Reads from Redis → last_briefing.json → empty. This keeps the endpoint
+    fast (<200ms) and prevents Railway timeout from an 80-ticker yfinance fetch.
+    """
+    bust = request.args.get("bust")
+    if not bust:
+        cached = _rcache_get("sc:equity_alpha")
+        if cached:
+            picks = cached.get("picks", cached) if isinstance(cached, dict) else cached
+            return jsonify({"picks": picks})
+    b     = _load_latest_briefing()
+    picks = b.get("equity_alpha_picks", [])
+    return jsonify({"picks": picks})
+
+
 @app.route("/api/macro", methods=["GET"])
 def api_macro():
-    """Yield curve and dollar index."""
+    """Yield curve, dollar index, and VIX term structure."""
     try:
+        if macro_snapshot is None:
+            return jsonify({"error": "risk_metrics unavailable"})
         return jsonify(macro_snapshot())
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+@app.route("/api/options", methods=["GET"])
+def api_options():
+    """Put/call ratio for SPY and QQQ."""
+    try:
+        from feeders.options_feeder import get_options_sentiment
+        return jsonify(get_options_sentiment(["SPY", "QQQ"]))
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -691,7 +772,7 @@ def health():
     gemini_key = os.environ.get("GEMINI_API_KEY", "")
     return jsonify({
         "status": "ok",
-        "ts": datetime.datetime.utcnow().isoformat(),
+        "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "gemini": "key_set" if gemini_key else "no_key",
         "telegram": "key_set" if os.environ.get("TELEGRAM_TOKEN") else "no_key",
     })
@@ -734,24 +815,23 @@ def test_gemini():
 
 # ── internal helpers ──────────────────────────────────────────────────────
 
+_BRIEFING_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "last_briefing.json")
+
+
 def _load_ranked_opportunities() -> list:
-    """Load the ranked opportunities from the last briefing JSON, if it exists."""
-    path = os.path.join("data", "last_briefing.json")
-    try:
-        if os.path.exists(path):
-            with open(path) as f:
-                b = json.load(f)
-                return b.get("ranked_opportunities", [])
-    except Exception:
-        pass
-    return []
+    """Load ranked opportunities — checks Redis first, then JSON file."""
+    return _load_latest_briefing().get("ranked_opportunities", [])
 
 
 def _load_latest_briefing() -> dict:
-    path = os.path.join("data", "last_briefing.json")
+    # Redis first (freshest, always consistent)
+    cached = _rcache_get("sc:last_briefing")
+    if cached:
+        return cached
+    # JSON fallback (written by main_engine.py on each run)
     try:
-        if os.path.exists(path):
-            with open(path) as f:
+        if os.path.exists(_BRIEFING_PATH):
+            with open(_BRIEFING_PATH) as f:
                 return json.load(f)
     except Exception:
         pass

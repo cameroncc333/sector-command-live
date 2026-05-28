@@ -208,25 +208,94 @@ def yield_curve() -> dict:
         t2  = _last(t2_raw)
         spread = round(t10 - t2, 3)
         return {
-            "ten_yr":   round(t10, 3),
-            "two_yr":   round(t2, 3),
-            "spread":   spread,
-            "inverted": spread < 0,
-            "signal":   ("INVERTED — recession risk elevated" if spread < 0
-                         else "NORMAL" if spread > 0.5
-                         else "FLAT — watch closely"),
+            "ten_yr":     round(t10, 3),
+            "two_yr":     round(t2, 3),    # ^IRX = 13-week T-bill (best free yfinance proxy)
+            "rate_label": "13w T-bill",    # accurate label for display
+            "spread":     spread,
+            "inverted":   spread < 0,
+            "signal":     ("INVERTED — recession risk elevated" if spread < 0
+                           else "NORMAL" if spread > 0.5
+                           else "FLAT — watch closely"),
         }
     except Exception as e:
         print(f"[risk_metrics] yield curve unavailable: {e}")
         return {}
 
 
+def vix_term_structure() -> dict:
+    """
+    VIX term structure: VIX (30d) vs VIX3M (93d) vs VIX9D (9d).
+
+    The VIX/VIX3M ratio is the single best real-time regime signal because:
+      - Ratio > 1.0 (backwardation): short-term fear > long-term → STRESSED
+      - Ratio < 0.85 (steep contango): markets very calm → CALM
+      - Ratio 0.85-1.0 (shallow contango): normal → NORMAL
+
+    VIX9D/VIX ratio identifies near-term event risk (e.g., FOMC, CPI):
+      - Ratio > 1.15: significant near-term event risk (tail spike)
+
+    Research: Macrosynergy (2021) — VIX term structure as a trading signal.
+    AmpyFin/Euler (GitHub) — Near-term Stress Ratio leading indicator.
+    """
+    try:
+        import yfinance as yf
+        raw = yf.download(["^VIX", "^VIX3M", "^VIX9D"], period="5d",
+                          progress=False, auto_adjust=True)
+        close = raw["Close"] if (hasattr(raw.columns, "get_level_values")
+                                 and "Close" in raw.columns.get_level_values(0)) else raw
+        if hasattr(close, "columns") and len(close) == 0:
+            return {}
+
+        def _last(ticker):
+            if ticker in close.columns:
+                s = close[ticker].dropna()
+                return float(s.iloc[-1]) if len(s) > 0 else None
+            return None
+
+        vix   = _last("^VIX")
+        vix3m = _last("^VIX3M")
+        vix9d = _last("^VIX9D")
+
+        if vix is None or vix3m is None:
+            return {}
+
+        ratio = round(vix / vix3m, 3)
+        near_ratio = round(vix9d / vix, 3) if vix9d and vix > 0 else None
+
+        if ratio > 1.0:
+            ts_regime = "BACKWARDATION"
+            ts_signal = "⚠️ Front-heavy fear spike — stressed regime confirmed"
+        elif ratio < 0.85:
+            ts_regime = "STEEP_CONTANGO"
+            ts_signal = "🟢 Deep contango — calm markets, momentum favored"
+        else:
+            ts_regime = "CONTANGO"
+            ts_signal = "🟡 Normal contango — proceed with base regime"
+
+        event_risk = bool(near_ratio and near_ratio > 1.15)
+
+        return {
+            "vix":       round(vix, 1),
+            "vix3m":     round(vix3m, 1),
+            "vix9d":     round(vix9d, 1) if vix9d else None,
+            "ratio":     ratio,           # VIX/VIX3M — key regime indicator
+            "near_ratio": near_ratio,     # VIX9D/VIX — event risk detector
+            "ts_regime": ts_regime,       # BACKWARDATION / CONTANGO / STEEP_CONTANGO
+            "ts_signal": ts_signal,
+            "event_risk": event_risk,     # near-term tail spike detected
+        }
+    except Exception as e:
+        print(f"[risk_metrics] VIX term structure unavailable: {e}")
+        return {}
+
+
 def macro_snapshot() -> dict:
     """
-    Quick macro dashboard: yield curve + dollar index.
+    Quick macro dashboard: yield curve + dollar index + VIX term structure.
     Used by the Telegram briefing and dashboard.
     """
     yc = yield_curve()
+    vts = vix_term_structure()
     dollar = {}
     try:
         import yfinance as yf
@@ -246,7 +315,7 @@ def macro_snapshot() -> dict:
     except Exception as e:
         print(f"[risk_metrics] DXY unavailable: {e}")
 
-    return {"yield_curve": yc, "dollar": dollar}
+    return {"yield_curve": yc, "dollar": dollar, "vix_term_structure": vts}
 
 
 # ── Sector rotation (4-week relative strength) ────────────────────────────────
@@ -303,10 +372,22 @@ def format_risk_block(var_data: dict, macro: dict) -> str:
     """Compact risk summary for Telegram (shown in PERF response)."""
     lines = []
 
+    vts = macro.get("vix_term_structure", {})
+    if vts:
+        ratio = vts.get("ratio")
+        ts_regime = vts.get("ts_regime", "")
+        event_str = "  ⚡ EVENT RISK" if vts.get("event_risk") else ""
+        ts_emoji = "🔴" if ts_regime == "BACKWARDATION" else ("🟢" if ts_regime == "STEEP_CONTANGO" else "🟡")
+        lines.append(
+            f"{ts_emoji} VIX term: {vts.get('vix','?')} / VIX3M {vts.get('vix3m','?')} "
+            f"= ratio {ratio}  [{ts_regime}]{event_str}"
+        )
+
     yc = macro.get("yield_curve", {})
     if yc:
         inv = "⚠️ INVERTED" if yc.get("inverted") else "Normal"
-        lines.append(f"📐 Yield curve: {yc.get('ten_yr','?')}% (10yr) − {yc.get('two_yr','?')}% (2yr) = "
+        short_label = yc.get("rate_label", "13w T-bill")
+        lines.append(f"📐 Yield curve: {yc.get('ten_yr','?')}% (10yr) − {yc.get('two_yr','?')}% ({short_label}) = "
                      f"{yc.get('spread','?')}  [{inv}]")
 
     dxy = macro.get("dollar", {})

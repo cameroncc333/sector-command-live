@@ -1,8 +1,14 @@
 name: Sector Command Live — Daily Signals
 
-# Triggered by cron-job.org (4×/day via /cron/briefing endpoint).
-# Schedule removed to prevent duplicate runs alongside cron-job.org.
+# Primary trigger: cron-job.org hits /cron/briefing at 9:00, 12:00, 3:30, 4:30 EDT.
+# GitHub Actions schedule handles the two new slots (10:30 AM + 2:00 PM) directly.
+# workflow_dispatch allows manual one-off runs from the GitHub Actions tab.
 on:
+  schedule:
+    # 10:30 AM EDT = 14:30 UTC
+    - cron: '30 14 * * 1-5'
+    # 2:00 PM EDT  = 18:00 UTC
+    - cron: '0 18 * * 1-5'
   workflow_dispatch: {}
 
 jobs:
@@ -48,6 +54,10 @@ jobs:
           ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
           ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          DEFAULT_BALANCE: ${{ secrets.DEFAULT_BALANCE }}
+          PAPER_MODE: "1"
           NEWS_MODE: lexicon
           RL_SIGNAL_JSON: data/rl_signal.json
         run: python main_engine.py

@@ -107,7 +107,11 @@ def score_statement(text: str) -> float:
         for chunk in chunks[:5]:  # max 5 chunks
             out = clf(chunk)[0]
             d = {o["label"].lower(): o["score"] for o in out}
-            scores.append(d.get("positive", 0) - d.get("negative", 0))
+            # FinBERT-FOMC labels: "dovish"/"hawkish"/"neutral" (ZiweiChen model)
+            # Base FinBERT labels: "positive"/"negative"/"neutral"
+            pos = d.get("positive", 0) or d.get("dovish", 0)
+            neg = d.get("negative", 0) or d.get("hawkish", 0)
+            scores.append(pos - neg)
         return round(sum(scores) / len(scores), 3) if scores else 0.0
     except ImportError:
         print("[fomc_live] transformers not installed — lexicon fallback")

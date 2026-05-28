@@ -1,7 +1,7 @@
 """
 main_engine.py — Sector Command Live orchestrator
 
-Entry point for the daily GitHub Actions run (4×/day). Flow:
+Entry point for the daily GitHub Actions run (6×/day). Flow:
   1. Load RL ensemble signal       rl-portfolio-optimizer models
   2. Pull news sentiment (real)     feeders/news_feeder.py
   3. Pull political (research-only) feeders/political_feeder.py
@@ -44,6 +44,13 @@ from engine.sell_signals        import check_exit_signals, format_sell_alerts
 import engine.multi_asset_ranker as ranker
 from interface.telegram_bot     import TelegramBot
 
+try:
+    from feeders.options_feeder import get_options_sentiment, pcr_confidence_modifier
+except Exception as _oe:
+    print(f"[main_engine] options_feeder unavailable: {_oe}")
+    get_options_sentiment = None
+    pcr_confidence_modifier = None
+
 
 def load_rl_signal():
     """
@@ -68,13 +75,28 @@ def load_rl_signal():
 
 def run(dry_run=False):
     today = datetime.date.today().isoformat()
-    gov   = Governance(paper_mode=True)
+    # PAPER_MODE=0 or PAPER_MODE=false disables paper mode (flip after 30-day track record)
+    _paper = os.environ.get("PAPER_MODE", "1").strip().lower() not in ("0", "false", "no")
+    gov   = Governance(paper_mode=_paper)
 
     # 1) RL signal
     rl = load_rl_signal()
 
     # 2) News (real conviction signal)
     news = NewsFeeder().daily_sector_sentiment(limit=60)
+
+    # 2b) StockTwits social sentiment for the RL target (top 3 holdings of that sector)
+    social_sentiment = {}
+    try:
+        from feeders.news_feeder import get_stocktwits_sentiment
+        from engine.earnings_calendar import SECTOR_HOLDINGS
+        top_holdings = SECTOR_HOLDINGS.get(rl.get("target", ""), [])[:3]
+        for tkr in top_holdings:
+            st = get_stocktwits_sentiment(tkr)
+            if st:
+                social_sentiment[tkr] = st
+    except Exception as e:
+        print(f"[main_engine] StockTwits skipped ({e})")
 
     # 3) Political (research-only — never enters decision logic)
     pol           = PoliticalFeeder()
@@ -121,6 +143,70 @@ def run(dry_run=False):
     except Exception as e:
         print(f"[main_engine] multi-asset ranker skipped ({e})")
 
+    # 6b) Equity alpha — individual stock picks via cross-sectional factor model
+    equity_alpha_picks = []
+    try:
+        from engine.equity_alpha import get_equity_alpha_picks
+        equity_alpha_picks = get_equity_alpha_picks(
+            top_n=8,
+            rl_sector=rl.get("target"),
+            balance=balance,
+            regime=rl.get("regime", "NORMAL"),
+            vix=float(rl.get("vix", 20.0)),
+        )
+    except Exception as e:
+        print(f"[main_engine] equity alpha skipped ({e})")
+
+    # 6c) Equity alpha conviction-drop exit signals
+    # Compare current picks vs. previous run (stored in Redis) to catch when a
+    # HIGH/MEDIUM conviction stock degrades. These fire in the Telegram briefing
+    # so Cameron knows to review/exit positions in those individual stocks.
+    equity_alpha_exit_alerts = []
+    try:
+        _ru = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+        _rt = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+        if _ru and _rt and equity_alpha_picks:
+            import requests as _req
+            _prev_r = _req.post(_ru, json=["GET", "sc:equity_alpha_prev"],
+                                headers={"Authorization": f"Bearer {_rt}"}, timeout=3)
+            _prev_raw = _prev_r.json().get("result")
+            if _prev_raw:
+                prev_by_ticker = {p["ticker"]: p for p in json.loads(_prev_raw)}
+                for pick in equity_alpha_picks:
+                    t = pick.get("ticker")
+                    prev = prev_by_ticker.get(t)
+                    if not prev:
+                        continue
+                    prev_conv = prev.get("conviction", "")
+                    curr_conv = pick.get("conviction", "")
+                    sc = pick.get("composite_score", 0)
+                    tag = pick.get("conviction_tagline") or "Factors deteriorated"
+                    if prev_conv in ("HIGH", "MEDIUM") and curr_conv == "AVOID":
+                        equity_alpha_exit_alerts.append({
+                            "ticker": t, "signal_type": "CONVICTION_DROP",
+                            "urgency": "URGENT",
+                            "detail": (f"Alpha conviction {prev_conv} → AVOID (score {sc:.0f}). "
+                                       f"{tag}"),
+                        })
+                    elif prev_conv == "HIGH" and curr_conv == "LOW":
+                        equity_alpha_exit_alerts.append({
+                            "ticker": t, "signal_type": "CONVICTION_DROP",
+                            "urgency": "WATCH",
+                            "detail": (f"Alpha conviction HIGH → LOW (score {sc:.0f}). "
+                                       f"Monitor position."),
+                        })
+            # Persist minimal snapshot for next run's comparison (7-day TTL)
+            _req.post(_ru, json=["SETEX", "sc:equity_alpha_prev", 604800,
+                                 json.dumps([{
+                                     "ticker": p.get("ticker"),
+                                     "conviction": p.get("conviction"),
+                                     "composite_score": p.get("composite_score", 0),
+                                     "conviction_tagline": p.get("conviction_tagline", ""),
+                                 } for p in equity_alpha_picks], default=str)],
+                      headers={"Authorization": f"Bearer {_rt}"}, timeout=3)
+    except Exception as e:
+        print(f"[main_engine] equity alpha exit check skipped ({e})")
+
     # 7) Paper performance
     ghost_alpha = rl.get("ghost_alpha", 0.0)
     perf_data   = None
@@ -137,6 +223,15 @@ def run(dry_run=False):
         fomc_live = get_fomc_conviction()
     except Exception as e:
         print(f"[main_engine] FOMC live feeder skipped ({e})")
+
+    # 8b) Options sentiment (PCR) — market-wide + RL sector
+    options_signals = {}
+    try:
+        if get_options_sentiment:
+            spy_qqq = get_options_sentiment(["SPY", "QQQ"])
+            options_signals = spy_qqq
+    except Exception as e:
+        print(f"[main_engine] options feeder skipped ({e})")
 
     # 9) Options overlay
     hedge = {"triggered": False}
@@ -188,12 +283,15 @@ def run(dry_run=False):
         except Exception:
             pass
 
-    # Data freshness stamp
+    # Data freshness stamp — VIX term structure enriches regime label
+    vts = macro.get("vix_term_structure", {})
+    vts_regime = vts.get("ts_regime", "")
     freshness = {
         "rl_source":    rl.get("_source", "STUB"),
         "market_data":  "LIVE" if repo_corr.get("equity_analyzer") else "UNAVAILABLE",
         "news":         news["mode"].upper(),
         "generated_utc": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        "vix_ts":       vts_regime or "—",
     }
 
     # 10) Decision engine
@@ -213,6 +311,8 @@ def run(dry_run=False):
         political_note = political_note,
         ghost_alpha    = ghost_alpha,
         repo_corroboration = repo_corr.get("agreement"),
+        vix_ts_regime  = vts_regime or None,
+        options_signals = options_signals or None,
     )
     briefing = decide(state, gov)
 
@@ -236,6 +336,10 @@ def run(dry_run=False):
         "sell_alerts":          sell_alerts_text,
         "var_data":             var_data,
         "portfolio_snap":       portfolio_snap,
+        "equity_alpha_picks":        equity_alpha_picks,
+        "equity_alpha_exit_alerts":  equity_alpha_exit_alerts,
+        "options_signals":           options_signals,
+        "social_sentiment":          social_sentiment,
     })
 
     # 11) Notify
@@ -258,17 +362,32 @@ def run(dry_run=False):
         "macro":                  macro,
         "sell_signals":           sell_signals_raw,
         "earnings":               raw_earnings,
+        "equity_alpha_exits":     equity_alpha_exit_alerts,
     })
 
-    # 13) Save last_briefing.json so webhook can use ranked ops for BUY 1 / HOW MUCH
+    # 13) Persist briefing — JSON file (cold storage) + Redis (live API cache)
     briefing_path = os.path.join(os.path.dirname(__file__), "data", "last_briefing.json")
     os.makedirs(os.path.dirname(briefing_path), exist_ok=True)
     try:
         with open(briefing_path, "w") as f:
-            # crypto_signals may contain non-serializable floats — use default=str
             json.dump(briefing, f, indent=2, default=str)
     except Exception as e:
         print(f"[main_engine] could not save last_briefing.json ({e})")
+
+    # Push to Redis so the dashboard/Telegram API never falls back to live compute.
+    # Redis is the single source of truth; JSON is the cold backup if Redis is dark.
+    try:
+        import requests as _req
+        _ru = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+        _rt = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+        if _ru and _rt:
+            _req.post(_ru,
+                      json=["SETEX", "sc:last_briefing", 86400,
+                            json.dumps(briefing, default=str)],
+                      headers={"Authorization": f"Bearer {_rt}"}, timeout=5)
+            print("[main_engine] briefing pushed to Redis (24h TTL)")
+    except Exception as e:
+        print(f"[main_engine] Redis push skipped ({e})")
 
     return briefing
 

@@ -27,20 +27,52 @@ import os
 import re
 from collections import defaultdict
 
-# Sector ETF universe (matches your existing 11)
+# Sector ETF universe — expanded with company names, tickers, and sub-industry terms
 SECTOR_KEYWORDS = {
-    "XLK": ["tech", "technology", "software", "semiconductor", "chip", "ai ", "cloud", "apple", "microsoft", "nvidia"],
-    "XLF": ["bank", "financial", "lending", "interest rate", "jpmorgan", "goldman", "insurance", "credit"],
-    "XLE": ["oil", "energy", "crude", "gas", "opec", "drilling", "exxon", "chevron", "barrel"],
-    "XLV": ["health", "pharma", "drug", "biotech", "fda", "medical", "vaccine", "hospital"],
-    "XLY": ["consumer discretionary", "retail", "amazon", "tesla", "auto", "restaurant", "travel", "leisure"],
-    "XLP": ["consumer staples", "grocery", "household", "food", "beverage", "walmart", "procter"],
-    "XLI": ["industrial", "manufacturing", "aerospace", "defense", "boeing", "machinery", "freight"],
-    "XLB": ["materials", "mining", "chemical", "steel", "copper", "commodity"],
-    "XLRE": ["real estate", "reit", "property", "mortgage", "housing", "commercial real"],
-    "XLU": ["utility", "utilities", "electric", "power grid", "renewable", "nuclear"],
-    "XLC": ["communication", "media", "telecom", "streaming", "social media", "meta", "google", "netflix"],
+    "XLK": ["tech", "technology", "software", "semiconductor", "chip", "ai ", " ai,",
+            "artificial intelligence", "cloud", "apple", "microsoft", "nvidia", "broadcom",
+            "amd", "qualcomm", "oracle", "salesforce", "adobe", "data center", "cybersecurity",
+            "gpu", "machine learning", "quantum", "aapl", "msft", "nvda", "avgo"],
+    "XLF": ["bank", "banking", "financial", "lending", "interest rate", "jpmorgan", "goldman",
+            "morgan stanley", "citigroup", "insurance", "credit", "federal reserve", "fed rate",
+            "fintech", "blackrock", "visa", "mastercard", "payment", "jpm", "bac", "wfc", "gs"],
+    "XLE": ["oil", "energy", "crude", "gas", "opec", "drilling", "exxon", "chevron",
+            "conocophillips", "barrel", "refinery", "lng", "natural gas", "pipeline",
+            "petroleum", "xom", "cvx", "cop", "slb", "oxy"],
+    "XLV": ["health", "pharma", "drug", "biotech", "fda", "medical", "vaccine", "hospital",
+            "eli lilly", "unitedhealth", "abbvie", "merck", "pfizer", "clinical trial",
+            "biosimilar", "medicare", "insurance claim", "lly", "unh", "jnj", "abbv", "mrk"],
+    "XLY": ["consumer discretionary", "retail", "amazon", "tesla", "home depot",
+            "auto", "restaurant", "travel", "leisure", "luxury", "e-commerce",
+            "consumer spending", "discretionary", "amzn", "tsla", "hd", "mcd", "nke"],
+    "XLP": ["consumer staples", "grocery", "household", "food", "beverage", "walmart",
+            "procter", "coca-cola", "pepsi", "costco", "staples", "cpg", "packaged food",
+            "wmt", "pg", "ko", "pep", "cost"],
+    "XLI": ["industrial", "manufacturing", "aerospace", "defense", "boeing", "caterpillar",
+            "honeywell", "machinery", "freight", "logistics", "ge aerospace", "ups",
+            "infrastructure", "lockheed", "raytheon", "cat", "hon", "rtx", "lmt"],
+    "XLB": ["materials", "mining", "chemical", "steel", "copper", "commodity",
+            "lithium", "aluminum", "gold mining", "fertilizer", "linde", "freeport",
+            "air products", "sherwin", "lin", "apd", "fcx", "nem"],
+    "XLRE": ["real estate", "reit", "property", "mortgage", "housing", "commercial real",
+             "data center reit", "cell tower", "prologis", "american tower", "equinix",
+             "office", "multifamily", "pld", "amt", "eqix", "spg"],
+    "XLU": ["utility", "utilities", "electric", "power grid", "renewable", "nuclear",
+             "solar", "wind energy", "nextera", "duke energy", "grid", "transmission",
+             "rate case", "nee", "duk", "so", "aep"],
+    "XLC": ["communication", "media", "telecom", "streaming", "social media", "meta",
+             "alphabet", "google", "netflix", "disney", "comcast", "advertising",
+             "content", "5g", "wireless", "nflx", "dis", "cmcsa", "chtr"],
 }
+
+# Expanded positive/negative lexicon with financial domain terms
+POS_WORDS_EXTRA = {"accelerates", "accelerating", "breakout", "outperform", "outperforms",
+                   "buyback", "dividend", "raised", "raises", "initiates", "overweight",
+                   "acquisition", "partnership", "contract", "beat", "exceeds", "raised guidance",
+                   "upgrade", "upgraded", "positive", "expands", "expansion"}
+NEG_WORDS_EXTRA = {"downgrade", "downgraded", "underweight", "misses", "lowered", "cuts guidance",
+                   "investigation", "lawsuit", "recall", "bankruptcy", "layoffs", "restructuring",
+                   "shortfall", "disappoints", "disappointing", "suspended", "halted", "probe"}
 
 # Tiny finance lexicon for the no-model fallback
 POS_WORDS = {"beat", "beats", "surge", "surges", "rally", "rallies", "gain", "gains", "jump", "jumps",
@@ -93,15 +125,18 @@ class NewsFeeder:
     def _fetch_rss(self, limit):
         """Free, keyless fallback: pull multiple finance RSS feeds."""
         import requests
-        # Ordered by reliability; we try all and deduplicate
+        # Ordered by reliability — CNBC, Yahoo, and Reuters are most stable.
+        # WSJ requires auth; MarketWatch is reliable. NYT Business is good backup.
+        # Seeking Alpha and Benzinga provide sector-specific news.
         feeds = [
-            "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",           # WSJ Markets
-            "https://www.cnbc.com/id/100003114/device/rss/rss.html",    # CNBC Markets
-            "https://www.cnbc.com/id/10000664/device/rss/rss.html",     # CNBC Business
-            "https://finance.yahoo.com/rss/topstories",                 # Yahoo Finance
-            "https://www.marketwatch.com/rss/topstories",               # MarketWatch
-            "https://feeds.reuters.com/reuters/businessNews",           # Reuters Business
-            "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml", # NYT Business
+            "https://www.cnbc.com/id/100003114/device/rss/rss.html",       # CNBC Markets (reliable)
+            "https://www.cnbc.com/id/10000664/device/rss/rss.html",         # CNBC Business
+            "https://finance.yahoo.com/rss/topstories",                     # Yahoo Finance
+            "https://feeds.reuters.com/reuters/businessNews",               # Reuters Business
+            "https://www.marketwatch.com/rss/topstories",                   # MarketWatch
+            "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",    # NYT Business
+            "https://feeds.feedburner.com/TheStreet-Stocks",                # TheStreet
+            "https://www.investing.com/rss/news.rss",                       # Investing.com
         ]
         seen, titles = set(), []
         for feed in feeds:
@@ -124,23 +159,40 @@ class NewsFeeder:
     def _score_finbert(self, headlines):
         if self._finbert is None:
             from transformers import pipeline
-            # NOTE: verify this exact model id on HuggingFace before trusting it.
-            # Base ProsusAI/finbert is the safe known-good default.
+            # FINBERT_MODEL options (in order of accuracy vs speed):
+            #   "ProsusAI/finbert"           — gold standard, 440MB (default)
+            #   "yiyanghkust/finbert-tone"   — finer-grained tone (same size)
+            #   "distilbert-base-uncased-finetuned-sst-2-english" — 265MB, faster, less domain-specific
+            # DistilBERT (93.23% accuracy per 2025 Atlantis Press study) is a strong
+            # lightweight alternative when GitHub Actions memory is tight.
             model_id = os.environ.get("FINBERT_MODEL", "ProsusAI/finbert")
             self._finbert = pipeline("text-classification", model=model_id, top_k=None)
         scores = []
         for h in headlines:
-            out = self._finbert(h[:512])[0]
-            d = {o["label"].lower(): o["score"] for o in out}
-            scores.append(d.get("positive", 0) - d.get("negative", 0))
+            try:
+                out = self._finbert(h[:512])[0]
+                d = {o["label"].lower(): o["score"] for o in out}
+                # Handle both FinBERT labels (positive/negative/neutral)
+                # and DistilBERT labels (POSITIVE/NEGATIVE) and finbert-tone labels
+                pos = d.get("positive", d.get("pos", d.get("POSITIVE", 0)))
+                neg = d.get("negative", d.get("neg", d.get("NEGATIVE", 0)))
+                scores.append(float(pos - neg))
+            except Exception:
+                scores.append(0.0)
         return scores
 
     def _score_lexicon(self, headlines):
+        all_pos = POS_WORDS | POS_WORDS_EXTRA
+        all_neg = NEG_WORDS | NEG_WORDS_EXTRA
         scores = []
         for h in headlines:
             words = set(re.findall(r"[a-z]+", h.lower()))
-            pos = len(words & POS_WORDS)
-            neg = len(words & NEG_WORDS)
+            # Phrase-level matching for multi-word terms
+            h_lower = h.lower()
+            pos = len(words & all_pos) + sum(1 for p in ["beat estimates", "raised guidance",
+                "record revenue", "strong earnings"] if p in h_lower)
+            neg = len(words & all_neg) + sum(1 for p in ["misses estimates", "lowered guidance",
+                "disappointed investors", "revenue shortfall"] if p in h_lower)
             total = pos + neg
             scores.append((pos - neg) / total if total else 0.0)
         return scores
@@ -191,6 +243,55 @@ class NewsFeeder:
             "n_headlines": len(headlines),
             "mode": self.mode,
         }
+
+
+def get_stocktwits_sentiment(ticker: str) -> dict | None:
+    """
+    Fetch real-time social sentiment for a ticker from StockTwits.
+    No API key required. Returns bullish/bearish ratio as a -1..+1 score.
+
+    StockTwits is the primary social platform for retail traders — high signal
+    for meme-adjacent tickers (TSLA, NVDA, AMD) and sector ETFs.
+
+    Research: Jay Lin (Medium 2024) — StockTwits retail sentiment has 3-5 day
+    leading correlation with price momentum for large-cap US equities.
+    """
+    import requests as _req
+    try:
+        url = f"https://api.stocktwits.com/api/2/streams/symbol/{ticker}.json"
+        r = _req.get(url, timeout=8, headers={"User-Agent": "SectorCommand/1.0"})
+        if r.status_code != 200:
+            return None
+        data = r.json()
+        messages = data.get("messages", [])
+        if not messages:
+            return None
+
+        bull, bear, total = 0, 0, 0
+        for m in messages[:50]:  # last 50 messages
+            sentiment = (m.get("entities", {}).get("sentiment") or {}).get("basic")
+            if sentiment == "Bullish":
+                bull += 1
+                total += 1
+            elif sentiment == "Bearish":
+                bear += 1
+                total += 1
+
+        if total == 0:
+            return None
+
+        score = round((bull - bear) / total, 3)   # -1..+1
+        return {
+            "ticker":       ticker,
+            "bullish":      bull,
+            "bearish":      bear,
+            "total_tagged": total,
+            "score":        score,
+            "signal":       "BULLISH" if score > 0.2 else "BEARISH" if score < -0.2 else "NEUTRAL",
+        }
+    except Exception as e:
+        print(f"[news_feeder] StockTwits fetch failed for {ticker}: {e}")
+        return None
 
 
 if __name__ == "__main__":

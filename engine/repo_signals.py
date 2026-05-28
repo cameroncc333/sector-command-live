@@ -210,7 +210,7 @@ def _corroboration(rl_target, tech, algo, algo_top, fed):
         elif rl_target in fed.get("pressured", []):
             notes.append(f"fed context pressures {rl_target} ({fed['stance']})")
         else:
-            agree += 0
+            notes.append(f"fed context neutral on {rl_target} ({fed['stance']})")
     return {"agree": agree, "total": total, "notes": notes}
 
 

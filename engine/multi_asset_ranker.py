@@ -65,7 +65,12 @@ def rank(
     opportunities = []
 
     # ── 1. Sector opportunities ──────────────────────────────────────────
-    from engine.repo_signals import sector_technicals, algo_composite_signal
+    try:
+        from engine.repo_signals import sector_technicals, algo_composite_signal
+    except Exception as _e:
+        print(f"[multi_asset_ranker] repo_signals unavailable: {_e}")
+        sector_technicals = lambda: {}
+        algo_composite_signal = lambda: {"by_sector": {}, "top": None}
     tech = sector_tech or sector_technicals()
     algo = algo_signals or algo_composite_signal()
     news = news_by_sector or {}

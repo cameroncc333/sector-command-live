@@ -1,8 +1,7 @@
 """
 decision.py — the brain of Sector Command Live
 
-ARCHITECTURE (the defensible version you can explain in an interview):
-
+ARCHITECTURE:
   RL ensemble (PPO/A2C/SAC) makes the CALL.
   News sentiment is a CONVICTION MODIFIER — it can raise/lower confidence or push
        toward abstain, but it does NOT pick a different sector than the agents.
@@ -10,12 +9,56 @@ ARCHITECTURE (the defensible version you can explain in an interview):
   Politics is RESEARCH-ONLY context, attached to the briefing, never an input here.
   A GOVERNANCE layer holds hard rules the system cannot override.
 
-This file is pure logic — no network, no I/O — so it's easy to test and easy for a
-reader to audit. The orchestrator feeds it already-collected inputs.
+GRPO INSIGHT (DeepSeek-R1, arXiv 2501.12948):
+  Group Relative Policy Optimization normalizes each signal's contribution relative
+  to the group mean/std. Applied here: all confidence modifiers are collected as a
+  group, then scaled so no single signal can swing confidence by more than MAX_MOD_SHIFT
+  points regardless of how many signals fire. This prevents reward-hacking patterns
+  where one very strong signal (e.g., extreme VIX) overrides all other information.
+
+  reward_total = sum(modifiers) clipped to [-MAX_MOD_SHIFT, +MAX_MOD_SHIFT]
+  rather than raw add/subtract of each independently.
+
+This file is pure logic — no network, no I/O — easy to test and audit.
 """
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import date as _date
+
+MAX_MOD_SHIFT = 20.0   # GRPO cap: total modifier swing cannot exceed ±20 pts
+
+
+def _grpo_apply(confidence: float, modifiers: list, trace: list) -> float:
+    """
+    Apply a list of (delta, label) confidence modifiers using GRPO-inspired
+    group-relative normalization. Caps total positive and negative contributions
+    independently so no single signal dominates.
+
+    DeepSeek-R1 principle: use deterministic, rule-based rewards and prevent any
+    single component from driving the optimization signal (reward hacking guard).
+    """
+    if not modifiers:
+        return confidence
+    pos = [(d, lbl) for d, lbl in modifiers if d > 0]
+    neg = [(d, lbl) for d, lbl in modifiers if d < 0]
+
+    total_pos = sum(d for d, _ in pos)
+    total_neg = sum(d for d, _ in neg)
+
+    # Scale down if any group exceeds cap (group-relative normalization)
+    if total_pos > MAX_MOD_SHIFT:
+        scale = MAX_MOD_SHIFT / total_pos
+        pos = [(d * scale, lbl) for d, lbl in pos]
+        total_pos = MAX_MOD_SHIFT
+        trace.append(f"[GRPO] positive modifiers scaled to cap +{MAX_MOD_SHIFT:.0f}")
+    if total_neg < -MAX_MOD_SHIFT:
+        scale = MAX_MOD_SHIFT / abs(total_neg)
+        neg = [(d * scale, lbl) for d, lbl in neg]
+        total_neg = -MAX_MOD_SHIFT
+        trace.append(f"[GRPO] negative modifiers scaled to cap −{MAX_MOD_SHIFT:.0f}")
+
+    new_conf = confidence + total_pos + total_neg
+    return max(0.0, min(100.0, new_conf))
 
 
 # ---- governance: hard rules nothing can override ----------------------
@@ -46,6 +89,8 @@ class MarketState:
     political_note: str = None           # RESEARCH-ONLY string or None
     ghost_alpha: float = None
     repo_corroboration: dict = None      # from repo_signals.collect_all(): cross-repo agreement
+    vix_ts_regime: str = None            # BACKWARDATION / CONTANGO / STEEP_CONTANGO from risk_metrics
+    options_signals: dict = None         # PCR data from options_feeder {SPY: {pcr, signal}, ...}
 
 
 def _ensemble_agreement(rl_votes: dict, target: str):
@@ -78,15 +123,31 @@ def decide(state: MarketState, gov: Governance = None) -> dict:
         confidence = 95.0
         return _briefing(state, action, ticker, confidence, abstain_reason, trace, gov)
 
-    # 2) GOVERNANCE: ensemble must agree, else abstain to SPY (market neutral)
+    # 2) GOVERNANCE: check ensemble agreement.
+    # Hard abstain ONLY if ZERO agents want to buy (all HOLD/SELL).
+    # Partial agreement (1/3) is common when agents diversify picks — treat as
+    # a strong negative modifier, not a full block. Full agreement (3/3) gets a
+    # bonus. This preserves signal flow even when RL agents spread across sectors.
     agreement = _ensemble_agreement(state.rl_votes, state.rl_target)
-    if agreement < gov.min_ensemble_agreement:
+    if agreement == 0:
         action, ticker = "BUY", "SPY"
-        abstain_reason = (f"Only {agreement}/3 agents agreed (need {gov.min_ensemble_agreement}) "
+        abstain_reason = (f"No agents voted to buy {state.rl_target} "
                           f"→ abstain to broad market (SPY)")
         trace.append(abstain_reason)
         confidence = min(confidence, 50.0)
         return _briefing(state, action, ticker, confidence, abstain_reason, trace, gov)
+    # Log the agreement level; modifiers applied below with the full group
+    trace.append(f"Ensemble agreement: {agreement}/3 agents on {state.rl_target}")
+
+    # Collect all conviction modifiers as a group — applied together at the end
+    # via _grpo_apply() which caps total swing at ±MAX_MOD_SHIFT (GRPO principle).
+    modifiers = []
+
+    # Agreement modifier: 1/3 = weak signal (-10), 2/3 = neutral (0), 3/3 = strong (+5)
+    if agreement == 1:
+        modifiers.append((-10.0, f"only 1/3 agents chose {state.rl_target} (minority view)"))
+    elif agreement == 3:
+        modifiers.append((5.0, "all 3 agents agree on same sector (strong consensus)"))
 
     # 3) NEWS as conviction modifier (REAL signal, but cannot change the ticker)
     news = state.news_by_sector.get(state.rl_target)
@@ -94,7 +155,7 @@ def decide(state: MarketState, gov: Governance = None) -> dict:
         trace.append(f"News sentiment for {state.rl_target}: {news:+.2f}")
         if state.rl_action == "BUY":
             if news <= -0.30:
-                # strong contradicting news -> abstain to SPY
+                # strong contradicting news -> abstain to SPY (hard gate, not modifier)
                 action, ticker = "BUY", "SPY"
                 abstain_reason = (f"RL wanted BUY {state.rl_target} but news is strongly "
                                   f"negative ({news:+.2f}) → abstain to SPY")
@@ -102,27 +163,47 @@ def decide(state: MarketState, gov: Governance = None) -> dict:
                 trace.append(abstain_reason)
                 return _briefing(state, action, ticker, confidence, abstain_reason, trace, gov)
             elif news >= 0.30:
-                confidence = min(100.0, confidence + 8)   # confirming news -> small boost
-                trace.append("Confirming positive news → confidence +8")
-            else:
-                trace.append("News neutral → no confidence change")
+                modifiers.append((8.0, f"confirming positive news ({news:+.2f})"))
+            elif news >= 0.10:
+                modifiers.append((3.0, f"mildly positive news ({news:+.2f})"))
+            elif news <= -0.10:
+                modifiers.append((-3.0, f"mildly negative news ({news:+.2f})"))
 
-    # 4) Soft VIX bias: in elevated-but-not-crisis vol, trim confidence
+    # 3.5) OPTIONS PCR as conviction modifier (contrarian sentiment, BUY only)
+    if state.options_signals and action == "BUY":
+        spy_pcr = state.options_signals.get("SPY") or state.options_signals.get("QQQ")
+        if spy_pcr:
+            pcr_val = spy_pcr.get("pcr")
+            pcr_sig = spy_pcr.get("signal", "NEUTRAL")
+            if pcr_val is not None:
+                trace.append(f"Options PCR (SPY): {pcr_val:.2f} [{pcr_sig}]")
+                if pcr_sig == "FEARFUL":
+                    modifiers.append((4.0, f"PCR {pcr_val:.2f} elevated put buying (contrarian)"))
+                elif pcr_sig == "COMPLACENT":
+                    modifiers.append((-3.0, f"PCR {pcr_val:.2f} complacent call positioning"))
+
+    # 4) VIX bias + VIX term structure (collect as modifiers, not immediate apply)
     if state.vix >= gov.neutral_vix:
-        confidence = max(0.0, confidence - 10)
-        trace.append(f"VIX {state.vix} ≥ {gov.neutral_vix} → confidence −10 (caution)")
+        modifiers.append((-10.0, f"VIX {state.vix} ≥ {gov.neutral_vix} (elevated vol)"))
+    if state.vix_ts_regime:
+        ts = state.vix_ts_regime
+        if ts == "BACKWARDATION":
+            modifiers.append((-8.0, "VIX term structure backwardation (front-heavy fear)"))
+        elif ts == "STEEP_CONTANGO":
+            modifiers.append((4.0, "VIX term structure steep contango (calm market)"))
 
-    # 5) RSI sanity overlay (note only, doesn't override)
+    # 5) RSI — adds to modifier group
     if state.rsi is not None:
-        if state.rsi >= 70 and action == "BUY":
-            trace.append(f"⚠️ RSI {state.rsi} overbought — entry may be late")
+        if state.rsi >= 75 and action == "BUY":
+            modifiers.append((-5.0, f"RSI {state.rsi:.0f} deeply overbought"))
+        elif state.rsi >= 70 and action == "BUY":
+            modifiers.append((-2.0, f"RSI {state.rsi:.0f} overbought"))
         elif state.rsi <= 30 and action == "BUY":
-            trace.append(f"RSI {state.rsi} oversold — entry timing favorable")
+            modifiers.append((5.0, f"RSI {state.rsi:.0f} oversold (entry timing favorable)"))
+        elif state.rsi <= 40 and action == "BUY":
+            modifiers.append((2.0, f"RSI {state.rsi:.0f} near oversold"))
 
-    # 6) MULTI-REPO CORROBORATION (equity-analyzer + algo-system + fed context)
-    #    The other repos vote on whether they AGREE with the RL pick. This is the
-    #    "all repos feed one decision" layer. It modifies conviction; it never
-    #    changes the ticker (RL stays the brain).
+    # 6) MULTI-REPO CORROBORATION
     corr = state.repo_corroboration
     if corr and corr.get("total", 0) > 0:
         agree, total = corr["agree"], corr["total"]
@@ -130,19 +211,19 @@ def decide(state: MarketState, gov: Governance = None) -> dict:
             trace.append(f"repo: {note}")
         ratio = agree / total
         if ratio >= 0.66:
-            confidence = min(100.0, confidence + 7)
-            trace.append(f"Cross-repo agreement {agree}/{total} → confidence +7")
+            modifiers.append((7.0, f"cross-repo agreement {agree}/{total}"))
         elif ratio == 0:
-            # no repo agrees with the RL pick -> strong caution, abstain to SPY
-            action, ticker = "BUY", "SPY"
-            abstain_reason = (f"0/{total} other repos corroborated RL's {state.rl_target} pick "
-                              f"→ abstain to SPY (no cross-strategy support)")
-            confidence = min(confidence, 45.0)
-            trace.append(abstain_reason)
-            return _briefing(state, action, ticker, round(confidence), abstain_reason, trace, gov)
+            modifiers.append((-12.0, f"0/{total} repos corroborated {state.rl_target} (no cross-strategy support)"))
         else:
-            confidence = max(0.0, confidence - 5)
-            trace.append(f"Mixed cross-repo support {agree}/{total} → confidence −5")
+            modifiers.append((-5.0, f"mixed cross-repo support {agree}/{total}"))
+
+    # 7) Apply all modifiers together (GRPO group normalization)
+    #    Prevents reward hacking — no single signal can dominate by itself.
+    if modifiers:
+        for delta, label in modifiers:
+            sign = "+" if delta >= 0 else ""
+            trace.append(f"modifier: {label} → {sign}{delta:.0f}")
+        confidence = _grpo_apply(confidence, modifiers, trace)
 
     return _briefing(state, action, ticker, round(confidence), abstain_reason, trace, gov)
 

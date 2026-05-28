@@ -1,7 +1,9 @@
 name: Sector Command — Weekly Report
 
-# Generates an HTML research report every Sunday at 20:00 UTC
-# and commits it to data/reports/ so it's viewable on the dashboard.
+# Runs every Sunday at 20:00 UTC (4:00 PM EDT / 3:00 PM EST).
+# 1. Generates the HTML research report and commits it to data/reports/.
+# 2. Sends a rich Telegram summary: decisions recap, weekly P&L vs SPY,
+#    equity alpha top 5, sector watchlist, and overall paper portfolio health.
 on:
   schedule:
     - cron: "0 20 * * 0"   # Sunday 20:00 UTC
@@ -10,7 +12,7 @@ on:
 jobs:
   report:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -21,8 +23,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install deps
-        run: |
-          pip install -r requirements-full.txt
+        run: pip install -r requirements-full.txt
 
       - name: Generate weekly HTML report
         env:
@@ -43,30 +44,11 @@ jobs:
           git diff --cached --quiet || git commit -m "report: weekly $(date -u +%F)"
           git push || echo "push skipped"
 
-      - name: Send Telegram notification
+      - name: Send rich Telegram weekly summary
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          python -c "
-          import os, requests, datetime
-          token = os.environ.get('TELEGRAM_TOKEN', '')
-          chat  = os.environ.get('TELEGRAM_CHAT_ID', '')
-          if not token or not chat:
-              print('No Telegram creds — skipping notification')
-              exit(0)
-          today = datetime.date.today().strftime('%B %d, %Y')
-          msg = (
-              'SECTOR COMMAND — Weekly Report Ready\n\n'
-              f'Date: {today}\n'
-              'Your full performance report has been generated.\n\n'
-              'View it on your dashboard under the Reports section, '
-              'or reply PERF for a quick summary right now.'
-          )
-          r = requests.post(
-              f'https://api.telegram.org/bot{token}/sendMessage',
-              json={'chat_id': chat, 'text': msg},
-              timeout=15
-          )
-          print('Telegram:', r.status_code, r.text[:80])
-          "
+          JOURNAL_DB: data/sector_command.db
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+        run: python scripts/weekly_summary.py

@@ -52,8 +52,6 @@ SECTOR_DESCRIPTIONS = {
     "GLD":  "SPDR Gold ETF — inflation hedge, crisis protection. Runs when dollar weakens or fear spikes.",
     "TLT":  "20-Year Treasury ETF — long-duration bonds. Inverse relationship with rates. Macro hedge.",
     "QQQ":  "Invesco Nasdaq 100 ETF — tech-heavy broad market. High growth, higher volatility than SPY.",
-    "BTC-USD": "Bitcoin — the OG crypto. Digital gold narrative + speculation. High volatility, 10% max alloc.",
-    "ETH-USD": "Ethereum — smart-contract platform. DeFi/NFT exposure. Correlates with BTC.",
     "BTC-USD": "Bitcoin — digital gold narrative. High-beta uncorrelated macro asset. 5% max position.",
     "ETH-USD": "Ethereum — smart-contract platform. Tracks BTC with higher vol. 5% max position.",
 }
@@ -159,6 +157,32 @@ def format_briefing(b: dict) -> str:
             lines.append("  Agents: " + ", ".join(f"{k}:{v}" for k, v in votes.items()))
         lines.append("")
 
+    # ── Equity alpha picks (top 3) ─────────────────────────────────────
+    equity_picks = g("equity_alpha_picks") or []
+    if equity_picks:
+        lines.append("📈 <b>Stock Alpha Picks</b>  (factor model — individual stocks)")
+        conv_emoji = {"HIGH": "🔥", "MEDIUM": "✅", "LOW": "🟡"}
+        for i, p in enumerate(equity_picks[:3], 1):
+            emoji   = conv_emoji.get(p.get("conviction"), "⚪")
+            score   = p.get("composite_score", 0)
+            sector  = p.get("sector_name", "")
+            tagline = p.get("conviction_tagline", "")
+            dollar  = f" → <b>${p['suggested_dollar']:.0f}</b>" if p.get("suggested_dollar") else ""
+            lines.append(f"  {i}. {emoji} <b>{p['ticker']}</b> ({sector}) score {score:.0f}{dollar}")
+            if tagline:
+                lines.append(f"     💡 {tagline}")
+        lines.append("  Reply <code>ALPHA</code> for full list with factor scores")
+        lines.append("")
+
+    # ── RL Agent Votes ────────────────────────────────────────────────
+    rl_votes = g("rl_votes") or {}
+    if rl_votes:
+        vote_parts = []
+        for agent, vote in rl_votes.items():
+            vote_parts.append(f"{agent}:{vote}")
+        lines.append("🤖 <b>Agent Votes:</b> " + "  |  ".join(vote_parts))
+        lines.append("")
+
     # ── Supporting signals ─────────────────────────────────────────────
     lines.append("📊 <b>Supporting Signals</b>")
     ns = g("news_sentiment")
@@ -174,6 +198,38 @@ def format_briefing(b: dict) -> str:
     if g("political_note"):
         lines.append(f"  🏛️ Political (research-only): {g('political_note')}")
     lines.append("")
+
+    # ── Options PCR + VIX term structure ──────────────────────────────────
+    opts = g("options_signals") or {}
+    macro_for_vts = g("macro") or {}
+    vts  = macro_for_vts.get("vix_term_structure", {})
+    if vts and vts.get("ratio"):
+        ts_regime = vts.get("ts_regime", "")
+        ts_emoji  = "🔴" if ts_regime == "BACKWARDATION" else ("🟢" if ts_regime == "STEEP_CONTANGO" else "🟡")
+        ev_str = "  ⚡event" if vts.get("event_risk") else ""
+        lines.append(f"{ts_emoji} VIX: {vts.get('vix','?')} / VIX3M: {vts.get('vix3m','?')} "
+                     f"(ratio {vts.get('ratio','?')}) [{ts_regime}]{ev_str}")
+    if opts:
+        spy_pcr = opts.get("SPY") or opts.get("QQQ")
+        if spy_pcr:
+            pcr_emoji = {"FEARFUL": "😰", "COMPLACENT": "😎", "NEUTRAL": "😐"}.get(
+                spy_pcr.get("signal", "NEUTRAL"), "❓")
+            lines.append(f"⚙️ PCR: {pcr_emoji} {spy_pcr.get('interpretation', '')}")
+    if vts or opts:
+        lines.append("")
+
+    # ── StockTwits social sentiment ────────────────────────────────────────
+    social = g("social_sentiment") or {}
+    if social:
+        soc_parts = []
+        for tkr, s in list(social.items())[:3]:
+            score = s.get("score", 0)
+            sig   = s.get("signal", "NEUTRAL")
+            emoji = "🟢" if sig == "BULLISH" else ("🔴" if sig == "BEARISH" else "⚪")
+            soc_parts.append(f"{emoji}{tkr}({score:+.2f})")
+        if soc_parts:
+            lines.append(f"💬 StockTwits: {' · '.join(soc_parts)}")
+            lines.append("")
 
     # ── FOMC window ────────────────────────────────────────────────────
     fomc = g("fomc_live") or {}
@@ -191,6 +247,17 @@ def format_briefing(b: dict) -> str:
         lines.append(sell_text)
         lines.append("")
 
+    # ── Equity alpha conviction drops (individual stock exits) ────────
+    alpha_exits = g("equity_alpha_exit_alerts") or []
+    if alpha_exits:
+        lines.append("📉 <b>Equity Alpha — Exit Signals</b>")
+        for sig in alpha_exits:
+            emoji = "🔴" if sig.get("urgency") == "URGENT" else "🟡"
+            lines.append(f"  {emoji} <b>{sig['ticker']}</b> [{sig['signal_type']}]")
+            lines.append(f"     {sig['detail']}")
+        lines.append("  Reply <code>SOLD TICKER</code> after exiting.")
+        lines.append("")
+
     # ── Earnings warnings ─────────────────────────────────────────────
     earn_text = g("earnings_warning")
     if earn_text:
@@ -205,7 +272,8 @@ def format_briefing(b: dict) -> str:
         lines.append("🌍 <b>Macro</b>")
         if yc:
             inv = " ⚠️ INVERTED" if yc.get("inverted") else ""
-            lines.append(f"  Yield curve: {yc.get('spread','?')}%{inv}  (10yr {yc.get('ten_yr','?')}% − 2yr {yc.get('two_yr','?')}%)")
+            short_label = yc.get("rate_label", "13w T-bill")
+            lines.append(f"  Yield curve: {yc.get('spread','?')}%{inv}  (10yr {yc.get('ten_yr','?')}% − {short_label} {yc.get('two_yr','?')}%)")
         if dxy:
             chg = dxy.get("dxy_change", 0)
             lines.append(f"  Dollar (DXY): {dxy.get('dxy','?')}  ({chg:+.2f}%)")
@@ -248,7 +316,7 @@ def format_briefing(b: dict) -> str:
 
     # ── Commands ───────────────────────────────────────────────────────
     lines.append("<b>Commands:</b> <code>BUY 1</code> <code>BUY XLF</code> <code>SKIP</code> <code>PORTFOLIO</code>")
-    lines.append("<code>CRYPTO</code> <code>GOLD</code> <code>BALANCE 12500</code> <code>EXPLAIN XLF</code>")
+    lines.append("<code>CRYPTO</code> <code>GOLD</code> <code>ALPHA</code> <code>BALANCE 12500</code> <code>EXPLAIN XLF</code>")
     lines.append("Or ask any question in plain English.")
     return "\n".join(lines)
 
@@ -317,7 +385,8 @@ def format_crypto_briefing(signals: dict) -> str:
             price = s.get("price", "?")
             arrow = "📈" if chg > 1.5 else "📉" if chg < -1.5 else "➡️"
             lines.append(f"  {arrow} <b>{s['name']}</b> ({s['ticker']})")
-            lines.append(f"     Price: ${price:,}  |  24h: {chg:+.1f}%  |  7d: {mom:+.1f}%")
+            price_fmt = f"{price:,.0f}" if isinstance(price, (int, float)) and price >= 10 else (f"{price:,.2f}" if isinstance(price, (int, float)) else str(price))
+            lines.append(f"     Price: ${price_fmt}  |  24h: {chg:+.1f}%  |  7d: {mom:+.1f}%")
             lines.append(f"     RSI: {rsi}  |  Signal: {sig}  |  Max: {s.get('max_alloc_pct',0):.1f}%")
         lines.append("")
 
@@ -501,7 +570,12 @@ def _plain_english_summary(b: dict) -> str:
         vix_f = float(vix)
     except Exception:
         vix_f = 16.0
-    if vix_f < 15:
+    # Use VIX term structure for sharper regime description if available
+    vts_data = (b.get("macro") or {}).get("vix_term_structure", {})
+    ts_regime = vts_data.get("ts_regime", "")
+    if ts_regime == "BACKWARDATION":
+        market_line = "🔴 FEAR SPIKE — VIX term structure inverted, high stress"
+    elif vix_f < 15 or ts_regime == "STEEP_CONTANGO":
         market_line = "🟢 Calm — good day to consider new positions"
     elif vix_f < 22:
         market_line = "🟡 Normal — nothing unusual, proceed as planned"
@@ -527,9 +601,9 @@ def _plain_english_summary(b: dict) -> str:
     # ── What to do ─────────────────────────────────────────────────────
     lines.append("")
     if abstain:
+        reason_short = (abstain[:120] + "…") if len(abstain) > 120 else abstain
         lines.append(
-            "🤖 <b>AI verdict:</b> The 3 RL models couldn't agree — only 1 out of 3 picked "
-            "the same sector. System is sitting out of specific bets. This is intentional."
+            f"🤖 <b>AI verdict:</b> System is sitting out — {reason_short}"
         )
         lines.append("")
         lines.append(
@@ -606,7 +680,7 @@ def _plain_english_summary(b: dict) -> str:
 KNOWN_COMMANDS = {
     "BUY", "SELL", "SKIP", "HOLD",
     "STATUS", "WHY", "PERF", "RISK", "REPORT",
-    "CRYPTO", "GOLD", "PORTFOLIO",
+    "CRYPTO", "GOLD", "PORTFOLIO", "ALPHA",
     "BALANCE", "BOUGHT", "SOLD",
     "EXPLAIN", "HOW",
 }

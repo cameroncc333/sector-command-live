@@ -23,7 +23,7 @@
     body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 13px; }
     a { color: var(--cyan); text-decoration: none; }
 
-    /* ── Layout ─────────────────────────────────── */
+    /* ── Top bar ─────────────────────────────────── */
     .topbar {
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -32,18 +32,52 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      position: sticky; top: 0; z-index: 100;
+      position: sticky; top: 0; z-index: 200;
     }
-    .topbar .brand { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
-    .topbar .brand span { color: var(--cyan); }
-    .topbar .meta { display: flex; gap: 20px; align-items: center; color: var(--muted); font-size: 12px; }
+    .topbar-left { display: flex; align-items: center; gap: 20px; }
+    .brand { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+    .brand span { color: var(--cyan); }
+    .topbar-right { display: flex; gap: 12px; align-items: center; color: var(--muted); font-size: 12px; }
     .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green);
                 box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-    main { max-width: 1280px; margin: 0 auto; padding: 20px 20px 40px; }
+    /* ── External link buttons ───────────────────── */
+    .ext-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 12px;
+      color: var(--text); font-size: 12px; font-weight: 600;
+      transition: border-color 0.15s, color 0.15s; cursor: pointer;
+      text-decoration: none;
+    }
+    .ext-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .ext-btn.tg:hover { border-color: #2aabee; color: #2aabee; }
 
-    /* ── Cards ──────────────────────────────────── */
+    /* ── Tab bar ─────────────────────────────────── */
+    .tabbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      gap: 2px;
+      position: sticky; top: 52px; z-index: 190;
+    }
+    .tab-btn {
+      background: none; border: none; border-bottom: 3px solid transparent;
+      color: var(--muted); font-size: 13px; font-family: var(--font);
+      padding: 12px 18px; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+    /* ── Content panes ───────────────────────────── */
+    .pane { display: none; }
+    .pane.active { display: block; }
+    main { max-width: 1360px; margin: 0 auto; padding: 20px 20px 48px; }
+
+    /* ── Cards ───────────────────────────────────── */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -55,16 +89,22 @@
       color: var(--muted); margin-bottom: 10px;
     }
 
-    /* ── Stat row ───────────────────────────────── */
-    .stat-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+    /* ── Grid layouts ────────────────────────────── */
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .g4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .g5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 16px; }
+    .fw { margin-bottom: 16px; }
+
+    /* ── Stat values ─────────────────────────────── */
     .stat-val { font-size: 26px; font-weight: 700; line-height: 1; }
     .stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
-    .up   { color: var(--green); }
-    .down { color: var(--red); }
-    .neutral { color: var(--yellow); }
+    .up     { color: var(--green); }
+    .down   { color: var(--red); }
+    .neutral{ color: var(--yellow); }
     .accent { color: var(--cyan); }
 
-    /* ── Big recommendation card ────────────────── */
+    /* ── Recommendation card ─────────────────────── */
     .rec-card {
       background: linear-gradient(135deg, #0d1a3a, #091630);
       border: 1px solid var(--border);
@@ -85,17 +125,19 @@
       display: inline-block; padding: 4px 12px; border-radius: 20px;
       font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
     }
-    .regime-CALM    { background: rgba(0,230,118,0.15); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+    .regime-CALM    { background: rgba(0,230,118,0.15); color: var(--green);  border: 1px solid rgba(0,230,118,0.3); }
     .regime-NORMAL  { background: rgba(255,179,0,0.12); color: var(--yellow); border: 1px solid rgba(255,179,0,0.3); }
-    .regime-STRESSED{ background: rgba(255,23,68,0.12); color: var(--red);    border: 1px solid rgba(255,23,68,0.3); }
-    .stub-warn { color: var(--red); font-size: 11px; }
+    .regime-STRESSED{ background: rgba(255,23,68,0.12);  color: var(--red);   border: 1px solid rgba(255,23,68,0.3); }
 
-    /* ── Grid layouts ───────────────────────────── */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-    .full-width { margin-bottom: 16px; }
+    /* ── Alert bar ───────────────────────────────── */
+    .alert-bar {
+      border-radius: 8px; padding: 10px 16px; margin-bottom: 14px;
+      font-size: 13px; line-height: 1.5;
+    }
+    .alert-warn { background: rgba(255,179,0,0.12); border: 1px solid rgba(255,179,0,0.35); color: var(--yellow); }
+    .alert-info { background: rgba(0,210,255,0.08); border: 1px solid rgba(0,210,255,0.25); color: var(--cyan); }
 
-    /* ── Agent votes ────────────────────────────── */
+    /* ── Agent votes ─────────────────────────────── */
     .vote-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
     .vote-item { display: flex; justify-content: space-between; align-items: center; }
     .vote-agent { font-size: 12px; color: var(--muted); }
@@ -106,58 +148,119 @@
     }
     .vote-action.hold { color: var(--muted); background: none; border-color: var(--border); }
 
-    /* ── Sector signals table ───────────────────── */
+    /* ── Tables ──────────────────────────────────── */
     table { width: 100%; border-collapse: collapse; }
-    th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
-         color: var(--muted); padding: 8px 10px; text-align: right;
-         border-bottom: 1px solid var(--border); }
+    th {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--muted); padding: 8px 10px; text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
     th:first-child { text-align: left; }
-    td { padding: 9px 10px; border-bottom: 1px solid rgba(30,45,80,0.6);
-         text-align: right; font-size: 12px; }
+    td {
+      padding: 9px 10px; border-bottom: 1px solid rgba(30,45,80,0.6);
+      text-align: right; font-size: 12px;
+    }
     td:first-child { text-align: left; font-weight: 600; color: var(--text); }
     tr:last-child td { border-bottom: none; }
-    .bar-cell { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
-    .mini-bar { height: 4px; border-radius: 2px; min-width: 2px; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
 
-    /* ── Decision log ───────────────────────────── */
-    .decision-row td { font-size: 12px; }
-    .cmd-buy  { color: var(--green); font-weight: 600; }
-    .cmd-sell { color: var(--red);   font-weight: 600; }
-    .cmd-skip { color: var(--yellow); }
+    /* ── Journal specific ────────────────────────── */
+    .journal-entry {
+      background: var(--surface2); border-radius: 8px;
+      padding: 14px 16px; margin-bottom: 10px;
+    }
+    .journal-entry-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .journal-date { font-size: 12px; color: var(--muted); }
+    .cmd-buy  { color: var(--green);  font-weight: 700; font-size: 13px; }
+    .cmd-sell { color: var(--red);    font-weight: 700; font-size: 13px; }
+    .cmd-skip { color: var(--yellow); font-size: 13px; }
+    .cmd-hold { color: var(--cyan);   font-size: 13px; }
+    .why-trace {
+      margin-top: 8px; padding: 8px 10px;
+      background: rgba(0,0,0,0.25); border-radius: 6px;
+      font-size: 11px; color: var(--muted); line-height: 1.7;
+    }
+    .why-trace span { display: block; }
+    .why-trace span::before { content: "› "; color: var(--border); }
+    details summary { cursor: pointer; color: var(--muted); font-size: 11px; list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+    details[open] summary { color: var(--cyan); }
 
-    /* ── Performance ────────────────────────────── */
-    .perf-number { font-size: 22px; font-weight: 700; }
-
-    /* ── Loading states ─────────────────────────── */
+    /* ── Loading / error ─────────────────────────── */
     .loading { color: var(--muted); font-size: 12px; text-align: center; padding: 20px; }
     .error { color: var(--red); font-size: 12px; }
 
-    /* ── Footer ─────────────────────────────────── */
-    .footer { text-align: center; color: var(--muted); font-size: 11px; margin-top: 32px; }
+    /* ── Footer ──────────────────────────────────── */
+    .footer { text-align: center; color: var(--muted); font-size: 11px; padding: 20px 0 0; }
 
-    @media (max-width: 768px) {
-      .stat-row { grid-template-columns: repeat(2, 1fr); }
-      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    /* ── Freshness pill ──────────────────────────── */
+    .fresh-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 3px 10px; font-size: 11px; color: var(--muted);
+    }
+    .fresh-pill.live { border-color: rgba(0,230,118,0.4); color: var(--green); }
+    .fresh-pill.stub { border-color: rgba(255,23,68,0.4); color: var(--red); }
+
+    /* ── Mini bar (for heatmap cells) ───────────── */
+    .mini-bar { height: 4px; border-radius: 2px; min-width: 2px; }
+
+    /* ── Responsive ──────────────────────────────── */
+    @media (max-width: 900px) {
+      .g3, .g4, .g5 { grid-template-columns: 1fr 1fr; }
+      .g2 { grid-template-columns: 1fr; }
       .rec-card { flex-direction: column; }
+    }
+    @media (max-width: 600px) {
+      .g2, .g3, .g4, .g5 { grid-template-columns: 1fr; }
+      .tab-btn { padding: 10px 10px; font-size: 12px; }
     }
   </style>
 </head>
 <body>
 
+<!-- ── Top bar ────────────────────────────────────── -->
 <div class="topbar">
-  <div class="brand">SECTOR <span>COMMAND</span></div>
-  <div class="meta">
-    <div class="live-dot"></div>
-    <span id="live-label">PAPER MODE</span>
-    <span id="clock">—</span>
-    <span>|</span>
-    <a href="https://github.com/cameroncc333/sector-command-live" target="_blank">GitHub</a>
+  <div class="topbar-left">
+    <div class="brand">SECTOR <span>COMMAND</span></div>
+    <div class="live-dot" title="Paper mode active — no real trades execute"></div>
+    <span id="mode-label" style="font-size:11px;color:var(--muted)">PAPER MODE</span>
   </div>
+  <div class="topbar-right">
+    <span id="clock" style="font-family:monospace">—</span>
+    <span style="color:var(--border)">|</span>
+    <a href="https://app.alpaca.markets/paper/dashboard" target="_blank" class="ext-btn">
+      Alpaca ↗
+    </a>
+    <a href="https://web.telegram.org/" target="_blank" class="ext-btn tg">
+      Telegram ↗
+    </a>
+    <a href="https://github.com/cameroncc333/sector-command-live" target="_blank" class="ext-btn">
+      GitHub ↗
+    </a>
+  </div>
+</div>
+
+<!-- ── Tab bar ────────────────────────────────────── -->
+<div class="tabbar">
+  <button class="tab-btn active" onclick="showTab('signal')"    id="tab-signal">📡 Signal</button>
+  <button class="tab-btn"        onclick="showTab('portfolio')" id="tab-portfolio">💼 Portfolio</button>
+  <button class="tab-btn"        onclick="showTab('alpha')"     id="tab-alpha">📊 Alpha</button>
+  <button class="tab-btn"        onclick="showTab('journal')"   id="tab-journal">📓 Journal</button>
+  <button class="tab-btn"        onclick="showTab('macro')"     id="tab-macro">🌐 Macro</button>
 </div>
 
 <main>
 
-  <!-- ── Current recommendation ─────────────────── -->
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB: Signal                                        -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="pane active" id="pane-signal">
+
+  <!-- Rec card -->
   <div class="rec-card" id="rec-card">
     <div>
       <div class="card-title">Sector Command — Current Signal</div>
@@ -166,125 +269,142 @@
         <span class="rec-ticker" id="rec-ticker"> —</span>
       </div>
       <div class="rec-conf" id="rec-conf">Loading...</div>
+      <div style="margin-top:8px" id="freshness-row"></div>
     </div>
     <div class="rec-right">
       <div class="regime-badge regime-NORMAL" id="regime-badge">—</div>
-      <div style="margin-top:8px;font-size:13px">VIX: <span id="vix-val" style="color:var(--cyan)">—</span></div>
-      <div style="margin-top:4px;font-size:11px;color:var(--muted)" id="freshness-stamp">—</div>
+      <div style="margin-top:8px;font-size:14px">VIX <span id="vix-val" style="color:var(--cyan);font-weight:700">—</span></div>
+      <div style="margin-top:4px;font-size:11px;color:var(--muted)" id="gen-stamp">—</div>
     </div>
   </div>
 
-  <!-- ── Herd market warning ──────────────────────── -->
-  <div id="herd-warning" style="display:none;background:rgba(255,179,0,0.12);border:1px solid rgba(255,179,0,0.35);border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:13px;color:var(--yellow);line-height:1.5"></div>
+  <!-- Alerts -->
+  <div id="herd-warning" style="display:none" class="alert-bar alert-warn"></div>
+  <div id="sell-alert-bar" style="display:none" class="alert-bar alert-warn"></div>
 
-  <!-- ── Stat row ───────────────────────────────── -->
-  <div class="stat-row">
+  <!-- Stat row (5 cards) -->
+  <div class="g5">
     <div class="card">
       <div class="card-title">Paper P&amp;L</div>
-      <div class="stat-val" id="port-pnl">—%</div>
-      <div class="stat-sub">vs SPY: <span id="spy-pnl">—%</span></div>
+      <div class="stat-val" id="port-pnl">—</div>
+      <div class="stat-sub">vs SPY: <span id="spy-pnl">—</span></div>
     </div>
     <div class="card">
       <div class="card-title">Alpha vs SPY</div>
-      <div class="stat-val accent" id="alpha-val">—%</div>
+      <div class="stat-val accent" id="alpha-val">—</div>
       <div class="stat-sub" id="alpha-sub">0 trades</div>
-      <div class="stat-sub" id="ir-sub" style="margin-top:3px;font-size:10px;color:var(--muted)"></div>
+      <div class="stat-sub" id="ir-sub" style="margin-top:3px;font-size:10px"></div>
     </div>
     <div class="card">
       <div class="card-title">Alpaca Account</div>
       <div class="stat-val" id="alpaca-equity">—</div>
-      <div class="stat-sub" id="alpaca-daily">daily P&amp;L: —</div>
+      <div class="stat-sub" id="alpaca-daily">daily: —</div>
     </div>
     <div class="card">
       <div class="card-title">News Sentiment</div>
       <div class="stat-val" id="news-sent">—</div>
-      <div class="stat-sub" id="news-label">FinBERT</div>
+      <div class="stat-sub" id="news-label">FinBERT / Lexicon</div>
     </div>
     <div class="card">
-      <div class="card-title">Avg Confidence</div>
+      <div class="card-title">Ensemble Confidence</div>
       <div class="stat-val accent" id="avg-conf">—%</div>
-      <div class="stat-sub">ensemble score</div>
+      <div class="stat-sub">RL + modifiers</div>
     </div>
   </div>
 
-  <!-- ── RL votes + Cross-repo ──────────────────── -->
-  <div class="grid-3">
+  <!-- RL Votes | Cross-repo | FOMC -->
+  <div class="g3">
     <div class="card">
       <div class="card-title">RL Agent Votes</div>
       <div class="vote-list" id="vote-list"><div class="loading">Loading...</div></div>
     </div>
     <div class="card">
       <div class="card-title">Cross-Repo Corroboration</div>
-      <div id="corr-body" style="margin-top:4px;font-size:12px;line-height:1.7">
+      <div id="corr-body" style="margin-top:4px;font-size:12px;line-height:1.8">
         <div class="loading">Loading...</div>
       </div>
     </div>
     <div class="card">
       <div class="card-title">FOMC &amp; Fed Context</div>
-      <div id="fomc-body" style="margin-top:4px;font-size:12px;line-height:1.7">
+      <div id="fomc-body" style="margin-top:4px;font-size:12px;line-height:1.8">
         <div class="loading">Loading...</div>
       </div>
     </div>
   </div>
 
-  <!-- ── Equity curve ───────────────────────────── -->
-  <div class="card full-width">
-    <div class="card-title">Paper Portfolio vs SPY (equity curve)</div>
-    <canvas id="equityChart" height="120"></canvas>
-  </div>
-
-  <!-- ── Sector signals ─────────────────────────── -->
-  <div class="card full-width" style="margin-bottom:16px">
-    <div class="card-title">Live Sector Signals (all 11 ETFs)</div>
-    <table id="sector-table">
-      <thead><tr>
-        <th>Sector</th><th>RSI</th><th>Momentum 20d</th>
-        <th>Sharpe 6mo</th><th>News Sentiment</th><th>Algo Score</th>
-      </tr></thead>
-      <tbody id="sector-tbody"><tr><td colspan="6" class="loading">Loading...</td></tr></tbody>
-    </table>
-  </div>
-
-  <!-- ── Macro indicators ──────────────────────────── -->
-  <div class="grid-3" style="margin-bottom:16px">
+  <!-- VIX TS | PCR | Social -->
+  <div class="g3">
     <div class="card">
-      <div class="card-title">Yield Curve</div>
-      <div id="yc-body" style="font-size:12px;line-height:1.8"><div class="loading">Loading...</div></div>
+      <div class="card-title">VIX Term Structure</div>
+      <div id="vts-body" style="font-size:12px;line-height:1.9"><div class="loading">Loading...</div></div>
     </div>
     <div class="card">
-      <div class="card-title">Dollar Index (DXY)</div>
-      <div id="dxy-body" style="font-size:12px;line-height:1.8"><div class="loading">Loading...</div></div>
+      <div class="card-title">Put/Call Ratio (Options)</div>
+      <div id="pcr-body" style="font-size:12px;line-height:1.9"><div class="loading">Loading...</div></div>
     </div>
     <div class="card">
-      <div class="card-title">Risk (VaR 95%)</div>
-      <div id="var-body" style="font-size:12px;line-height:1.8"><div class="loading">Loading...</div></div>
+      <div class="card-title">Social Sentiment (StockTwits)</div>
+      <div id="social-body" style="font-size:12px;line-height:1.9"><div class="loading">Loading...</div></div>
     </div>
   </div>
 
-  <!-- ── Sector rotation heatmap ────────────────── -->
-  <div class="card full-width" style="margin-bottom:16px">
-    <div class="card-title">Sector Rotation — 4-Week Relative Strength vs SPY</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
-      Each cell = weekly % outperformance vs SPY. Green = outperforming, Red = underperforming. Week 1 = most recent.
+  <!-- Latest WHY trace inline -->
+  <div class="card fw" id="why-card" style="display:none">
+    <div class="card-title">Decision Trace — Why This Signal?</div>
+    <div id="why-body" style="font-size:12px;line-height:1.8"></div>
+  </div>
+
+  <!-- Top equity alpha summary (top 3 only) -->
+  <div class="card fw">
+    <div class="card-title">Top Equity Alpha Picks — Quick View</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Full table in the Alpha tab</div>
+    <div id="alpha-quick" style="font-size:12px;line-height:2"><div class="loading">Loading...</div></div>
+  </div>
+
+</div><!-- /pane-signal -->
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB: Portfolio                                     -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="pane" id="pane-portfolio">
+
+  <!-- Portfolio summary stats -->
+  <div class="g4" id="port-stat-row">
+    <div class="card">
+      <div class="card-title">Paper P&amp;L</div>
+      <div class="stat-val" id="p-port-pnl">—</div>
+      <div class="stat-sub">paper portfolio</div>
     </div>
-    <div id="rotation-body"><div class="loading">Loading...</div></div>
+    <div class="card">
+      <div class="card-title">SPY Benchmark</div>
+      <div class="stat-val" id="p-spy-pnl">—</div>
+      <div class="stat-sub" id="p-days-run">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Alpha vs SPY</div>
+      <div class="stat-val accent" id="p-alpha">—</div>
+      <div class="stat-sub" id="p-ir">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Alpaca Live Equity</div>
+      <div class="stat-val" id="p-alpaca-equity">—</div>
+      <div class="stat-sub" id="p-alpaca-daily">daily: —</div>
+    </div>
   </div>
 
-  <!-- ── Crypto + Macro signals ──────────────────── -->
-  <div class="card full-width" style="margin-bottom:16px">
-    <div class="card-title">Crypto + Macro Signals</div>
-    <table id="crypto-table">
-      <thead><tr>
-        <th>Asset</th><th>Price</th><th>24h Change</th>
-        <th>7d Momentum</th><th>RSI</th><th>Signal</th><th>Max Alloc</th>
-      </tr></thead>
-      <tbody id="crypto-tbody"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody>
-    </table>
+  <!-- Equity curve -->
+  <div class="card fw">
+    <div class="card-title">Portfolio vs SPY Equity Curve</div>
+    <canvas id="equityChart" height="140"></canvas>
+    <div style="font-size:11px;color:var(--muted);margin-top:8px">
+      Based on paper trades (BUY replies to Telegram briefings). Reply <strong>BUY</strong> to start tracking.
+    </div>
   </div>
 
-  <!-- ── Real portfolio ────────────────────────── -->
-  <div class="card full-width" style="margin-bottom:16px">
-    <div class="card-title">Your Portfolio</div>
+  <!-- Real portfolio holdings -->
+  <div class="card fw">
+    <div class="card-title">Your Portfolio — Holdings</div>
     <div id="portfolio-body" style="font-size:12px;line-height:1.8">
       {% set p = portfolio %}
       {% if p and p.balance %}
@@ -299,7 +419,7 @@
         </div>
         {% if p.holdings %}
         <table>
-          <thead><tr><th>Ticker</th><th>Cost</th><th>Current</th><th>P&amp;L</th><th>Alloc</th><th>Date</th></tr></thead>
+          <thead><tr><th>Ticker</th><th>Cost</th><th>Current</th><th>P&amp;L</th><th>Alloc</th><th>Bought</th></tr></thead>
           <tbody>
           {% for h in p.holdings %}
             <tr>
@@ -314,42 +434,252 @@
           </tbody>
         </table>
         {% else %}
-        <div style="color:var(--muted)">No positions yet. Log trades via Telegram: <code>BOUGHT XLE 5 47.50</code></div>
+        <div style="color:var(--muted)">No positions. Log via Telegram: <code>BOUGHT XLE 5 47.50</code></div>
         {% endif %}
       {% else %}
-      <span style="color:var(--muted)">Set balance via Telegram: <code>BALANCE 12500</code></span>
+      <div style="color:var(--muted)">Set balance via Telegram: <code>BALANCE 12500</code></div>
       {% endif %}
     </div>
   </div>
 
-  <!-- ── Decision log ───────────────────────────── -->
-  <div class="card full-width">
-    <div class="card-title">Decision Log (recent)</div>
-    <table>
+  <!-- VaR -->
+  <div class="card fw">
+    <div class="card-title">Risk — VaR 95% &amp; CVaR</div>
+    <div id="p-var-body" style="font-size:12px;line-height:1.8"><div class="loading">Loading...</div></div>
+  </div>
+
+  <!-- Quick links -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Alpaca Dashboard</div>
+      <div style="font-size:13px;line-height:1.8">
+        <div style="margin-bottom:8px;color:var(--muted)">View live paper account, orders, and positions on Alpaca.</div>
+        <a href="https://app.alpaca.markets/paper/dashboard" target="_blank" class="ext-btn" style="display:inline-flex">
+          Open Alpaca Paper Dashboard ↗
+        </a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Telegram Bot</div>
+      <div style="font-size:13px;line-height:1.8">
+        <div style="margin-bottom:8px;color:var(--muted)">
+          Commands: <code>BUY</code> / <code>SELL</code> / <code>SKIP</code> / <code>HOLD</code> / <code>PERF</code> / <code>SIGNAL</code> / <code>ALPHA</code> / <code>WHY</code>
+        </div>
+        <a href="https://web.telegram.org/" target="_blank" class="ext-btn tg" style="display:inline-flex">
+          Open Telegram ↗
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /pane-portfolio -->
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB: Alpha                                         -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="pane" id="pane-alpha">
+
+  <!-- Equity alpha table -->
+  <div class="card fw">
+    <div class="card-title">Equity Alpha — Individual Stock Factor Scores</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+      Value (20%) &nbsp;·&nbsp; Quality (25%) &nbsp;·&nbsp; Momentum (30%) &nbsp;·&nbsp; Technical (15%) &nbsp;·&nbsp; Low Vol (10%)
+      &nbsp;·&nbsp; Scores 0–100 percentile within sector
+      &nbsp;·&nbsp; EPS% = earnings surprise (PEAD) &nbsp;·&nbsp; 52W Hi = price / 52-week high
+    </div>
+    <div style="overflow-x:auto">
+    <table id="equity-alpha-table">
       <thead><tr>
-        <th>Date</th><th>Regime</th><th>Rec</th>
-        <th>Confidence</th><th>Your Call</th><th>Abstain Reason</th>
+        <th title="Hover for investment thesis">Stock 💡</th>
+        <th>Sector</th><th>Score</th><th>Conviction</th>
+        <th title="Value (P/E, P/B, FCF yield) — green=cheap vs peers">Val</th>
+        <th title="Quality (ROE, margins, analyst consensus)">Qual</th>
+        <th title="Momentum (12-1 mo, 6mo return)">Mom</th>
+        <th title="Technical (RSI zone, rel strength vs SPY)">Tech</th>
+        <th title="Low volatility — green=stable">LVol</th>
+        <th>RSI</th><th>Fwd P/E</th>
+        <th title="Recent earnings surprise % — Post-Earnings Announcement Drift signal">EPS%</th>
+        <th title="Price as % of 52-week high — George &amp; Hwang (2004) momentum anchor">52W Hi</th>
       </tr></thead>
-      <tbody id="decision-tbody"><tr><td colspan="6" class="loading">Loading...</td></tr></tbody>
+      <tbody id="equity-alpha-tbody"><tr><td colspan="13" class="loading">Loading...</td></tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- Sector signals table -->
+  <div class="card fw">
+    <div class="card-title">Live Sector Signals — All 11 ETFs</div>
+    <table id="sector-table">
+      <thead><tr>
+        <th>Sector</th><th>RSI</th><th>Momentum 20d</th>
+        <th>Sharpe 6mo</th><th>News Sentiment</th><th>Algo Score</th>
+      </tr></thead>
+      <tbody id="sector-tbody"><tr><td colspan="6" class="loading">Loading...</td></tr></tbody>
     </table>
   </div>
 
-  <div class="footer">
-    Sector Command Live &nbsp;·&nbsp; Cameron Camarotti &nbsp;·&nbsp;
-    github.com/cameroncc333/sector-command-live &nbsp;·&nbsp; Paper mode only
+  <!-- Sector rotation heatmap -->
+  <div class="card fw">
+    <div class="card-title">Sector Rotation — 4-Week Relative Strength vs SPY</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+      Each cell = weekly % outperformance vs SPY. Green = outperforming. Week 1 = most recent.
+    </div>
+    <div id="rotation-body"><div class="loading">Loading...</div></div>
   </div>
+
+  <!-- Ranked opportunities -->
+  <div class="card fw">
+    <div class="card-title">Ranked Opportunities (Multi-Asset)</div>
+    <table id="ranked-table">
+      <thead><tr>
+        <th>Asset</th><th>Type</th><th>Conviction</th><th>Score</th>
+        <th>Alloc %</th><th>$ Size</th><th>Kelly %</th><th>Rationale</th>
+      </tr></thead>
+      <tbody id="ranked-tbody"><tr><td colspan="8" class="loading">Loading...</td></tr></tbody>
+    </table>
+  </div>
+
+</div><!-- /pane-alpha -->
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB: Journal                                       -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="pane" id="pane-journal">
+
+  <div class="card fw" style="margin-bottom:12px">
+    <div class="card-title">Decision Journal</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7">
+      Every briefing is logged here with the full decision trace.
+      Reply <strong style="color:var(--green)">BUY</strong> /
+      <strong style="color:var(--red)">SELL</strong> /
+      <strong style="color:var(--yellow)">SKIP</strong> /
+      <strong style="color:var(--cyan)">HOLD</strong> to any Telegram briefing to record your trade decision.
+      Expand any entry to see the full reasoning trace.
+    </div>
+  </div>
+
+  <!-- Summary counts -->
+  <div class="g4" id="journal-stats">
+    <div class="card"><div class="card-title">Total Decisions</div><div class="stat-val accent" id="j-total">—</div></div>
+    <div class="card"><div class="card-title">BUY Calls</div><div class="stat-val up" id="j-buys">—</div></div>
+    <div class="card"><div class="card-title">SKIP / HOLD</div><div class="stat-val neutral" id="j-skips">—</div></div>
+    <div class="card"><div class="card-title">Abstains</div><div class="stat-val" id="j-abstains" style="color:var(--muted)">—</div></div>
+  </div>
+
+  <!-- Journal entries -->
+  <div id="journal-entries"><div class="loading">Loading journal...</div></div>
+
+  <!-- Load more -->
+  <div style="text-align:center;margin-top:12px">
+    <button onclick="loadMoreJournal()" id="load-more-btn"
+      style="background:var(--surface2);border:1px solid var(--border);color:var(--muted);
+             padding:8px 20px;border-radius:8px;cursor:pointer;font-size:12px">
+      Load more entries
+    </button>
+  </div>
+
+</div><!-- /pane-journal -->
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB: Macro                                         -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div class="pane" id="pane-macro">
+
+  <!-- Macro indicators -->
+  <div class="g3">
+    <div class="card">
+      <div class="card-title">Yield Curve (10yr − 13w T-bill)</div>
+      <div id="yc-body" style="font-size:12px;line-height:1.9"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Dollar Index (DXY)</div>
+      <div id="dxy-body" style="font-size:12px;line-height:1.9"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">VIX Term Structure</div>
+      <div id="m-vts-body" style="font-size:12px;line-height:1.9"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- PCR + VaR -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Put/Call Ratio (Options Sentiment)</div>
+      <div id="m-pcr-body" style="font-size:12px;line-height:1.9"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Portfolio Risk — VaR 95% &amp; CVaR</div>
+      <div id="var-body" style="font-size:12px;line-height:1.8"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Crypto + macro signals -->
+  <div class="card fw">
+    <div class="card-title">Crypto + Macro Signals</div>
+    <div style="overflow-x:auto">
+    <table id="crypto-table">
+      <thead><tr>
+        <th>Asset</th><th>Price</th><th>24h Chg</th>
+        <th>7d Mom</th><th>RSI</th><th>Signal</th><th>Max Alloc</th>
+      </tr></thead>
+      <tbody id="crypto-tbody"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <!-- Earnings calendar warning -->
+  <div class="card fw">
+    <div class="card-title">Earnings Calendar</div>
+    <div id="earnings-body" style="font-size:12px;line-height:1.8">
+      <div class="loading">Loading...</div>
+    </div>
+  </div>
+
+</div><!-- /pane-macro -->
+
+<div class="footer">
+  Sector Command Live &nbsp;·&nbsp; Cameron Camarotti &nbsp;·&nbsp;
+  <a href="https://github.com/cameroncc333/sector-command-live" target="_blank">GitHub</a>
+  &nbsp;·&nbsp; Paper mode — no real trades
+  &nbsp;·&nbsp; <span id="last-refresh">—</span>
+</div>
 
 </main>
 
 <script>
-// ── Clock ──────────────────────────────────────────────────────────
-function updateClock() {
-  document.getElementById('clock').textContent =
-    new Date().toUTCString().replace(/GMT/, 'UTC').split(' ').slice(1, 5).join(' ');
+// ═══════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════════
+function showTab(name) {
+  document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  localStorage.setItem('sc_tab', name);
 }
-updateClock(); setInterval(updateClock, 1000);
+(function() {
+  const saved = localStorage.getItem('sc_tab') || 'signal';
+  showTab(saved);
+})();
 
-// ── Fetch helpers ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const utc = now.toUTCString().replace(' GMT', ' UTC');
+  document.getElementById('clock').textContent =
+    utc.split(' ').slice(1, 5).join(' ');
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ═══════════════════════════════════════════════════════════
+// FETCH HELPER
+// ═══════════════════════════════════════════════════════════
 async function api(path) {
   try {
     const r = await fetch(path);
@@ -357,12 +687,17 @@ async function api(path) {
   } catch { return null; }
 }
 
-// ── Colour helpers ─────────────────────────────────────────────────
-const pctColor = v => v >= 0 ? 'var(--green)' : 'var(--red)';
+// ═══════════════════════════════════════════════════════════
+// COLOUR HELPERS
+// ═══════════════════════════════════════════════════════════
+const pctColor  = v => v >= 0 ? 'var(--green)' : 'var(--red)';
 const sentColor = v => v > 0.15 ? 'var(--green)' : v < -0.15 ? 'var(--red)' : 'var(--yellow)';
 const rsiColor  = v => v > 70 ? 'var(--red)' : v < 30 ? 'var(--cyan)' : 'var(--text)';
+const sign = v => v >= 0 ? '+' : '';
 
-// ── Equity chart (Chart.js) ────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// EQUITY CHART
+// ═══════════════════════════════════════════════════════════
 let equityChart = null;
 function renderEquityChart(history) {
   const ctx = document.getElementById('equityChart').getContext('2d');
@@ -399,57 +734,68 @@ function renderEquityChart(history) {
   });
 }
 
-// ── Status card ────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// SIGNAL TAB renders
+// ═══════════════════════════════════════════════════════════
 function renderStatus(s) {
   if (!s) return;
   document.getElementById('rec-action').textContent = s.action || '—';
   document.getElementById('rec-ticker').textContent = ' ' + (s.ticker || '');
-  document.getElementById('vix-val').textContent = (s.vix || '—');
+  document.getElementById('vix-val').textContent = s.vix ?? '—';
   document.getElementById('rec-conf').textContent =
     `${s.confidence ?? '—'}% ensemble confidence  ·  RSI: ${s.rsi ?? '—'}`;
+
   const rBadge = document.getElementById('regime-badge');
-  rBadge.textContent = s.regime || '—';
-  rBadge.className = `regime-badge regime-${(s.regime || 'NORMAL').toUpperCase()}`;
-  const src = (s.freshness?.rl_source || 'STUB');
-  document.getElementById('freshness-stamp').innerHTML =
-    `RL: <strong style="color:${src === 'LIVE' ? 'var(--green)' : 'var(--red)'}">${src}</strong>
-     &nbsp;·&nbsp; ${s.freshness?.generated_utc || ''}`;
+  const regime = (s.regime || 'NORMAL').toUpperCase();
+  rBadge.textContent = regime;
+  rBadge.className = `regime-badge regime-${regime}`;
 
-  // Herd market warning from RL signal dispersion
+  // Freshness pill
+  const src = s.freshness?.rl_source || 'STUB';
+  const fr = document.getElementById('freshness-row');
+  fr.innerHTML = `<span class="fresh-pill ${src === 'LIVE' ? 'live' : 'stub'}">
+    ● RL: ${src}</span>
+    <span style="font-size:11px;color:var(--muted);margin-left:8px">${s.freshness?.generated_utc || ''}</span>`;
+  document.getElementById('gen-stamp').textContent =
+    s.freshness?.vix_ts ? `VIX TS: ${s.freshness.vix_ts}` : '';
+
+  // Herd warning
   const herdEl = document.getElementById('herd-warning');
-  if (herdEl) {
-    const herd = s.herd_market_warning;
-    const dp = s.dispersion_percentile;
-    if (herd) {
-      herdEl.style.display = 'block';
-      herdEl.innerHTML = `⚠ <strong>Herd Market</strong> — stocks moving together (dispersion p${dp ?? '?'}). ` +
-        `RL alpha is weaker when all sectors correlate. Wait for dispersion to recover before sizing up.`;
-    } else {
-      herdEl.style.display = 'none';
-    }
-  }
+  if (s.herd_market_warning) {
+    herdEl.style.display = 'block';
+    herdEl.innerHTML = `⚠ <strong>Herd Market</strong> — stocks moving in sync (dispersion p${s.dispersion_percentile ?? '?'}). ` +
+      `RL alpha weakens when all sectors correlate. Wait for dispersion to recover.`;
+  } else { herdEl.style.display = 'none'; }
 
-  // votes
+  // Agent votes
   const vl = document.getElementById('vote-list');
   if (s.votes) {
     vl.innerHTML = Object.entries(s.votes).map(([agent, vote]) => {
-      const isHold = vote === 'HOLD' || !vote.startsWith('BUY');
+      const isHold = !vote || vote === 'HOLD' || !vote.startsWith('BUY');
       return `<div class="vote-item">
         <span class="vote-agent">${agent}</span>
-        <span class="vote-action${isHold ? ' hold' : ''}">${vote}</span>
+        <span class="vote-action${isHold ? ' hold' : ''}">${vote || 'HOLD'}</span>
       </div>`;
     }).join('');
   }
 
-  // abstain
+  // Abstain border
   if (s.abstain_reason) {
     document.getElementById('rec-card').style.borderLeftColor = 'var(--yellow)';
-    document.getElementById('rec-conf').innerHTML =
-      `⚠️ ${s.abstain_reason}`;
+    document.getElementById('rec-conf').innerHTML = `⚠️ ${s.abstain_reason}`;
   }
+
+  // News sentiment stat
+  if (s.news_sentiment != null) {
+    const ns = s.news_sentiment;
+    document.getElementById('news-sent').style.color = sentColor(ns);
+    document.getElementById('news-sent').textContent = sign(ns) + ns.toFixed(3);
+    document.getElementById('news-label').textContent = ns > 0.15 ? 'Bullish' : ns < -0.15 ? 'Bearish' : 'Neutral';
+  }
+  if (s.confidence != null)
+    document.getElementById('avg-conf').textContent = s.confidence + '%';
 }
 
-// ── Corroboration ───────────────────────────────────────────────────
 function renderCorr(s) {
   if (!s || !s.repo_detail) return;
   const r = s.repo_detail;
@@ -457,16 +803,13 @@ function renderCorr(s) {
   const fed = r.fed_context || {};
   const fomc = r.fomc_sentiment || {};
   document.getElementById('corr-body').innerHTML = `
-    <div style="margin-bottom:6px">
-      Agreement: <strong style="color:var(--cyan)">${ag.agree ?? 0}/${ag.total ?? 0}</strong> systems
-    </div>
+    <div>Agreement: <strong style="color:var(--cyan)">${ag.agree ?? 0}/${ag.total ?? 0}</strong> systems</div>
     <div>Algo top pick: <strong>${r.algo_top_pick || '—'}</strong></div>
     <div>Fed: <strong>${fed.stance || '—'}</strong> @ ${fed.rate ?? '—'}%</div>
-    ${fomc.pmsi != null ? `<div>FOMC mood: <strong style="color:${sentColor(fomc.pmsi)}">${fomc.pmsi > 0.15 ? 'BULLISH' : fomc.pmsi < -0.15 ? 'BEARISH' : 'NEUTRAL'}</strong> (${fomc.pmsi})</div>` : ''}
+    ${fomc.pmsi != null ? `<div>FOMC mood: <strong style="color:${sentColor(fomc.pmsi)}">${fomc.pmsi > 0.15 ? 'BULLISH' : fomc.pmsi < -0.15 ? 'BEARISH' : 'NEUTRAL'}</strong></div>` : ''}
   `;
 }
 
-// ── FOMC block ─────────────────────────────────────────────────────
 function renderFomc(s) {
   if (!s) return;
   const fomc = s.fomc_live || {};
@@ -475,45 +818,392 @@ function renderFomc(s) {
     const c = fomc.label === 'DOVISH' ? 'var(--green)' : fomc.label === 'HAWKISH' ? 'var(--red)' : 'var(--yellow)';
     fb.innerHTML = `
       <div>Meeting: <strong>${fomc.meeting_date || '—'}</strong></div>
-      <div>Sentiment: <strong style="color:${c}">${fomc.label || '—'}</strong> (${fomc.sentiment ?? '—'})</div>
-      <div style="color:var(--muted);margin-top:4px;font-size:11px">${fomc.note || ''}</div>`;
+      <div>Sentiment: <strong style="color:${c}">${fomc.label || '—'}</strong></div>
+      <div style="color:var(--muted);font-size:11px">${fomc.note || ''}</div>`;
   } else {
     const fed = s.repo_detail?.fed_context || {};
     fb.innerHTML = `
-      <div>No FOMC meeting this week</div>
-      <div style="margin-top:6px">Rate: <strong>${fed.rate ?? '—'}%</strong></div>
-      <div>Stance: <strong>${fed.stance || '—'}</strong></div>
-      ${(fed.favored || []).length > 0 ? `<div style="color:var(--muted)">Favored: ${fed.favored.join(', ')}</div>` : ''}`;
+      <div>No FOMC this week</div>
+      <div style="margin-top:4px">Rate: <strong>${fed.rate ?? '—'}%</strong> &nbsp; Stance: <strong>${fed.stance || '—'}</strong></div>
+      ${(fed.favored||[]).length ? `<div style="color:var(--muted)">Favored: ${fed.favored.join(', ')}</div>` : ''}`;
   }
 }
 
-// ── Sector table ────────────────────────────────────────────────────
+function renderVixTermStructure(macro) {
+  const ids = ['vts-body', 'm-vts-body'];
+  const vts = (macro || {}).vix_term_structure || {};
+  let html;
+  if (!vts.ratio) {
+    html = '<span style="color:var(--muted)">Unavailable</span>';
+  } else {
+    const regime = vts.ts_regime || '';
+    const rc = regime === 'BACKWARDATION' ? 'var(--red)' : regime === 'STEEP_CONTANGO' ? 'var(--green)' : 'var(--yellow)';
+    const re = regime === 'BACKWARDATION' ? '🔴' : regime === 'STEEP_CONTANGO' ? '🟢' : '🟡';
+    const evtRisk = vts.event_risk ? ' <span style="color:var(--red)">⚡ Event Risk</span>' : '';
+    html = `
+      <div>VIX: <strong style="color:var(--cyan)">${vts.vix ?? '—'}</strong>
+        &nbsp;/&nbsp; VIX3M: <strong>${vts.vix3m ?? '—'}</strong>
+        ${vts.vix9d != null ? '&nbsp;/&nbsp; VIX9D: ' + vts.vix9d : ''}
+      </div>
+      <div>Ratio: <strong style="color:${rc}">${vts.ratio ?? '—'}</strong></div>
+      <div>${re} <strong style="color:${rc}">${regime || '—'}</strong>${evtRisk}</div>
+      <div style="color:var(--muted);font-size:10px;margin-top:4px">&gt;1.0 = stress · &lt;0.85 = calm</div>`;
+  }
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+}
+
+function renderPCR(optData) {
+  const ids = ['pcr-body', 'm-pcr-body'];
+  let html;
+  if (!optData || optData.error || Object.keys(optData).length === 0) {
+    html = '<span style="color:var(--muted)">Unavailable</span>';
+  } else {
+    html = '';
+    for (const [tkr, d] of Object.entries(optData)) {
+      if (!d || d.pcr == null) continue;
+      const sig = d.signal || 'NEUTRAL';
+      const ic = sig === 'FEARFUL' ? 'var(--red)' : sig === 'COMPLACENT' ? 'var(--yellow)' : 'var(--cyan)';
+      const ie = { FEARFUL: '😰', COMPLACENT: '😎', NEUTRAL: '😐' }[sig] || '';
+      html += `<div style="margin-bottom:5px">
+        <strong>${tkr}</strong> PCR: <span style="color:${ic};font-weight:700">${d.pcr}</span>
+        &nbsp; ${ie} <span style="color:${ic}">${sig}</span>
+        <div style="color:var(--muted);font-size:10px">${d.interpretation || ''}</div>
+      </div>`;
+    }
+    if (!html) html = '<span style="color:var(--muted)">Unavailable</span>';
+    else html += `<div style="color:var(--muted);font-size:10px;margin-top:4px">PCR &gt;1.2 = fear (contrarian +) · &lt;0.7 = complacent</div>`;
+  }
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+}
+
+function renderSocial(status) {
+  const el = document.getElementById('social-body');
+  if (!el) return;
+  const social = (status || {}).social_sentiment || {};
+  const entries = Object.entries(social);
+  if (!entries.length) { el.innerHTML = '<span style="color:var(--muted)">No data — top sector holdings</span>'; return; }
+  const sc = s => s === 'BULLISH' ? 'var(--green)' : s === 'BEARISH' ? 'var(--red)' : 'var(--yellow)';
+  const se = s => s === 'BULLISH' ? '🟢' : s === 'BEARISH' ? '🔴' : '🟡';
+  let html = entries.map(([tkr, d]) => {
+    const sig = d.signal || 'NEUTRAL';
+    return `<div>${se(sig)} <strong>${tkr}</strong>
+      <span style="color:${sc(sig)};font-weight:700"> ${sig}</span>
+      <span style="color:var(--muted);font-size:10px"> (${sign(d.score||0)}${(d.score||0).toFixed(2)} · ${d.bullish||0}🟢 ${d.bearish||0}🔴)</span>
+    </div>`;
+  }).join('');
+  html += `<div style="color:var(--muted);font-size:10px;margin-top:4px">Last 50 msgs · top holdings of RL target sector</div>`;
+  el.innerHTML = html;
+}
+
+function renderWhyTrace(s) {
+  const trace = s?.why_trace || [];
+  const card = document.getElementById('why-card');
+  const body = document.getElementById('why-body');
+  if (!trace.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  body.innerHTML = trace.map(t => `<div style="padding:2px 0;border-bottom:1px solid var(--border)">
+    <span style="color:var(--muted)">›</span> ${t}
+  </div>`).join('');
+}
+
+function renderAlphaQuick(equityAlpha) {
+  const el = document.getElementById('alpha-quick');
+  const picks = equityAlpha?.picks || [];
+  if (!picks.length) { el.innerHTML = '<span style="color:var(--muted)">Equity alpha runs with each briefing</span>'; return; }
+  const convColor = { HIGH: 'var(--green)', MEDIUM: 'var(--cyan)', LOW: 'var(--yellow)', AVOID: 'var(--red)' };
+  const convEmoji = { HIGH: '🔥', MEDIUM: '✅', LOW: '🟡', AVOID: '🔴' };
+  el.innerHTML = picks.slice(0, 3).map(p => {
+    const sc = p.composite_score || 0;
+    const conv = p.conviction || 'LOW';
+    const name = p.name && p.name !== p.ticker ? p.name : '';
+    const tag = p.conviction_tagline || '';
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
+      ${convEmoji[conv]} <strong style="color:${convColor[conv]}">${p.ticker}</strong>
+      ${name ? `<span style="color:var(--muted);font-size:11px"> ${name}</span>` : ''}
+      &nbsp; score <strong>${sc.toFixed(0)}</strong>
+      &nbsp; <span style="color:var(--muted);font-size:11px">${p.sector_etf || ''}</span>
+      ${tag ? `<div style="color:var(--muted);font-size:11px;margin-left:16px">💡 ${tag}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// PORTFOLIO TAB
+// ═══════════════════════════════════════════════════════════
+function renderPerf(perf) {
+  if (!perf) return;
+  const pr = perf.portfolio_return_pct ?? 0;
+  const sr = perf.spy_return_pct ?? 0;
+  const al = perf.alpha_pct ?? 0;
+  const n  = perf.n_trades || 0;
+  const ir = perf.information_ratio;
+
+  const fmt = (v, id) => {
+    document.getElementById(id).innerHTML =
+      `<span style="color:${pctColor(v)}">${sign(v)}${v.toFixed(2)}%</span>`;
+  };
+  fmt(pr, 'port-pnl'); fmt(sr, 'spy-pnl'); fmt(al, 'alpha-val');
+  fmt(pr, 'p-port-pnl'); fmt(sr, 'p-spy-pnl'); fmt(al, 'p-alpha');
+
+  document.getElementById('alpha-sub').textContent = `${n} trade${n !== 1 ? 's' : ''} · ${perf.days_running || 0}d`;
+  document.getElementById('p-days-run').textContent = `${perf.days_running || 0} days running`;
+  if (ir != null) {
+    const irc = ir > 0.3 ? 'var(--green)' : ir > 0 ? 'var(--cyan)' : 'var(--red)';
+    const irHtml = `IR: <span style="color:${irc}">${sign(ir)}${ir.toFixed(2)}</span>`;
+    document.getElementById('ir-sub').innerHTML = irHtml;
+    document.getElementById('p-ir').innerHTML = irHtml;
+  }
+  if (perf.history) renderEquityChart(perf.history);
+}
+
+function renderAlpaca(alpaca) {
+  if (!alpaca || !alpaca.equity) return;
+  const eq = '$' + alpaca.equity.toLocaleString();
+  document.getElementById('alpaca-equity').textContent = eq;
+  document.getElementById('p-alpaca-equity').textContent = eq;
+  const dp = alpaca.daily_pnl_pct ?? 0;
+  const dpHtml = `daily: <span style="color:${pctColor(dp)}">${sign(dp)}${dp.toFixed(2)}%</span>`;
+  document.getElementById('alpaca-daily').innerHTML = dpHtml;
+  document.getElementById('p-alpaca-daily').innerHTML = dpHtml;
+}
+
+function renderVaR(risk) {
+  const varData = (risk || {}).var || {};
+  const ids = ['p-var-body', 'var-body'];
+  let html;
+  const keys = Object.keys(varData);
+  if (!keys.length) {
+    html = '<span style="color:var(--muted)">No positions yet</span>';
+  } else {
+    let total_var = 0, total_cvar = 0;
+    html = keys.map(t => {
+      const v = varData[t];
+      total_var  += v.var_dollar  || 0;
+      total_cvar += v.cvar_dollar || 0;
+      return `<div><strong>${t}</strong>: VaR $${(v.var_dollar||0).toFixed(0)} (${v.var_pct}%) · Vol ${v.vol_annual}%/yr</div>`;
+    }).join('');
+    html += `<div style="margin-top:6px;border-top:1px solid var(--border);padding-top:4px">
+      Total VaR: <strong style="color:var(--red)">$${total_var.toFixed(0)}</strong>
+      · CVaR: <strong style="color:var(--red)">$${total_cvar.toFixed(0)}</strong>
+    </div>`;
+  }
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = html; });
+}
+
+// ═══════════════════════════════════════════════════════════
+// ALPHA TAB
+// ═══════════════════════════════════════════════════════════
+function renderEquityAlpha(data) {
+  const tbody = document.getElementById('equity-alpha-tbody');
+  if (!tbody) return;
+  const picks = data?.picks || [];
+  if (!picks.length) {
+    tbody.innerHTML = '<tr><td colspan="13" class="loading">Generated with each daily briefing run</td></tr>';
+    return;
+  }
+  const convColor = { HIGH: 'var(--green)', MEDIUM: 'var(--cyan)', LOW: 'var(--yellow)', AVOID: 'var(--red)' };
+  const convEmoji = { HIGH: '🔥', MEDIUM: '✅', LOW: '🟡', AVOID: '🔴' };
+
+  const fcBg = v => {
+    if (v == null || isNaN(v)) return '';
+    const n = parseFloat(v);
+    if (n >= 80) return 'background:rgba(0,230,118,0.18);';
+    if (n >= 65) return 'background:rgba(0,230,118,0.07);';
+    if (n <= 25) return 'background:rgba(255,23,68,0.18);';
+    if (n <= 40) return 'background:rgba(255,23,68,0.07);';
+    return '';
+  };
+  const fcCell = (v, tip) => {
+    const col = v != null && v >= 65 ? 'var(--green)' : v != null && v <= 35 ? 'var(--red)' : 'var(--muted)';
+    return `<td style="${fcBg(v)}color:${col};text-align:center;font-weight:${v>=75?'700':'400'}"
+               title="${tip || ''}">${v != null ? Math.round(v) : '—'}</td>`;
+  };
+
+  tbody.innerHTML = picks.map(p => {
+    const s      = p.factor_scores || {};
+    const r      = p.raw_factors   || {};
+    const conv   = p.conviction || 'LOW';
+    const sc     = p.composite_score || 0;
+    const scColor = sc >= 72 ? 'var(--green)' : sc >= 58 ? 'var(--cyan)' : 'var(--yellow)';
+    const fwdPe  = r.fwd_pe  != null ? r.fwd_pe.toFixed(1) + 'x' : '—';
+    const rsiVal = r.rsi     != null ? parseFloat(r.rsi) : null;
+    const rsiStr = rsiVal    != null ? rsiVal.toFixed(0) : '—';
+    const tagline = p.conviction_tagline || '';
+    const nameStr = p.name && p.name !== p.ticker
+      ? ` <span style="color:var(--muted);font-size:10px">${p.name}</span>` : '';
+    const tickerCell = tagline
+      ? `<strong title="${tagline}">${p.ticker}</strong>${nameStr} <span style="font-size:10px" title="${tagline}">💡</span>`
+      : `<strong>${p.ticker}</strong>${nameStr}`;
+    const epsBeat  = r.earnings_surprise;
+    const epsStr   = epsBeat != null ? sign(epsBeat*100) + (epsBeat*100).toFixed(1) + '%' : '—';
+    const epsColor = epsBeat != null ? (epsBeat >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--muted)';
+    const hiProx   = r.high_52w_prox;
+    const hiStr    = hiProx != null ? (hiProx*100).toFixed(0) + '%' : '—';
+    const hiColor  = hiProx != null ? (hiProx >= 0.95 ? 'var(--green)' : hiProx >= 0.80 ? 'var(--cyan)' : 'var(--muted)') : 'var(--muted)';
+    return `<tr title="${tagline}">
+      <td>${tickerCell}</td>
+      <td style="color:var(--muted);font-size:11px">${p.sector_name || ''}</td>
+      <td style="color:${scColor};font-weight:700;text-align:center">${sc.toFixed(0)}</td>
+      <td style="color:${convColor[conv]||'var(--muted)'};font-size:11px">${convEmoji[conv]||'⚪'} ${conv}</td>
+      ${fcCell(s.value,    r.fwd_pe   != null ? 'P/E '+r.fwd_pe.toFixed(1)+'x' : '')}
+      ${fcCell(s.quality,  r.roe      != null ? 'ROE '+(r.roe*100).toFixed(1)+'%' : '')}
+      ${fcCell(s.momentum, r.mom_12_1 != null ? '12mo '+sign(r.mom_12_1*100)+(r.mom_12_1*100).toFixed(1)+'%' : '')}
+      ${fcCell(s.technical,rsiVal     != null ? 'RSI '+rsiStr : '')}
+      ${fcCell(s.low_vol,  r.vol_90d  != null ? 'Vol '+(r.vol_90d*100).toFixed(0)+'%ann' : '')}
+      <td style="color:${rsiColor(rsiVal)};text-align:center">${rsiStr}</td>
+      <td style="color:var(--muted);text-align:center">${fwdPe}</td>
+      <td style="color:${epsColor};text-align:center;font-size:11px">${epsStr}</td>
+      <td style="color:${hiColor};text-align:center;font-size:11px">${hiStr}</td>
+    </tr>`;
+  }).join('');
+}
+
 function renderSectors(sectors) {
   const tbody = document.getElementById('sector-tbody');
-  if (!sectors || sectors.length === 0) {
+  if (!sectors || !sectors.length) {
     tbody.innerHTML = '<tr><td colspan="6" class="loading">No sector data</td></tr>'; return;
   }
   tbody.innerHTML = sectors.map(s => {
     const rsi = s.rsi ?? '—';
-    const mom = s.mom != null ? (s.mom * 100).toFixed(1) + '%' : '—';
+    const mom = s.mom != null ? sign(s.mom*100) + (s.mom*100).toFixed(1) + '%' : '—';
     const shp = s.sharpe != null ? s.sharpe.toFixed(2) : '—';
     const ns  = s.news_sentiment != null ? s.news_sentiment.toFixed(2) : '—';
     const sc  = s.algo_score != null ? s.algo_score.toFixed(2) : '—';
-    const rsiStyle = rsi !== '—' ? `color:${rsiColor(rsi)}` : '';
-    const momStyle = mom !== '—' ? `color:${pctColor(s.mom)}` : '';
-    const nsStyle  = ns  !== '—' ? `color:${sentColor(s.news_sentiment)}` : '';
     return `<tr>
       <td><strong>${s.ticker}</strong> <span style="color:var(--muted);font-size:11px">${s.name||''}</span></td>
-      <td style="${rsiStyle}">${rsi}</td>
-      <td style="${momStyle}">${mom}</td>
-      <td style="color:${s.sharpe > 0 ? 'var(--green)' : 'var(--red)'}">${shp}</td>
-      <td style="${nsStyle}">${ns}</td>
+      <td style="color:${rsi !== '—' ? rsiColor(rsi) : ''}">${rsi}</td>
+      <td style="color:${s.mom != null ? pctColor(s.mom) : ''}">${mom}</td>
+      <td style="color:${s.sharpe != null ? (s.sharpe>0?'var(--green)':'var(--red)') : ''}">${shp}</td>
+      <td style="color:${s.news_sentiment != null ? sentColor(s.news_sentiment) : ''}">${ns}</td>
       <td>${sc}</td>
     </tr>`;
   }).join('');
 }
 
-// ── Macro indicators ──────────────────────────────────────────────────
+function renderRotation(data) {
+  const el = document.getElementById('rotation-body');
+  const rows = data?.rotation;
+  if (!rows || !rows.length) { el.innerHTML = '<span style="color:var(--muted)">No data</span>'; return; }
+  const cs = v => {
+    if (v == null) return 'background:#1a2240;color:var(--muted)';
+    const i = Math.min(Math.abs(v)/3, 1);
+    return v > 0
+      ? `background:rgba(0,230,118,${0.1+i*0.6});color:var(--green)`
+      : `background:rgba(255,23,68,${0.1+i*0.6});color:var(--red)`;
+  };
+  let t = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
+    <thead><tr>
+      <th style="text-align:left;padding:4px 8px;color:var(--muted);font-weight:normal">Sector</th>
+      ${[1,2,3,4].map(w => `<th style="padding:4px 8px;color:var(--muted);font-weight:normal;text-align:center">Wk ${w}</th>`).join('')}
+    </tr></thead><tbody>`;
+  rows.forEach(r => {
+    t += `<tr><td style="padding:3px 8px"><strong>${r.ticker}</strong> <span style="color:var(--muted);font-size:11px">${r.name}</span></td>`;
+    for (let i = 0; i < 4; i++) {
+      const v = (r.weeks||[])[i];
+      t += `<td style="padding:3px 8px;text-align:center;${cs(v)};border-radius:4px;font-size:12px">
+        ${v != null ? sign(v)+v.toFixed(1)+'%' : '—'}</td>`;
+    }
+    t += '</tr>';
+  });
+  el.innerHTML = t + '</tbody></table></div>';
+}
+
+function renderRanked(status) {
+  const tbody = document.getElementById('ranked-tbody');
+  if (!tbody) return;
+  const ranked = (status?.ranked_opportunities || []);
+  if (!ranked.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="loading">Runs with each briefing</td></tr>'; return;
+  }
+  const cc = { HIGH: 'var(--green)', MEDIUM: 'var(--cyan)', LOW: 'var(--yellow)', AVOID: 'var(--red)' };
+  tbody.innerHTML = ranked.map(o => {
+    const conv = o.conviction || '—';
+    const score = typeof o.score === 'number' ? (o.score <= 1 ? (o.score*100).toFixed(0) : o.score.toFixed(0)) : '—';
+    const pct = o.suggested_pct != null ? o.suggested_pct.toFixed(1)+'%' : '—';
+    const dollar = o.suggested_dollar != null ? '$'+o.suggested_dollar.toFixed(0) : '—';
+    const kelly = o.kelly_pct != null ? o.kelly_pct+'%' : '—';
+    const typeLabel = { sector:'📊 Sector', crypto:'⚡ Crypto', stock:'🏢 Stock', macro:'🏦 Macro' }[o.asset_type] || o.asset_type||'';
+    return `<tr>
+      <td><strong>${o.ticker}</strong> <span style="color:var(--muted);font-size:11px">${o.name||''}</span></td>
+      <td style="color:var(--muted);font-size:11px">${typeLabel}</td>
+      <td style="color:${cc[conv]||'var(--muted)'};font-size:11px">${conv}</td>
+      <td style="text-align:center">${score}</td>
+      <td style="text-align:center">${pct}</td>
+      <td style="text-align:center">${dollar}</td>
+      <td style="text-align:center;color:var(--muted)">${kelly}</td>
+      <td style="color:var(--muted);font-size:11px;max-width:200px;white-space:normal">${(o.rationale||'').substring(0,80)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// JOURNAL TAB
+// ═══════════════════════════════════════════════════════════
+let journalPage = 20;
+function renderJournal(decisions) {
+  if (!decisions) return;
+  const el = document.getElementById('journal-entries');
+  const buys    = decisions.filter(d => (d.human_command||'').toUpperCase() === 'BUY').length;
+  const skips   = decisions.filter(d => ['SKIP','HOLD'].includes((d.human_command||'').toUpperCase())).length;
+  const abstains = decisions.filter(d => d.abstain_reason).length;
+  document.getElementById('j-total').textContent    = decisions.length;
+  document.getElementById('j-buys').textContent     = buys;
+  document.getElementById('j-skips').textContent    = skips;
+  document.getElementById('j-abstains').textContent = abstains;
+
+  const cmdClass = c => ({ BUY:'cmd-buy', SELL:'cmd-sell', SKIP:'cmd-skip', HOLD:'cmd-hold' }[c] || '');
+  const regIcon  = r => ({ CALM:'🟢', NORMAL:'🟡', STRESSED:'🔴' }[(r||'').toUpperCase()] || '⚪');
+
+  el.innerHTML = decisions.map(d => {
+    const cmd = (d.human_command||'').toUpperCase();
+    const ticker = d.recommended_ticker || d.ticker || '—';
+    const conf = d.confidence ?? '—';
+    const date = (d.date||'').substring(0,10);
+    const regime = d.regime || '—';
+    const abstainNote = d.abstain_reason
+      ? `<span style="color:var(--yellow);font-size:11px"> ⚠️ ${d.abstain_reason.substring(0,60)}...</span>` : '';
+    let whyTrace = [];
+    try {
+      if (d.why_trace) {
+        whyTrace = typeof d.why_trace === 'string' ? JSON.parse(d.why_trace) : d.why_trace;
+        if (!Array.isArray(whyTrace)) whyTrace = String(d.why_trace).split(' | ');
+      }
+    } catch(e) { whyTrace = String(d.why_trace||'').split(' | ').filter(Boolean); }
+    const traceHtml = whyTrace.length
+      ? `<details style="margin-top:6px">
+          <summary>▶ Show reasoning (${whyTrace.length} steps)</summary>
+          <div class="why-trace">${whyTrace.map(t => `<span>${t}</span>`).join('')}</div>
+        </details>` : '';
+    const hrNote = d.human_reason
+      ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">Your note: "${d.human_reason}"</div>` : '';
+    return `<div class="journal-entry">
+      <div class="journal-entry-header">
+        <div>
+          <span class="journal-date">${date} &nbsp; ${regIcon(regime)} ${regime}</span>
+          &nbsp;·&nbsp;
+          <strong>${ticker}</strong> &nbsp;·&nbsp;
+          <span style="color:var(--muted)">conf ${conf}%</span>
+          ${abstainNote}
+        </div>
+        <div>
+          ${cmd ? `<span class="${cmdClass(cmd)}">${cmd}</span>` : '<span style="color:var(--muted);font-size:11px">no reply</span>'}
+        </div>
+      </div>
+      ${hrNote}
+      ${traceHtml}
+    </div>`;
+  }).join('');
+}
+
+async function loadMoreJournal() {
+  journalPage += 20;
+  const data = await api(`/api/decisions?n=${journalPage}`);
+  if (data?.decisions) renderJournal(data.decisions);
+}
+
+// ═══════════════════════════════════════════════════════════
+// MACRO TAB
+// ═══════════════════════════════════════════════════════════
 function renderMacro(risk) {
   if (!risk) return;
   const macro = risk.macro || {};
@@ -525,8 +1215,9 @@ function renderMacro(risk) {
     const inv = yc.inverted ? ' <span style="color:var(--red)">⚠️ INVERTED</span>' : '';
     ycEl.innerHTML = `
       <div>10yr: <strong>${yc.ten_yr ?? '—'}%</strong></div>
-      <div>2yr: <strong>${yc.two_yr ?? '—'}%</strong></div>
-      <div>Spread: <strong style="color:${yc.inverted ? 'var(--red)' : 'var(--green)'}">${yc.spread}%</strong>${inv}</div>`;
+      <div>${yc.rate_label ?? '13w T-bill'}: <strong>${yc.two_yr ?? '—'}%</strong></div>
+      <div>Spread: <strong style="color:${yc.inverted ? 'var(--red)' : 'var(--green)'}">${yc.spread}%</strong>${inv}</div>
+      <div style="color:var(--muted);font-size:10px;margin-top:4px">Negative spread = inverted yield curve (recession warning)</div>`;
   } else {
     ycEl.innerHTML = '<span style="color:var(--muted)">Unavailable</span>';
   }
@@ -536,263 +1227,123 @@ function renderMacro(risk) {
     const chg = dxy.dxy_change ?? 0;
     dxyEl.innerHTML = `
       <div>DXY: <strong>${dxy.dxy}</strong></div>
-      <div>Change: <span style="color:${pctColor(chg)}">${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%</span></div>
+      <div>Change: <span style="color:${pctColor(chg)}">${sign(chg)}${chg.toFixed(2)}%</span></div>
       <div style="color:var(--muted)">${dxy.signal || ''}</div>`;
   } else {
     dxyEl.innerHTML = '<span style="color:var(--muted)">Unavailable</span>';
   }
 
-  const varEl = document.getElementById('var-body');
   const varData = risk.var || {};
-  const keys = Object.keys(varData);
-  if (keys.length > 0) {
-    let html = '';
-    let totalVar = 0, totalCvar = 0;
-    keys.forEach(t => {
-      const v = varData[t];
-      totalVar  += v.var_dollar  || 0;
-      totalCvar += v.cvar_dollar || 0;
-      html += `<div><strong>${t}</strong>: VaR $${(v.var_dollar||0).toFixed(0)} (${v.var_pct}%) · Vol ${v.vol_annual}%/yr</div>`;
-    });
-    html += `<div style="margin-top:6px;border-top:1px solid var(--border);padding-top:4px">Total VaR: <strong style="color:var(--red)">$${totalVar.toFixed(0)}</strong> · CVaR: <strong style="color:var(--red)">$${totalCvar.toFixed(0)}</strong></div>`;
-    varEl.innerHTML = html;
-  } else {
-    varEl.innerHTML = '<span style="color:var(--muted)">No positions yet</span>';
-  }
+  renderVaR(risk);
 }
 
-// ── Sector rotation heatmap ────────────────────────────────────────────
-function renderRotation(data) {
-  const el = document.getElementById('rotation-body');
-  const rows = data?.rotation;
-  if (!rows || rows.length === 0) {
-    el.innerHTML = '<span style="color:var(--muted)">No data</span>'; return;
-  }
-
-  const cellStyle = (v) => {
-    if (v == null) return 'background:#1a2240;color:var(--muted)';
-    const intensity = Math.min(Math.abs(v) / 3, 1);
-    if (v > 0) return `background:rgba(0,230,118,${0.1 + intensity * 0.6});color:var(--green)`;
-    return `background:rgba(255,23,68,${0.1 + intensity * 0.6});color:var(--red)`;
-  };
-
-  let table = `<table style="width:100%;border-collapse:collapse">
-    <thead><tr>
-      <th style="text-align:left;padding:4px 8px;color:var(--muted);font-weight:normal">Sector</th>
-      <th style="padding:4px 8px;color:var(--muted);font-weight:normal;text-align:center">Wk 1</th>
-      <th style="padding:4px 8px;color:var(--muted);font-weight:normal;text-align:center">Wk 2</th>
-      <th style="padding:4px 8px;color:var(--muted);font-weight:normal;text-align:center">Wk 3</th>
-      <th style="padding:4px 8px;color:var(--muted);font-weight:normal;text-align:center">Wk 4</th>
-    </tr></thead><tbody>`;
-
-  rows.forEach(r => {
-    table += `<tr>
-      <td style="padding:3px 8px"><strong>${r.ticker}</strong> <span style="color:var(--muted);font-size:11px">${r.name}</span></td>`;
-    for (let i = 0; i < 4; i++) {
-      const v = (r.weeks || [])[i];
-      table += `<td style="padding:3px 8px;text-align:center;${cellStyle(v)};border-radius:4px;font-size:12px">
-        ${v != null ? (v >= 0 ? '+' : '') + v.toFixed(1) + '%' : '—'}
-      </td>`;
-    }
-    table += '</tr>';
-  });
-
-  table += '</tbody></table>';
-  el.innerHTML = table;
-}
-
-// ── Crypto + Macro signals ────────────────────────────────────────────
 function renderCrypto(cryptoData) {
   const tbody = document.getElementById('crypto-tbody');
-  if (!cryptoData || Object.keys(cryptoData).length === 0) {
+  if (!cryptoData || !Object.keys(cryptoData).length) {
     tbody.innerHTML = '<tr><td colspan="7" class="loading">No crypto data</td></tr>'; return;
   }
   const typeOrder = { crypto: 0, meme: 1, macro: 2 };
-  const entries = Object.values(cryptoData).sort((a,b) =>
-    (typeOrder[a.type] ?? 3) - (typeOrder[b.type] ?? 3));
-
+  const entries = Object.values(cryptoData).sort((a,b) => (typeOrder[a.type]??3)-(typeOrder[b.type]??3));
   tbody.innerHTML = entries.map(s => {
     const chg = s.change_24h_pct ?? 0;
     const mom = s.mom_7d_pct ?? 0;
     const rsi = s.rsi ?? '—';
     const sig = s.signal || '—';
-    const typeLabel = { crypto:'⚡ Crypto', meme:'🎲 Meme', macro:'🏦 Macro' }[s.type] || s.type;
-    const sigColor = sig.includes('STRONG') ? 'var(--green)' :
-                     sig === 'BULLISH' ? 'var(--cyan)' :
-                     sig === 'WEAK' || sig === 'BEARISH' ? 'var(--red)' : 'var(--yellow)';
+    const tl  = { crypto:'⚡ Crypto', meme:'🎲 Meme', macro:'🏦 Macro' }[s.type] || s.type;
+    const sc  = sig.includes('STRONG')?'var(--green)':sig==='BULLISH'?'var(--cyan)':sig==='BEARISH'||sig==='WEAK'?'var(--red)':'var(--yellow)';
     return `<tr>
-      <td><strong>${s.name || s.ticker}</strong> <span style="color:var(--muted);font-size:11px">${typeLabel}</span></td>
-      <td style="font-family:monospace">$${typeof s.price === 'number' ? s.price.toLocaleString() : s.price}</td>
-      <td style="color:${pctColor(chg)}">${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%</td>
-      <td style="color:${pctColor(mom)}">${mom >= 0 ? '+' : ''}${mom.toFixed(1)}%</td>
+      <td><strong>${s.name||s.ticker}</strong> <span style="color:var(--muted);font-size:11px">${tl}</span></td>
+      <td style="font-family:monospace">$${typeof s.price==='number'?s.price.toLocaleString():s.price}</td>
+      <td style="color:${pctColor(chg)}">${sign(chg)}${chg.toFixed(1)}%</td>
+      <td style="color:${pctColor(mom)}">${sign(mom)}${mom.toFixed(1)}%</td>
       <td style="color:${rsiColor(rsi)}">${rsi}</td>
-      <td style="color:${sigColor};font-size:11px">${sig}</td>
-      <td style="color:var(--muted)">${s.max_alloc_pct ?? '—'}%</td>
+      <td style="color:${sc};font-size:11px">${sig}</td>
+      <td style="color:var(--muted)">${s.max_alloc_pct??'—'}%</td>
     </tr>`;
   }).join('');
 }
 
-// ── Real portfolio ─────────────────────────────────────────────────────
-function renderPortfolio(portfolio) {
-  const el = document.getElementById('portfolio-body');
-  if (!portfolio || portfolio.balance == null) {
-    return; // leave server-rendered content intact — don't overwrite with placeholder
-  }
-  const { balance, holdings, total_invested, total_current, unrealized_pnl, unrealized_pct, cash_remaining } = portfolio;
-
-  if (!holdings || holdings.length === 0) {
-    el.innerHTML = `<div>Balance: <strong>$${balance.toLocaleString()}</strong>  |  No positions yet.</div>
-      <div style="color:var(--muted);margin-top:6px">Log trades via Telegram: <code>BOUGHT XLE 5 47.50</code></div>`;
-    return;
-  }
-
-  const rows = holdings.map(h => {
-    const pct = h.pnl_pct ?? 0;
-    const alloc = h.alloc_pct != null ? h.alloc_pct.toFixed(1) : '—';
-    return `<tr>
-      <td><strong>${h.ticker}</strong></td>
-      <td>$${(h.cost_basis ?? 0).toLocaleString()}</td>
-      <td>$${(h.current_value ?? 0).toLocaleString()}</td>
-      <td style="color:${pctColor(pct)}">${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%</td>
-      <td style="color:var(--muted)">${alloc}%</td>
-      <td style="color:var(--muted);font-size:11px">${h.date_bought || ''}</td>
-    </tr>`;
-  }).join('');
-
-  const upnl = unrealized_pnl ?? 0;
-  const cash = cash_remaining ?? 0;
-  el.innerHTML = `
-    <div style="margin-bottom:10px">
-      Balance: <strong>$${balance.toLocaleString()}</strong>  ·
-      Invested: <strong>$${(total_invested || 0).toLocaleString()}</strong>  ·
-      Cash: <strong>$${cash.toLocaleString()}</strong>  ·
-      P&L: <strong style="color:${pctColor(upnl)}">${upnl >= 0 ? '+' : ''}$${Math.abs(upnl).toLocaleString()} (${(unrealized_pct ?? 0).toFixed(1)}%)</strong>
-    </div>
-    <table>
-      <thead><tr><th>Ticker</th><th>Cost</th><th>Current</th><th>P&L</th><th>Alloc</th><th>Date</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-}
-
-// ── Decision log ────────────────────────────────────────────────────
-function renderDecisions(decisions) {
-  const tbody = document.getElementById('decision-tbody');
-  if (!decisions || decisions.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="loading">No decisions yet — waiting for next briefing run</td></tr>'; return;
-  }
-  tbody.innerHTML = decisions.map(d => {
-    const cmd = d.human_command || '—';
-    const cmdClass = cmd === 'BUY' ? 'cmd-buy' : cmd === 'SELL' ? 'cmd-sell' : cmd === 'SKIP' ? 'cmd-skip' : '';
-    const regimeIcon = {'CALM':'🟢','NORMAL':'🟡','STRESSED':'🔴'}[(d.regime||'').toUpperCase()] || '⚪';
-    const abstainNote = d.abstain_reason ? '<span style="color:var(--yellow);font-size:10px">⚠️ abstained</span>' : '';
-    const yourCall = cmd !== '—' ? `<span class="${cmdClass}">${cmd}</span>` :
-                     `<span style="color:var(--muted);font-size:11px">no reply yet</span>`;
-    return `<tr class="decision-row">
-      <td>${d.date || '—'}</td>
-      <td>${regimeIcon} ${d.regime || '—'}</td>
-      <td><strong>${d.recommended_ticker || '—'}</strong> ${abstainNote}</td>
-      <td>${d.confidence ?? '—'}%</td>
-      <td>${yourCall}</td>
-      <td style="color:var(--muted);font-size:11px">${d.abstain_reason ? d.abstain_reason.substring(0,60) : ''}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ── Performance ─────────────────────────────────────────────────────
-function renderPerf(perf) {
-  if (!perf || perf.n_trades == null) return;
-  const pr = perf.portfolio_return_pct ?? 0;
-  const sr = perf.spy_return_pct ?? 0;
-  const al = perf.alpha_pct ?? 0;
-  const nTrades = perf.n_trades || 0;
-
-  if (nTrades === 0) {
-    document.getElementById('port-pnl').innerHTML =
-      `<span style="color:var(--muted);font-size:13px">no trades yet</span>`;
-    document.getElementById('spy-pnl').innerHTML =
-      `<span style="color:var(--muted)">—</span>`;
-    document.getElementById('alpha-val').innerHTML =
-      `<span style="color:var(--muted)">—</span>`;
-    document.getElementById('alpha-sub').innerHTML =
-      `<span style="color:var(--muted);font-size:11px">Reply BUY to a briefing to start tracking</span>`;
-    return;
-  }
-
-  document.getElementById('port-pnl').innerHTML =
-    `<span style="color:${pctColor(pr)}">${pr >= 0 ? '+' : ''}${pr.toFixed(1)}%</span>`;
-  document.getElementById('spy-pnl').innerHTML =
-    `<span style="color:${pctColor(sr)}">${sr >= 0 ? '+' : ''}${sr.toFixed(1)}%</span>`;
-  document.getElementById('alpha-val').innerHTML =
-    `<span style="color:${pctColor(al)}">${al >= 0 ? '+' : ''}${al.toFixed(2)}%</span>`;
-  document.getElementById('alpha-sub').textContent =
-    `${nTrades} trade${nTrades !== 1 ? 's' : ''} · ${perf.days_running || 0}d`;
-  const ir = perf.information_ratio;
-  const irEl = document.getElementById('ir-sub');
-  if (irEl && ir != null) {
-    const irColor = ir > 0.3 ? 'var(--green)' : ir > 0 ? 'var(--accent)' : 'var(--red)';
-    irEl.innerHTML = `IR: <span style="color:${irColor}">${ir >= 0 ? '+' : ''}${ir.toFixed(2)}</span>`;
+function renderEarnings(status) {
+  const el = document.getElementById('earnings-body');
+  if (!el) return;
+  const warn = (status || {}).earnings_warning || '';
+  if (warn) {
+    el.innerHTML = `<div style="color:var(--yellow)">${warn}</div>`;
+  } else {
+    el.innerHTML = '<span style="color:var(--muted)">No earnings warnings for held/recommended sectors this week</span>';
   }
 }
 
-// ── Alpaca ──────────────────────────────────────────────────────────
-function renderAlpaca(alpaca) {
-  if (!alpaca || !alpaca.equity) return;
-  document.getElementById('alpaca-equity').textContent =
-    '$' + alpaca.equity.toLocaleString();
-  const dp = alpaca.daily_pnl_pct ?? 0;
-  document.getElementById('alpaca-daily').innerHTML =
-    `daily: <span style="color:${pctColor(dp)}">${dp >= 0 ? '+' : ''}${dp.toFixed(2)}%</span>`;
+// ═══════════════════════════════════════════════════════════
+// SELL ALERTS
+// ═══════════════════════════════════════════════════════════
+function renderSellAlerts(status) {
+  const el = document.getElementById('sell-alert-bar');
+  if (!el) return;
+  const alerts = (status || {}).sell_alerts || '';
+  if (alerts) {
+    el.style.display = 'block';
+    el.innerHTML = `🚨 <strong>Sell Signals Active</strong><br>${alerts}`;
+  } else {
+    el.style.display = 'none';
+  }
 }
 
-// ── Main loader ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// MAIN LOAD
+// ═══════════════════════════════════════════════════════════
 async function loadAll() {
-  const [status, sectors, decisions, perf, alpaca, crypto, portfolio, risk, rotation] = await Promise.all([
+  const [status, sectors, decisions, perf, alpaca, crypto, risk, rotation, equityAlpha, options] = await Promise.all([
     api('/api/status'),
     api('/api/sectors'),
-    api('/api/decisions'),
+    api('/api/decisions?n=20'),
     api('/api/performance'),
     api('/api/alpaca'),
     api('/api/crypto'),
-    api('/api/portfolio'),
     api('/api/risk'),
     api('/api/rotation'),
+    api('/api/equity-alpha'),
+    api('/api/options'),
   ]);
+
+  const macro = (risk?.macro) || (status?.macro) || {};
 
   const renders = [
     () => renderStatus(status),
     () => renderCorr(status),
     () => renderFomc(status),
-    () => renderMacro(risk),
-    () => renderRotation(rotation),
-    () => renderSectors(sectors?.sectors),
-    () => renderCrypto(crypto?.crypto),
-    () => renderPortfolio(portfolio),
-    () => renderDecisions(decisions?.decisions),
+    () => renderWhyTrace(status),
+    () => renderAlphaQuick(equityAlpha),
+    () => renderSellAlerts(status),
     () => renderPerf(perf),
     () => renderAlpaca(alpaca),
-    () => { if (perf?.history) renderEquityChart(perf.history); },
-    () => {
-      if (status?.news_sentiment != null) {
-        const ns = status.news_sentiment;
-        document.getElementById('news-sent').style.color = sentColor(ns);
-        document.getElementById('news-sent').textContent = (ns >= 0 ? '+' : '') + ns.toFixed(3);
-        document.getElementById('news-label').textContent =
-          ns > 0.15 ? 'Bullish' : ns < -0.15 ? 'Bearish' : 'Neutral';
-      }
-    },
-    () => {
-      if (status?.confidence != null)
-        document.getElementById('avg-conf').textContent = status.confidence + '%';
-    },
+    () => renderVaR(risk),
+    () => renderVixTermStructure(macro),
+    () => renderPCR(options),
+    () => renderSocial(status),
+    () => renderSectors(sectors?.sectors),
+    () => renderEquityAlpha(equityAlpha),
+    () => renderRotation(rotation),
+    () => renderRanked(status),
+    () => renderJournal(decisions?.decisions || []),
+    () => renderMacro(risk),
+    () => renderCrypto(crypto?.crypto),
+    () => renderEarnings(status),
   ];
+
   for (const fn of renders) {
-    try { fn(); } catch (e) { console.warn('render error:', e); }
+    try { fn(); } catch(e) { console.warn('render error:', e); }
   }
+
+  document.getElementById('last-refresh').textContent =
+    'refreshed ' + new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'UTC'}) + ' UTC';
 }
 
-// Load on start + refresh every 3 minutes
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
 loadAll();
-setInterval(loadAll, 180_000);
+setInterval(loadAll, 120_000); // refresh every 2 minutes
 </script>
 </body>
 </html>

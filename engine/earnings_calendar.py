@@ -15,7 +15,7 @@ import datetime
 
 # Top 3-5 holdings by weight for each SPDR sector ETF (as of early 2026)
 SECTOR_HOLDINGS = {
-    "XLK":  ["AAPL", "MSFT", "NVDA", "AVGO", "META"],
+    "XLK":  ["AAPL", "MSFT", "NVDA", "AVGO", "ADBE"],
     "XLF":  ["BRK-B", "JPM", "V", "MA", "BAC"],
     "XLV":  ["LLY", "UNH", "JNJ", "ABBV", "MRK"],
     "XLY":  ["AMZN", "TSLA", "HD", "MCD", "NKE"],

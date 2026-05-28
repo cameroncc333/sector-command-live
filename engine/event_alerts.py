@@ -1,5 +1,5 @@
 """
-event_alerts.py — event-triggered alerts outside the 4 scheduled runs
+event_alerts.py — event-triggered alerts outside the 6 scheduled runs
 
 Fires an EXTRA Telegram alert when something moves fast enough that waiting for the
 next scheduled briefing would be too slow. Three triggers:
@@ -126,6 +126,65 @@ def check_sell_signals_alert(fired: set) -> tuple:
     return alerts, new_fired
 
 
+def check_alpha_intraday_drops(fired: set) -> tuple:
+    """
+    Alert if any HIGH/MEDIUM conviction equity alpha stock drops >5% intraday.
+    Reads the latest briefing from Redis to get current picks without recomputing.
+    """
+    alerts = []
+    new_fired = set()
+    try:
+        import requests as _req
+        _ru = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+        _rt = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+        if not _ru or not _rt:
+            return alerts, new_fired
+        import json
+        r = _req.post(_ru, json=["GET", "sc:last_briefing"],
+                      headers={"Authorization": f"Bearer {_rt}"}, timeout=3)
+        raw = r.json().get("result")
+        if not raw:
+            return alerts, new_fired
+        briefing = json.loads(raw)
+        picks = briefing.get("equity_alpha_picks") or []
+        watch = [p for p in picks if p.get("conviction") in ("HIGH", "MEDIUM")]
+        if not watch:
+            return alerts, new_fired
+
+        import yfinance as yf
+        tickers = [p["ticker"] for p in watch]
+        price_data = yf.download(tickers, period="1d", progress=False, auto_adjust=True)
+        close = price_data["Close"] if "Close" in price_data else price_data
+        open_ = price_data["Open"] if "Open" in price_data else None
+
+        for p in watch:
+            t = p["ticker"]
+            try:
+                if hasattr(close, "columns") and t in close.columns:
+                    cur = float(close[t].dropna().iloc[-1])
+                    op  = float(open_[t].dropna().iloc[-1]) if open_ is not None and hasattr(open_, "columns") and t in open_.columns else cur
+                elif not hasattr(close, "columns"):
+                    cur = float(close.dropna().iloc[-1])
+                    op  = float(open_.dropna().iloc[-1]) if open_ is not None and not hasattr(open_, "columns") else cur
+                else:
+                    continue
+                chg = (cur - op) / op * 100 if op else 0
+                if chg <= POSITION_DROP_PCT:
+                    key = f"alpha_drop_{t}"
+                    if key not in fired:
+                        conv = p.get("conviction", "")
+                        alerts.append(
+                            f"🔻 <b>{t}</b> [{conv}] down {chg:.1f}% intraday. "
+                            f"Alpha score {p.get('composite_score', 0):.0f}. Review position."
+                        )
+                        new_fired.add(key)
+            except Exception:
+                continue
+    except Exception as e:
+        print(f"[event_alerts] alpha intraday drop check skipped ({e})")
+    return alerts, new_fired
+
+
 def check_earnings_alert(fired: set) -> tuple:
     """Check for imminent earnings in held/tracked sectors."""
     alerts = []
@@ -173,7 +232,18 @@ def run(current_regime=None, holdings=None):
             messages.append(flip); fired.add("regime_flip")
         state["last_regime"] = current_regime
 
-    for a in check_positions(holdings or {}):
+    # Build {ticker: entry_price} from real holdings if caller didn't supply them
+    if not holdings:
+        try:
+            from engine.position_tracker import PositionTracker
+            raw = PositionTracker().get_holdings()
+            holdings = {h["ticker"]: float(h.get("avg_cost") or 0)
+                        for h in raw if h.get("ticker") and h.get("avg_cost")}
+        except Exception as _e:
+            print(f"[event_alerts] could not load holdings for position check ({_e})")
+            holdings = {}
+
+    for a in check_positions(holdings):
         key = "pos_" + a.split()[1]
         if key not in fired:
             messages.append(a); fired.add(key)
@@ -187,6 +257,11 @@ def run(current_regime=None, holdings=None):
     earn_alerts, earn_fired = check_earnings_alert(fired)
     messages.extend(earn_alerts)
     fired.update(earn_fired)
+
+    # Equity alpha intraday drop check (HIGH/MEDIUM conviction stocks)
+    alpha_alerts, alpha_fired = check_alpha_intraday_drops(fired)
+    messages.extend(alpha_alerts)
+    fired.update(alpha_fired)
 
     if messages:
         bot = TelegramBot()

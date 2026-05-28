@@ -83,7 +83,17 @@ def check_exit_signals(holdings: list) -> list:
 
         # ── 1. Trailing stop ────────────────────────────────────────────────
         if entry_price and entry_price > 0:
-            high_since_entry = float(series.iloc[-min(len(series), 126):].max())
+            # Only look at prices since entry date so a pre-buy high doesn't
+            # trigger a false stop on a position that's actually profitable.
+            if date_bought:
+                try:
+                    import pandas as _pd
+                    series_since = series[series.index >= _pd.Timestamp(date_bought)]
+                    high_since_entry = float(series_since.max()) if len(series_since) > 0 else current_price
+                except Exception:
+                    high_since_entry = float(series.iloc[-min(len(series), 126):].max())
+            else:
+                high_since_entry = float(series.iloc[-min(len(series), 126):].max())
             drop_from_high   = (current_price - high_since_entry) / high_since_entry * 100
             if drop_from_high <= -TRAILING_STOP_PCT:
                 signals.append({
