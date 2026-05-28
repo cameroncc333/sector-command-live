@@ -535,13 +535,25 @@ def answer_question(question: str, briefing: dict = None) -> str:
 
 def _plain_english_summary(b: dict) -> str:
     """Plain English TL;DR appended to every briefing."""
-    g       = b.get
-    vix     = g("vix") or 16
-    ranked  = g("ranked_opportunities") or []
-    abstain = g("abstain_reason")
-    macro   = g("macro") or {}
-    yc      = macro.get("yield_curve") or {}
-    port    = g("portfolio_snap") or {}
+    g          = b.get
+    vix        = g("vix") or 16
+    ranked     = g("ranked_opportunities") or []
+    abstain    = g("abstain_reason") or ""
+    macro      = g("macro") or {}
+    yc         = macro.get("yield_curve") or {}
+    port       = g("portfolio_snap") or {}
+    ticker     = g("ticker") or "SPY"
+    action     = g("action") or "BUY"
+    confidence = int(g("confidence") or 50)
+
+    _sector_names = {
+        "XLF": "Financials", "XLK": "Technology", "XLE": "Energy",
+        "XLV": "Health Care", "XLY": "Consumer Disc.", "XLP": "Consumer Staples",
+        "XLI": "Industrials", "XLB": "Materials", "XLRE": "Real Estate",
+        "XLU": "Utilities", "XLC": "Comm. Services",
+        "SPY": "S&P 500 broad", "QQQ": "Nasdaq 100", "BIL": "T-Bills (cash)",
+        "TLT": "Long Bonds", "GLD": "Gold", "BTC-USD": "Bitcoin",
+    }
 
     lines = ["", "─────────────────────────────",
              "📋 <b>PLAIN ENGLISH</b>", ""]
@@ -570,8 +582,7 @@ def _plain_english_summary(b: dict) -> str:
         vix_f = float(vix)
     except Exception:
         vix_f = 16.0
-    # Use VIX term structure for sharper regime description if available
-    vts_data = (b.get("macro") or {}).get("vix_term_structure", {})
+    vts_data  = (b.get("macro") or {}).get("vix_term_structure", {})
     ts_regime = vts_data.get("ts_regime", "")
     if ts_regime == "BACKWARDATION":
         market_line = "🔴 FEAR SPIKE — VIX term structure inverted, high stress"
@@ -584,72 +595,84 @@ def _plain_english_summary(b: dict) -> str:
     else:
         market_line = "🔴 STRESSED — hold extra cash, be very careful"
     lines.append(f"📊 <b>Market:</b> {market_line}  (VIX {vix_f:.1f})")
-
-    # ── Confidence meter ───────────────────────────────────────────────
-    def _conf_label(conf_pct):
-        if conf_pct >= 75:
-            return f"🔥 {conf_pct}% — VERY HIGH confidence, strong signal"
-        elif conf_pct >= 60:
-            return f"✅ {conf_pct}% — HIGH confidence, good signal"
-        elif conf_pct >= 50:
-            return f"🟡 {conf_pct}% — MODERATE, decent but not certain"
-        elif conf_pct >= 40:
-            return f"⚠️ {conf_pct}% — LOW confidence, lean toward skip"
-        else:
-            return f"❌ {conf_pct}% — VERY LOW, skip this one"
-
-    # ── What to do ─────────────────────────────────────────────────────
     lines.append("")
-    if abstain:
-        reason_short = (abstain[:120] + "…") if len(abstain) > 120 else abstain
-        lines.append(
-            f"🤖 <b>AI verdict:</b> System is sitting out — {reason_short}"
-        )
+
+    # ── Confidence label (Cameron's scale: 30=maybe, 70=definitely, 100=must) ──
+    def _conf_label(pct):
+        pct = int(pct)
+        if pct >= 80:
+            return f"🔥 {pct}% — MUST BUY — very high conviction"
+        elif pct >= 65:
+            return f"✅ {pct}% — DEFINITELY — strong signal, buy it"
+        elif pct >= 50:
+            return f"🟡 {pct}% — PROBABLY — solid signal, consider a normal position"
+        elif pct >= 35:
+            return f"⚠️ {pct}% — MAYBE — weak signal, small position or wait"
+        else:
+            return f"❌ {pct}% — SKIP — confidence too low to act"
+
+    # ── Sizing helper ──────────────────────────────────────────────────
+    top_op  = ranked[0] if ranked and isinstance(ranked[0], dict) else {}
+    pct_sz  = top_op.get("suggested_pct") or 9
+    dollar  = top_op.get("suggested_dollar")
+    if not dollar and bal:
+        dollar = int(bal * pct_sz / 100)
+    size_str = f"${dollar:,.0f}" if dollar else f"~{pct_sz:.0f}% of your balance"
+
+    # ── Determine call type and render ─────────────────────────────────
+    is_crisis  = ticker == "BIL"
+    is_abstain = ticker == "SPY" and bool(abstain)
+    sector_name = _sector_names.get(ticker, ticker)
+
+    if is_crisis:
+        lines.append("⛔ <b>NO TRADE — CRISIS MODE</b>")
+        lines.append(f"VIX is dangerously high ({vix_f:.0f}). System forces you to cash.")
         lines.append("")
+        lines.append(
+            "✅ <b>Your move:</b> Stay in cash.\n"
+            "→ Reply <code>SKIP</code> to log no action today"
+        )
+
+    elif is_abstain:
+        lines.append("⚠️ <b>NO SECTOR CALL TODAY</b>")
+        lines.append("The RL models have no strong sector conviction right now.")
+        lines.append(f"📊 Confidence: {_conf_label(confidence)}")
+        lines.append("")
+        if ranked:
+            alt    = ranked[0] if isinstance(ranked[0], dict) else {}
+            alt_t  = alt.get("ticker", "SPY")
+            alt_nm = _sector_names.get(alt_t, alt_t)
+            lines.append(f"📌 <b>Best ranked pick:</b> {alt_t} ({alt_nm})")
+            lines.append("")
         lines.append(
             "✅ <b>Your move:</b>\n"
-            "→ Reply <code>SKIP</code> — recommended (no edge today)\n"
-            "→ Or <code>BUY SPY</code> to go broad market if you want to deploy cash\n"
-            "→ Or just ask anything — \"is XLE still worth holding?\""
+            "→ Reply <code>SKIP</code> — recommended today\n"
+            "→ Or <code>BUY SPY</code> for a small broad-market position"
         )
-    elif ranked:
-        top        = ranked[0] if isinstance(ranked[0], dict) else {}
-        ticker     = top.get("ticker", "?")
-        name       = top.get("name", "?")
-        conviction = top.get("conviction", "LOW")
-        dollar     = top.get("suggested_dollar")
-        pct        = top.get("suggested_pct") or 9
-        conf       = top.get("score")
-        # Convert score (0-1 or raw) to a confidence percentage
-        try:
-            conf_pct = int(float(conf) * 100) if conf and float(conf) <= 1 else int(float(conf or 50))
-        except Exception:
-            conv_map = {"HIGH": 70, "MEDIUM": 55, "LOW": 42, "SPECULATIVE": 35}
-            conf_pct = conv_map.get(conviction, 50)
-        size_str  = f"${dollar:,.0f}" if dollar else f"~${int(bal * pct / 100):,}" if bal else f"~{pct:.0f}% of balance"
-        amt_int   = int(dollar) if dollar else (int(bal * pct / 100) if bal else None)
 
-        lines.append(
-            f"🤖 <b>AI verdict:</b> Best pick is <b>{ticker} ({name})</b>\n"
-            f"Confidence: {_conf_label(conf_pct)}\n"
-            f"Suggested amount: <b>{size_str}</b>"
-        )
+    else:
+        # Normal sector recommendation — show it clearly
+        lines.append(f"🎯 <b>TODAY'S CALL: {action} {ticker} ({sector_name})</b>")
+        lines.append(f"📊 Confidence: {_conf_label(confidence)}")
+        lines.append(f"💰 Suggested size: <b>{size_str}</b>")
         lines.append("")
 
-        if conviction in ("HIGH", "MEDIUM"):
-            buy_cmd  = f"<code>BUY A</code>"
-            log_cmd  = f"<code>BOUGHT {ticker} {amt_int if amt_int else '[amount]'}</code>"
+        if confidence >= 50:
             lines.append(
                 f"✅ <b>Your move:</b>\n"
-                f"1️⃣ Reply {buy_cmd} to log the decision\n"
-                f"2️⃣ If you actually bought it, also send {log_cmd}\n"
-                f"→ Or reply <code>SKIP</code> — no pressure"
+                f"→ Reply <code>BUY A</code> or <code>BUY {ticker}</code> to log it\n"
+                f"→ Or <code>SKIP</code> to pass today"
+            )
+        elif confidence >= 35:
+            lines.append(
+                f"✅ <b>Your move:</b>\n"
+                f"→ Reply <code>SKIP</code> — low signal, lean toward waiting\n"
+                f"→ Or <code>BUY A</code> for a small position ({size_str}) if you want exposure"
             )
         else:
             lines.append(
                 f"✅ <b>Your move:</b>\n"
-                f"→ Reply <code>SKIP</code> — signal is weak, lean toward waiting\n"
-                f"→ Or <code>BUY A</code> for a tiny amount ({size_str}) if you want exposure"
+                f"→ Reply <code>SKIP</code> — confidence too low to act"
             )
 
     # ── Macro flag ─────────────────────────────────────────────────────
