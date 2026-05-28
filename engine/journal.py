@@ -34,7 +34,49 @@ class Journal:
             deployed = os.path.join(os.path.dirname(__file__), "..", "data", "sector_command.db")
             if os.path.exists(deployed):
                 shutil.copy2(deployed, self.db_path)
+            self._restore_replies_from_redis()
         self._init_db()
+
+    def _redis(self, *cmd):
+        url   = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+        token = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+        if not url or not token:
+            return None
+        try:
+            import requests as _req
+            r = _req.post(url, json=list(cmd),
+                          headers={"Authorization": f"Bearer {token}"}, timeout=4)
+            return r.json().get("result")
+        except Exception:
+            return None
+
+    def _restore_replies_from_redis(self):
+        """After cold-start seed, replay stored human replies so P&L survives restarts."""
+        try:
+            raw = self._redis("GET", "sc:journal_replies")
+            if not raw:
+                return
+            replies = json.loads(raw) if isinstance(raw, str) else raw
+            if not replies:
+                return
+            con = sqlite3.connect(self.db_path)
+            for rep in replies:
+                date = rep.get("date")
+                command = rep.get("command")
+                reason = rep.get("reason", "")
+                if not date or not command:
+                    continue
+                # Apply to the most recent decision on that date
+                row = con.execute(
+                    "SELECT id FROM decisions WHERE date=? ORDER BY id DESC LIMIT 1", (date,)
+                ).fetchone()
+                if row:
+                    con.execute("UPDATE decisions SET human_command=?, human_reason=? WHERE id=?",
+                                (command, reason, row[0]))
+            con.commit()
+            con.close()
+        except Exception:
+            pass
 
     def _init_db(self):
         con = sqlite3.connect(self.db_path)
@@ -100,13 +142,37 @@ class Journal:
         """Called by the webhook when you reply BUY/SELL/SKIP + reason."""
         con = sqlite3.connect(self.db_path)
         if decision_id is None:
-            row = con.execute("SELECT id FROM decisions ORDER BY id DESC LIMIT 1").fetchone()
+            row = con.execute("SELECT id, date FROM decisions ORDER BY id DESC LIMIT 1").fetchone()
             decision_id = row[0] if row else None
+            decision_date = row[1] if row else None
+        else:
+            r = con.execute("SELECT date FROM decisions WHERE id=?", (decision_id,)).fetchone()
+            decision_date = r[0] if r else None
         if decision_id is not None:
             con.execute("UPDATE decisions SET human_command=?, human_reason=? WHERE id=?",
                         (command, reason, decision_id))
             con.commit()
         con.close()
+
+        # Persist to Redis so reply survives Vercel cold starts
+        if decision_date:
+            try:
+                raw = self._redis("GET", "sc:journal_replies")
+                replies = json.loads(raw) if raw and isinstance(raw, str) else (raw or [])
+                # Replace any existing reply for this date, then append
+                replies = [r for r in replies if r.get("date") != decision_date]
+                replies.append({
+                    "date": decision_date,
+                    "command": command,
+                    "reason": reason,
+                    "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                })
+                # Keep last 90 days only
+                replies = replies[-90:]
+                self._redis("SET", "sc:journal_replies", json.dumps(replies))
+            except Exception:
+                pass
+
         return decision_id
 
     def _maybe_log_sheets(self, briefing, research_context):
