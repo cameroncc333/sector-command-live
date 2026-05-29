@@ -168,7 +168,7 @@ def format_briefing(b: dict) -> str:
             sector  = p.get("sector_name", "")
             tagline = p.get("conviction_tagline", "")
             dollar  = f" → <b>${p['suggested_dollar']:.0f}</b>" if p.get("suggested_dollar") else ""
-            lines.append(f"  {i}. {emoji} <b>{p['ticker']}</b> ({sector}) score {score:.0f}{dollar}")
+            lines.append(f"  {i}. {emoji} <b>{p['ticker']}</b> ({sector}) rank score {score:.0f}/100{dollar}")
             if tagline:
                 lines.append(f"     💡 {tagline}")
         lines.append("  Reply <code>ALPHA</code> for full list with factor scores")
@@ -697,22 +697,23 @@ def _plain_english_summary(b: dict) -> str:
     equity_picks = b.get("equity_alpha_picks") or []
     if equity_picks:
         lines.append("")
-        lines.append("📈 <b>STOCK PICKS — should you buy them?</b>")
-        conv_to_pct = {"HIGH": 80, "MEDIUM": 62, "LOW": 42}
-        conv_emoji  = {"HIGH": "🔥", "MEDIUM": "✅", "LOW": "🟡"}
+        lines.append("📈 <b>STOCK PICKS — should you buy?</b>")
+        conv_call = {"HIGH": "✅ BUY", "MEDIUM": "🟡 CONSIDER", "LOW": "⏭️ SKIP", "AVOID": "🔴 AVOID"}
+        conv_desc = {"HIGH": "HIGH conviction", "MEDIUM": "MEDIUM conviction",
+                     "LOW": "LOW conviction — skip unless you have reason", "AVOID": "avoid"}
         for p in equity_picks[:3]:
-            ticker_p  = p.get("ticker", "?")
-            conv      = p.get("conviction", "LOW")
-            conf_pct  = conv_to_pct.get(conv, 42)
-            emoji     = conv_emoji.get(conv, "⚪")
-            dollar    = p.get("suggested_dollar")
-            tagline   = p.get("conviction_tagline", "")
-            size_str  = f" → <b>${dollar:,.0f}</b>" if dollar else ""
-            call_str  = "BUY" if conf_pct >= 60 else "SKIP"
-            lines.append(f"  {emoji} <b>{ticker_p}</b>  {call_str} @ {conf_pct}%{size_str}")
+            ticker_p = p.get("ticker", "?")
+            conv     = p.get("conviction", "LOW")
+            call     = conv_call.get(conv, "⏭️ SKIP")
+            desc     = conv_desc.get(conv, conv)
+            dollar   = p.get("suggested_dollar")
+            tagline  = p.get("conviction_tagline", "")
+            size_str = f" → <b>${dollar:,.0f}</b>" if dollar else ""
+            lines.append(f"  {call}: <b>{ticker_p}</b>  [{desc}]{size_str}")
             if tagline:
                 lines.append(f"     💡 {tagline}")
-            lines.append(f"     → Reply <code>BUY {ticker_p}</code> or <code>SKIP</code>")
+            if conv in ("HIGH", "MEDIUM"):
+                lines.append(f"     → Reply <code>BUY {ticker_p}</code> to log it")
         lines.append("")
 
     # ── Macro flag ─────────────────────────────────────────────────────

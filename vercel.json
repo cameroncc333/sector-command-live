@@ -1,5 +1,9 @@
 {
-  "buildCommand": "",
   "outputDirectory": "docs",
-  "framework": null
+  "framework": null,
+  "functions": {
+    "api/webhook.py": {
+      "maxDuration": 10
+    }
+  }
 }

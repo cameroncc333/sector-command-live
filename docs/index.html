@@ -168,7 +168,7 @@ code{background:#21262d;padding:1px 5px;border-radius:4px;font-size:12px;font-fa
 <div class="tab-bar">
   <div class="tab active" onclick="switchTab('today',this)">📊 Today</div>
   <div class="tab" onclick="switchTab('opportunities',this)">🎯 Opportunities</div>
-  <div class="tab" onclick="switchTab('stocks',this)">📈 Stocks</div>
+  <div class="tab" onclick="switchTab('stocks',this)">📈 My Positions</div>
   <div class="tab" onclick="switchTab('portfolio',this)">💼 Portfolio</div>
   <div class="tab" onclick="switchTab('journal',this)">📋 Journal</div>
 </div>
@@ -515,42 +515,86 @@ function renderOpportunities(b) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// TAB 3 — STOCKS (EQUITY ALPHA)
+// TAB 3 — MY POSITIONS (real money + Alpaca paper)
 // ═══════════════════════════════════════════════════════════════════
 function renderStocks(b) {
-  const picks=b.equity_alpha_picks||[];
-  const exits=b.equity_alpha_exit_alerts||[];
-  const EMOJI={HIGH:"🔥",MEDIUM:"✅",LOW:"🔵"};
+  const port    = b.portfolio_snap||{};
+  const holdings= port.holdings||[];
+  const alp     = b.alpaca_paper||{};
+  const alpPos  = alp.positions||[];
+  const exits   = b.equity_alpha_exit_alerts||[];
 
-  const exitHtml=exits.length?`<div class="card" style="border-color:var(--red);margin-bottom:0">
-    <div class="card-title" style="color:var(--red)">🚨 Exit Signals — Review These Positions</div>
+  // Exit signal alerts
+  const exitHtml=exits.length?`<div class="card" style="border-color:var(--red)">
+    <div class="card-title" style="color:var(--red)">🚨 Exit Signals — Review These</div>
     ${exits.map(e=>`<div class="alert-banner"><div class="alert-title">${e.urgency==="URGENT"?"🔴":"🟡"} ${e.ticker} — ${e.signal_type}</div><div class="small muted">${e.detail||""}</div></div>`).join("")}
   </div>`:"";
 
-  const pickRows=picks.length?picks.map(p=>{
-    const conv=p.conviction||"LOW";
-    const score=Math.round(p.composite_score||0);
-    const dollar=p.suggested_dollar?`<div class="green bold" style="font-size:15px">${fmt$(p.suggested_dollar)}</div>`:"";
-    const tagline=p.conviction_tagline||"";
-    return `<div class="alpha-row">
-      <div class="alpha-lft">
-        <div class="alpha-ticker">${EMOJI[conv]||"⚪"} ${p.ticker} <span class="tag ${tagClass(conv)}" style="font-size:10px;vertical-align:middle">${conv}</span></div>
-        <div class="alpha-meta">${p.sector_name||""} · Score: <strong>${score}/100</strong></div>
-        ${tagline?`<div class="alpha-tagline">💡 ${tagline}</div>`:""}
-      </div>
-      <div class="alpha-rgt">
-        ${dollar}
-        ${p.suggested_pct?`<div class="small muted">${p.suggested_pct}% of balance</div>`:""}
-      </div>
+  // Real money positions
+  let realHtml="";
+  if(holdings.length){
+    const rows=holdings.map(h=>{
+      const pnlCls=(h.pnl_dollar||0)>=0?"green":"red";
+      return `<div class="alpha-row">
+        <div class="alpha-lft">
+          <div class="alpha-ticker">${h.ticker} <span class="small muted">${SNAMES[h.ticker]||""}</span></div>
+          <div class="alpha-meta">Bought ${h.date_bought||"—"}${h.avg_cost?" · avg $"+h.avg_cost.toFixed(2):""}</div>
+          ${h.notes?`<div class="alpha-tagline">💬 ${h.notes}</div>`:""}
+        </div>
+        <div class="alpha-rgt">
+          <div class="bold">${fmt$(h.current_value||h.cost_basis)}</div>
+          ${h.pnl_dollar!=null&&h.pnl_dollar!==0?`<div class="${pnlCls} small">${h.pnl_dollar>=0?"+":""}$${Math.abs(h.pnl_dollar).toFixed(0)} (${(h.pnl_pct||0)>=0?"+":""}${(h.pnl_pct||0).toFixed(1)}%)</div>`:""}
+          ${h.current_price?`<div class="small muted">$${h.current_price.toFixed(2)} / share</div>`:""}
+        </div>
+      </div>`;
+    }).join("");
+    realHtml=`<div class="card">
+      <div class="card-title">💵 Real Money Positions</div>
+      ${rows}
+      <div class="small muted" style="margin-top:12px">Log: <code>BOUGHT XLF 500 reason here</code> &nbsp;·&nbsp; Remove: <code>SOLD XLF</code></div>
     </div>`;
-  }).join(""):`<div class="empty"><div class="empty-icon">🔬</div>Individual stock picks are generated with each daily briefing.<br><br>The factor model ranks ~80 large-cap S&P 500 stocks across Value (20%), Quality (25%), Momentum (30%), Technical (15%), and Low-Vol (10%) factors. Scores are Z-scored within sector.</div>`;
+  } else {
+    realHtml=`<div class="card"><div class="empty"><div class="empty-icon">💵</div><strong>No real-money positions logged.</strong><br><br>Send <code>BOUGHT XLF 500 my reason</code> in Telegram to log a position with a note.</div></div>`;
+  }
+
+  // Alpaca paper positions
+  let alpHtml="";
+  if(alpPos.length){
+    const rows=alpPos.map(p=>{
+      const upl=parseFloat(p.unrealized_pl||0);
+      const uplp=parseFloat(p.unrealized_plpc||0)*100;
+      const cls=upl>=0?"green":"red";
+      return `<div class="alpha-row">
+        <div class="alpha-lft">
+          <div class="alpha-ticker">${p.symbol}</div>
+          <div class="alpha-meta">${p.qty} shares · $${parseFloat(p.current_price||0).toFixed(2)}/share</div>
+        </div>
+        <div class="alpha-rgt">
+          <div class="${cls} bold">${upl>=0?"+":""}$${Math.abs(upl).toFixed(0)}</div>
+          <div class="${cls} small">${upl>=0?"+":""}${uplp.toFixed(1)}%</div>
+        </div>
+      </div>`;
+    }).join("");
+    alpHtml=`<div class="card">
+      <div class="card-title">🏦 Alpaca Paper Positions${alp.equity?` — Account: ${fmt$(alp.equity)}`:""}</div>
+      ${rows}
+      <div class="small muted" style="margin-top:12px">Auto-executed when you reply <code>BUY</code> in Telegram.</div>
+    </div>`;
+  } else if(alp.equity){
+    alpHtml=`<div class="card">
+      <div class="card-title">🏦 Alpaca Paper Account — ${fmt$(alp.equity)}</div>
+      <div class="empty">No open paper positions. Reply <code>BUY A</code> in Telegram to auto-execute a paper trade.</div>
+    </div>`;
+  }
 
   document.getElementById('pg-stocks').innerHTML=`
     ${exitHtml}
-    <div class="card">
-      <div class="card-title">Cross-Sectional Factor Model — Individual Stock Alpha</div>
-      ${pickRows}
-    </div>
+    ${realHtml}
+    ${alpHtml}
+    ${(!holdings.length&&!alpPos.length&&!exits.length)?"":`<div class="card" style="border-color:var(--border)">
+      <div class="card-title">ℹ️ Stock recommendations</div>
+      <div class="small muted">AI stock picks are sent to your Telegram briefing only — reply <code>ALPHA</code> to see the full list, or wait for the next daily briefing.</div>
+    </div>`}
     ${freshBar(b)}`;
 }
 
