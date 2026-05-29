@@ -282,14 +282,20 @@ async function init() {
     }
   }
 
-  // 4. Overlay live journal replies so BUY/SKIP shows immediately without waiting for next run
+  // 4. Overlay live journal replies so BUY/SKIP shows immediately without waiting for next run.
+  // journal.json is sorted newest-first (ORDER BY id DESC). Only apply the overlay to the FIRST
+  // occurrence of each date so that multiple runs on the same day don't all get the same badge.
   const liveReplies = live && Array.isArray(live.journal_replies) ? live.journal_replies : [];
   const replyByDate = {};
   liveReplies.forEach(r => { if (r.date) replyByDate[r.date] = r; });
+  const overlaidDates = new Set();
   const journalData = (Array.isArray(journal) ? journal : []).map(entry => {
-    if (entry.human_command) return entry;  // already set from DB
+    if (entry.human_command) return entry;  // already persisted in DB — trust it
     const r = replyByDate[entry.date];
-    if (r) return { ...entry, human_command: r.command, human_reason: r.reason };
+    if (r && !overlaidDates.has(entry.date)) {
+      overlaidDates.add(entry.date);  // only the most-recent entry per date gets the live badge
+      return { ...entry, human_command: r.command, human_reason: r.reason };
+    }
     return entry;
   });
 

@@ -70,11 +70,7 @@ async function alpacaBuy(ticker, confidence = 50) {
   const base = 'https://paper-api.alpaca.markets';
   const hdrs = { 'APCA-API-KEY-ID': key, 'APCA-API-SECRET-KEY': secret, 'Content-Type': 'application/json' };
   try {
-    const posR = await fetch(`${base}/v2/positions`, { headers: hdrs });
-    if (posR.ok) {
-      const positions = await posR.json();
-      await Promise.all(positions.map(p => fetch(`${base}/v2/positions/${p.symbol}`, { method: 'DELETE', headers: hdrs })));
-    }
+    // NOTE: positions are NOT cleared — each BUY adds to the paper portfolio
     const orderR = await fetch(`${base}/v2/orders`, {
       method: 'POST', headers: hdrs,
       body: JSON.stringify({ symbol: ticker, notional: String(notional), side: 'buy', type: 'market', time_in_force: 'day' }),
@@ -239,9 +235,19 @@ async function handle(text) {
     tokens.slice(2).forEach(t => { const n = parseFloat(t.replace(/[$,]/g,'')); isNaN(n) ? noteParts.push(t) : nums.push(n); });
     const notes = noteParts.join(' ').replace(/^[-–: ]+/,'').trim() || null;
     let entry;
-    if (nums.length === 2) entry = { ticker, shares: nums[0], avg_cost: nums[1], dollar_value: Math.round(nums[0]*nums[1]*100)/100 };
-    else if (nums.length === 1) entry = { ticker, dollar_value: nums[0] };
-    else return 'Format: <code>BOUGHT XLE 500</code>';
+    if (nums.length === 2) {
+      entry = { ticker, shares: nums[0], avg_cost: nums[1], dollar_value: Math.round(nums[0]*nums[1]*100)/100 };
+    } else if (nums.length === 1) {
+      entry = { ticker, dollar_value: nums[0] };
+      // Auto-fetch current price so P&L can be tracked even for dollar-only entries
+      try {
+        const px = (await fetchPrices([ticker]))[ticker];
+        if (px && px > 0) {
+          entry.avg_cost = Math.round(px * 100) / 100;
+          entry.shares   = Math.round(nums[0] / px * 1000) / 1000;
+        }
+      } catch (_) {}
+    } else return 'Format: <code>BOUGHT XLE 500</code>';
     let holdings = await redisGet('sc:holdings') || [];
     if (!Array.isArray(holdings)) holdings = [];
     holdings = holdings.filter(h => h.ticker !== ticker);
