@@ -12,7 +12,7 @@
     "PPO": "BUY XLK"
   },
   "abstain_reason": null,
-  "news_sentiment": 0.2,
+  "news_sentiment": 0.222,
   "news_headline": "Costco says it saw &apos;record-breaking&apos; gas volumes amid rising prices",
   "rsi": 49.0,
   "rel_strength": -0.063,
@@ -20,12 +20,12 @@
   "ghost_alpha": 0.0,
   "why_trace": [
     "Ensemble agreement: 1/3 agents on XLF",
-    "News sentiment for XLF: +0.20",
+    "News sentiment for XLF: +0.22",
     "Options PCR (SPY): 3.13 [FEARFUL]",
     "repo: algo-system prefers XLK",
     "repo: equity-analyzer momentum/rel weak",
     "modifier: only 1/3 agents chose XLF (minority view) \u2192 -10",
-    "modifier: mildly positive news (+0.20) \u2192 +3",
+    "modifier: mildly positive news (+0.22) \u2192 +3",
     "modifier: PCR 3.13 elevated put buying (contrarian) \u2192 +4",
     "modifier: VIX term structure steep contango (calm market) \u2192 +4",
     "modifier: 0/2 repos corroborated XLF (no cross-strategy support) \u2192 -12",
@@ -36,7 +36,7 @@
     "rl_source": "LIVE",
     "market_data": "LIVE",
     "news": "LEXICON",
-    "generated_utc": "2026-05-29 02:55 UTC",
+    "generated_utc": "2026-05-29 03:05 UTC",
     "vix_ts": "STEEP_CONTANGO"
   },
   "repo_detail": {
@@ -175,7 +175,7 @@
       "pressured": []
     },
     "fomc_sentiment": {
-      "pmsi": 0.295,
+      "pmsi": 0.302,
       "regime": "BULLISH"
     },
     "agreement": {
@@ -227,7 +227,7 @@
         "sharpe": 0.03,
         "rel": -0.073,
         "algo_score": -0.316,
-        "news": 0.2
+        "news": 0.222
       },
       "kelly_pct": 0.0
     },
@@ -256,9 +256,9 @@
       "ticker": "BTC-USD",
       "name": "Bitcoin",
       "type": "crypto",
-      "price": 73149.89,
-      "change_24h_pct": -1.61,
-      "mom_7d_pct": -5.66,
+      "price": 73178.0,
+      "change_24h_pct": -1.57,
+      "mom_7d_pct": -5.62,
       "rsi": 19.8,
       "vol_7d_pct": 1.58,
       "signal": "BEARISH",
@@ -268,10 +268,10 @@
       "ticker": "ETH-USD",
       "name": "Ethereum",
       "type": "crypto",
-      "price": 1995.53,
-      "change_24h_pct": -1.32,
-      "mom_7d_pct": -6.38,
-      "rsi": 18.9,
+      "price": 1998.23,
+      "change_24h_pct": -1.19,
+      "mom_7d_pct": -6.25,
+      "rsi": 19.1,
       "vol_7d_pct": 1.92,
       "signal": "BEARISH",
       "max_alloc_pct": 5.0
@@ -323,8 +323,8 @@
       "signal": "NORMAL"
     },
     "dollar": {
-      "dxy": 99.01,
-      "dxy_change": -0.2,
+      "dxy": 99.03,
+      "dxy_change": -0.18,
       "signal": "WEAK USD"
     },
     "vix_term_structure": {
@@ -420,7 +420,7 @@
         "rel_spy": 0.1394279290925049,
         "rsi": 43.30075631269357,
         "high_52w_prox": 0.8361712579512148,
-        "vol_90d": 0.549904997023896
+        "vol_90d": 0.5499050166868878
       },
       "rationale": [
         "High quality: ROE 25.8%",
@@ -460,7 +460,7 @@
         "rel_spy": 0.15299842945059172,
         "rsi": 64.6940923140942,
         "high_52w_prox": 0.9653923309800072,
-        "vol_90d": 0.25848071662854394
+        "vol_90d": 0.2584807166285439
       },
       "rationale": [
         "Cheap vs sector peers: fwd P/E 12.3x",
@@ -499,10 +499,10 @@
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": -0.0013883533499772227,
+        "rel_spy": -0.0013884729795876627,
         "rsi": 62.43718350699697,
         "high_52w_prox": 0.9815674494557257,
-        "vol_90d": 0.17099418913369305
+        "vol_90d": 0.17099418913369294
       },
       "rationale": [
         "Near 52-week high (98.2%) \u2014 breakout zone",
@@ -624,7 +624,7 @@
         "rel_spy": 0.09716588997535491,
         "rsi": 59.19996599382004,
         "high_52w_prox": 0.9484644983709484,
-        "vol_90d": 0.2784527766739734
+        "vol_90d": 0.2784527766739732
       },
       "rationale": [
         "RSI 59 \u2014 ideal entry zone",
@@ -689,17 +689,17 @@
   },
   "social_sentiment": {},
   "alpaca_paper": {
-    "equity": 100021.15,
+    "equity": 100003.52,
     "cash": 80000.0,
-    "daily_pnl": -66.97,
-    "daily_pnl_pct": -0.07,
+    "daily_pnl": -84.6,
+    "daily_pnl_pct": -0.08,
     "positions": [
       {
         "symbol": "XLE",
         "qty": "352.485019386",
-        "current_price": "56.8",
-        "unrealized_pl": "21.149101",
-        "unrealized_plpc": "0.00106"
+        "current_price": "56.75",
+        "unrealized_pl": "3.52485",
+        "unrealized_plpc": "0.00018"
       }
     ],
     "account_status": "ACTIVE"
