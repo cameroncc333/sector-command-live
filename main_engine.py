@@ -211,9 +211,13 @@ def run(dry_run=False):
     except Exception as e:
         print(f"[main_engine] equity alpha exit check skipped ({e})")
 
-    # 7) Paper performance
+    # 7) Paper performance — restore Redis replies first so BUY decisions are visible
     ghost_alpha = rl.get("ghost_alpha", 0.0)
     perf_data   = None
+    try:
+        Journal()._restore_replies_from_redis()
+    except Exception as e:
+        print(f"[main_engine] pre-performance reply restore skipped ({e})")
     try:
         pp          = PaperPortfolio()
         ghost_alpha = pp.ghost_alpha()
@@ -334,6 +338,19 @@ def run(dry_run=False):
         alpaca_paper = _alpaca_summary()
     except Exception as e:
         print(f"[main_engine] Alpaca paper summary skipped ({e})")
+    # Add SPY daily return so dashboard can show Alpaca vs SPY comparison
+    try:
+        import yfinance as _yf
+        _spy = _yf.download("SPY", period="5d", progress=False, auto_adjust=True)
+        if len(_spy) >= 2:
+            _spy_ret = float(_spy["Close"].iloc[-1] / _spy["Close"].iloc[-2] - 1) * 100
+            alpaca_paper["spy_daily_pct"] = round(_spy_ret, 3)
+            # Total return since Alpaca account inception (starting $100k)
+            _alp_eq = alpaca_paper.get("equity")
+            if _alp_eq:
+                alpaca_paper["total_return_pct"] = round((_alp_eq / 100000 - 1) * 100, 3)
+    except Exception as e:
+        print(f"[main_engine] SPY daily return skipped ({e})")
 
     briefing.update({
         "freshness":            freshness,

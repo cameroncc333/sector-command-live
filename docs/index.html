@@ -244,14 +244,23 @@ async function init() {
   // even before the next GitHub Actions run regenerates briefing.json.
   if (live && live.balance != null) {
     briefing.portfolio_snap = briefing.portfolio_snap || {};
-    briefing.portfolio_snap.balance = live.balance;
-    if (Array.isArray(live.holdings) && live.holdings.length) {
-      const invested = live.holdings.reduce((s, h) => s + (h.dollar_value || 0), 0);
-      briefing.portfolio_snap.holdings = live.holdings.map(h => ({
+    briefing.portfolio_snap.balance = live.balance;  // Redis balance is always authoritative
+
+    const snapH = briefing.portfolio_snap.holdings || [];
+    const liveH = Array.isArray(live.holdings) ? live.holdings : [];
+    const snapTickers = new Set(snapH.map(h => h.ticker));
+    const liveTickers = new Set(liveH.map(h => h.ticker));
+    const holdingsMatch = liveH.length === snapH.length &&
+      liveH.every(h => snapTickers.has(h.ticker)) && snapH.every(h => liveTickers.has(h.ticker));
+
+    if (!holdingsMatch || !snapH.length) {
+      // Use live Redis holdings (no prices yet — GitHub Actions will add them next run)
+      const invested = liveH.reduce((s, h) => s + (h.dollar_value || 0), 0);
+      briefing.portfolio_snap.holdings = liveH.map(h => ({
         ticker: h.ticker,
         date_bought: h.date_bought || '—',
         avg_cost: h.avg_cost || null,
-        current_price: null,
+        current_price: null,  // filled in by GitHub Actions next run
         cost_basis: h.dollar_value || 0,
         pnl_dollar: 0,
         pnl_pct: 0,
@@ -260,10 +269,9 @@ async function init() {
       }));
       briefing.portfolio_snap.total_invested = invested;
       briefing.portfolio_snap.cash_remaining = live.balance - invested;
-    } else if (!briefing.portfolio_snap.holdings?.length) {
-      briefing.portfolio_snap.holdings = [];
-      briefing.portfolio_snap.total_invested = 0;
-      briefing.portfolio_snap.cash_remaining = live.balance;
+    } else {
+      // Snap already has the right tickers (and may have live prices from GitHub Actions)
+      briefing.portfolio_snap.cash_remaining = live.balance - (briefing.portfolio_snap.total_invested || 0);
     }
   }
 
@@ -732,9 +740,24 @@ function renderPortfolio(b) {
     </div>`;
   }
 
-  // Paper P&L section
+  // Paper P&L section — prefer Alpaca real-time data when available
   let paperHtml="";
-  if(perf.portfolio_return_pct!=null){
+  const alp2=b.alpaca_paper||{};
+  if(alp2.equity!=null){
+    // Alpaca paper account is live — use it for the comparison
+    const alpRet=alp2.total_return_pct!=null?alp2.total_return_pct:((alp2.equity/100000-1)*100);
+    const spyDay=alp2.spy_daily_pct;
+    const alpDay=alp2.daily_pnl_pct||0;
+    paperHtml=`<div class="card">
+      <div class="card-title">Paper Trading P&amp;L vs SPY Benchmark</div>
+      <div class="perf-row" style="margin-bottom:10px">
+        <div class="perf-stat"><div class="lbl">Paper Portfolio</div><div class="val ${alpRet>=0?"green":"red"}">${alpRet>=0?"+":""}${alpRet.toFixed(2)}%</div><div class="small muted">vs $100k start</div></div>
+        ${spyDay!=null?`<div class="perf-stat"><div class="lbl">SPY Today</div><div class="val ${spyDay>=0?"green":"red"}">${spyDay>=0?"+":""}${spyDay.toFixed(2)}%</div><div class="small muted">daily change</div></div>`:""}
+        <div class="perf-stat"><div class="lbl">Today's P&amp;L</div><div class="val ${alpDay>=0?"green":"red"}">${alpDay>=0?"+":""}${alpDay.toFixed(2)}%</div><div class="small muted">${fmt$(alp2.daily_pnl||0)} today</div></div>
+      </div>
+      <div class="small muted">Tracked on Alpaca paper account · Auto-executes when you reply BUY in Telegram · Balance: ${fmt$(alp2.equity)}</div>
+    </div>`;
+  } else if(perf.portfolio_return_pct!=null){
     const pr=perf.portfolio_return_pct,sr=perf.spy_return_pct||0,al=perf.alpha_pct||0;
     paperHtml=`<div class="card">
       <div class="card-title">Paper Trading P&amp;L vs SPY Benchmark</div>
@@ -743,7 +766,7 @@ function renderPortfolio(b) {
         <div class="perf-stat"><div class="lbl">SPY Return</div><div class="val ${sr>=0?"green":"red"}">${sr>=0?"+":""}${sr.toFixed(1)}%</div></div>
         <div class="perf-stat"><div class="lbl">Alpha vs Market</div><div class="val ${al>=0?"green":"red"}">${al>=0?"+":""}${al.toFixed(2)}%</div></div>
       </div>
-      <div class="small muted">${perf.n_trades||0} paper trades · ${perf.days_running||0} days · Paper mode active — auto-executes on Alpaca paper account when you reply BUY</div>
+      <div class="small muted">${perf.n_trades||0} paper trades · ${perf.days_running||0} days · Paper mode active</div>
     </div>`;
   }
 
@@ -766,7 +789,7 @@ function renderPortfolio(b) {
         </table>
       </div>
       <div class="small muted" style="margin-top:10px">
-        Log a position: <code>BOUGHT XLF 500</code> &nbsp;·&nbsp; Remove: <code>SOLD XLF</code>
+        Current prices refresh 3×/day (9AM, 12PM, 3:30PM EDT). &nbsp;·&nbsp; Log: <code>BOUGHT XLF 500</code> &nbsp;·&nbsp; Remove: <code>SOLD XLF</code>
       </div>
     </div>`
     :`<div class="card"><div class="empty"><div class="empty-icon">📭</div>No real-money positions logged yet.<br>Send <code>BOUGHT XLF 500</code> in Telegram to log a position.</div></div>`}
@@ -826,7 +849,7 @@ function renderJournal(rows) {
           <div class="jrow-rec"><span class="ticker" style="color:${actionColor}">${action} ${ticker}</span>${confDisp}</div>
           ${r.abstain_reason?`<div class="small muted" style="margin-top:3px">ℹ️ ${r.abstain_reason}</div>`:""}
         </div>
-        <div>${human&&REPLY_BADGE[human]?REPLY_BADGE[human]:""}</div>
+        <div>${human&&REPLY_BADGE[human]?REPLY_BADGE[human]:`<span class="pill" style="background:#161b22;color:var(--muted);border:1px solid #30363d">⏳ No reply</span>`}</div>
       </div>
       ${r.news_headline?`<div class="jrow-headline">"${r.news_headline.slice(0,90)}${r.news_headline.length>90?"…":""}"</div>`:""}
       ${r.human_command?`<div class="jrow-reply"><strong>${r.human_command}</strong>${r.human_reason&&r.human_reason!=="(no reason given)"?` — ${r.human_reason}`:""}</div>`:""}
