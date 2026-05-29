@@ -282,20 +282,39 @@ async function init() {
     }
   }
 
-  // 4. Overlay live journal replies so BUY/SKIP shows immediately without waiting for next run.
-  // journal.json is sorted newest-first (ORDER BY id DESC). Only apply the overlay to the FIRST
-  // occurrence of each date so that multiple runs on the same day don't all get the same badge.
+  // 4. Overlay live journal replies.
+  // sc:journal_replies keeps ALL replies (multiple per day), each with a timestamp.
+  // journal.json is sorted newest-first (ORDER BY id DESC).
+  // Matching: group both by date, sort both newest-first, match positionally.
+  // → newest reply for a date → newest journal entry for that date, etc.
   const liveReplies = live && Array.isArray(live.journal_replies) ? live.journal_replies : [];
-  const replyByDate = {};
-  liveReplies.forEach(r => { if (r.date) replyByDate[r.date] = r; });
-  const overlaidDates = new Set();
-  const journalData = (Array.isArray(journal) ? journal : []).map(entry => {
+  // Group replies by date, sort each group newest-first
+  const repliesByDate = {};
+  liveReplies.forEach(r => {
+    if (!r.date) return;
+    (repliesByDate[r.date] = repliesByDate[r.date] || []).push(r);
+  });
+  Object.values(repliesByDate).forEach(arr => arr.sort((a,b) => (b.ts||'') > (a.ts||'') ? 1 : -1));
+
+  // Group journal entries by date — journal is already newest-first, so each date's group is too
+  const entriesByDate = {};
+  (Array.isArray(journal) ? journal : []).forEach((entry, idx) => {
+    if (!entry.date) return;
+    (entriesByDate[entry.date] = entriesByDate[entry.date] || []).push(idx);
+  });
+
+  // Map journal array index → reply (newest entry → newest reply for that date)
+  const replyByIdx = {};
+  Object.entries(entriesByDate).forEach(([date, idxList]) => {
+    const reps = repliesByDate[date] || [];
+    idxList.forEach((idx, i) => { if (reps[i]) replyByIdx[idx] = reps[i]; });
+  });
+
+  const jArr = Array.isArray(journal) ? journal : [];
+  const journalData = jArr.map((entry, idx) => {
     if (entry.human_command) return entry;  // already persisted in DB — trust it
-    const r = replyByDate[entry.date];
-    if (r && !overlaidDates.has(entry.date)) {
-      overlaidDates.add(entry.date);  // only the most-recent entry per date gets the live badge
-      return { ...entry, human_command: r.command, human_reason: r.reason };
-    }
+    const r = replyByIdx[idx];
+    if (r) return { ...entry, human_command: r.command, human_ticker: r.ticker, human_reason: r.reason };
     return entry;
   });
 
@@ -853,16 +872,31 @@ function emptyJournalCard(rows) {
   </div>`;
 }
 
+function fmtJDate(d){
+  if(!d)return'—';
+  try{const dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});}
+  catch{return d;}
+}
+
 function renderJournal(rows) {
   const el=document.getElementById('pg-journal');
   if(!rows||!rows.length){el.innerHTML=emptyJournalCard([]);return;}
 
-  const REPLY_BADGE={
-    BUY:`<span class="pill pill-green">✅ BUY</span>`,
-    SELL:`<span class="pill pill-red">📉 SELL</span>`,
-    SKIP:`<span class="pill" style="background:#21262d;color:var(--muted)">⏭️ SKIP</span>`,
-    HOLD:`<span class="pill pill-blue">⏸️ HOLD</span>`,
-  };
+  function makeBadge(cmd, tkr){
+    const icons={BUY:'✅',SELL:'📉',SKIP:'⏭️',HOLD:'⏸️'};
+    const clsMap={BUY:'pill-green',SELL:'pill-red',SKIP:'',HOLD:'pill-blue'};
+    const styleMap={SKIP:'background:#21262d;color:var(--muted)'};
+    if(!icons[cmd])return null;
+    const label=(tkr&&(cmd==='BUY'||cmd==='SELL'))?`${cmd} ${tkr}`:cmd;
+    const cls=clsMap[cmd]||'';
+    const sty=styleMap[cmd]?`style="${styleMap[cmd]}"`:'';
+    return `<span class="pill ${cls}" ${sty}>${icons[cmd]} ${label}</span>`;
+  }
+
+  // Track same-day runs so we can label them "Run 1 of 3" etc.
+  const dateCounts={};
+  rows.forEach(r=>{const d=r.date||'—';dateCounts[d]=(dateCounts[d]||0)+1;});
+  const dateIdx={};
 
   const html=rows.map(r=>{
     const ticker=r.recommended_ticker||r.rl_target||"—";
@@ -872,25 +906,31 @@ function renderJournal(rows) {
     const regime=r.regime||"?";
     const date  =r.date||"—";
     const human =r.human_command;
+    const hTkr  =r.human_ticker||null;
+
+    // Run counter for same-day entries (journal is newest-first, so run 1 = latest)
+    dateIdx[date]=(dateIdx[date]||0)+1;
+    const runLabel=dateCounts[date]>1?` <span class="small muted">· run ${dateIdx[date]} of ${dateCounts[date]}</span>`:'';
 
     let trace=[];
     try{trace=typeof r.why_trace==="string"?JSON.parse(r.why_trace):(r.why_trace||[]);}catch(_){}
-    const tId="t"+r.id;
+    const tId="t"+(r.id||Math.random().toString(36).slice(2));
 
     const actionColor=ticker==="BIL"?"var(--red)":ticker==="SPY"?"var(--muted)":"var(--text)";
     const confDisp=conf!=="—"?`<span class="small muted" style="margin-left:8px">${conf}% confidence</span>`:"";
+    const badge=makeBadge(human,hTkr)||`<span class="pill" style="background:#161b22;color:var(--muted);border:1px solid #30363d">⏳ No reply</span>`;
 
     return `<div class="jrow">
       <div class="jrow-header">
         <div>
-          <div class="jrow-meta">${date} &nbsp;·&nbsp; ${regime} &nbsp;·&nbsp; VIX ${vix}</div>
+          <div class="jrow-meta"><strong>${fmtJDate(date)}</strong>${runLabel} &nbsp;·&nbsp; ${regime} &nbsp;·&nbsp; VIX ${vix}</div>
           <div class="jrow-rec"><span class="ticker" style="color:${actionColor}">${action} ${ticker}</span>${confDisp}</div>
           ${r.abstain_reason?`<div class="small muted" style="margin-top:3px">ℹ️ ${r.abstain_reason}</div>`:""}
         </div>
-        <div>${human&&REPLY_BADGE[human]?REPLY_BADGE[human]:`<span class="pill" style="background:#161b22;color:var(--muted);border:1px solid #30363d">⏳ No reply</span>`}</div>
+        <div>${badge}</div>
       </div>
       ${r.news_headline?`<div class="jrow-headline">"${r.news_headline.slice(0,90)}${r.news_headline.length>90?"…":""}"</div>`:""}
-      ${r.human_command?`<div class="jrow-reply"><strong>${r.human_command}</strong>${r.human_reason&&r.human_reason!=="(no reason given)"?` — ${r.human_reason}`:""}</div>`:""}
+      ${human?`<div class="jrow-reply"><strong>${human}${hTkr?' '+hTkr:''}</strong>${r.human_reason&&r.human_reason!=='(no reason given)'&&r.human_reason?` — ${r.human_reason}`:''}</div>`:''}
       ${trace.length?`
         <div class="trace-toggle" onclick="toggleEl('${tId}',this)">▶ Show decision trace (${trace.length} steps)</div>
         <div id="${tId}" class="trace-body">${trace.map(t=>`<div class="trace-item">${t}</div>`).join("")}</div>`:""}

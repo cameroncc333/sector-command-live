@@ -64,19 +64,23 @@ async function alpacaBuy(ticker, confidence = 50) {
   const key = process.env.ALPACA_API_KEY;
   const secret = process.env.ALPACA_SECRET_KEY;
   if (!key || !secret) return { executed: false, reason: 'no_alpaca_keys' };
-  const balance = parseFloat(process.env.DEFAULT_BALANCE || '0') || 0;
+  // Use Redis balance (set via BALANCE command) — fall back to DEFAULT_BALANCE env var
+  const redisBalance = await redisGet('sc:balance');
+  const balance = redisBalance ? parseFloat(redisBalance) : (parseFloat(process.env.DEFAULT_BALANCE || '0') || 0);
   const pct = confidence >= 75 ? 0.30 : confidence >= 50 ? 0.20 : 0.10;
   const notional = balance > 0 ? Math.round(balance * pct * 100) / 100 : 500;
   const base = 'https://paper-api.alpaca.markets';
   const hdrs = { 'APCA-API-KEY-ID': key, 'APCA-API-SECRET-KEY': secret, 'Content-Type': 'application/json' };
   try {
-    // NOTE: positions are NOT cleared — each BUY adds to the paper portfolio
+    // Positions are NOT cleared — each BUY adds to the paper portfolio.
+    // time_in_force: gtc so orders placed after market close still execute at open.
     const orderR = await fetch(`${base}/v2/orders`, {
       method: 'POST', headers: hdrs,
-      body: JSON.stringify({ symbol: ticker, notional: String(notional), side: 'buy', type: 'market', time_in_force: 'day' }),
+      body: JSON.stringify({ symbol: ticker, notional: String(notional), side: 'buy', type: 'market', time_in_force: 'gtc' }),
     });
     if (orderR.status === 200 || orderR.status === 201) return { executed: true, notional, ticker };
-    return { executed: false, reason: (await orderR.text()).slice(0, 200) };
+    const errText = (await orderR.text()).slice(0, 300);
+    return { executed: false, reason: errText };
   } catch (e) { return { executed: false, reason: String(e).slice(0, 200) }; }
 }
 
@@ -176,15 +180,17 @@ async function handle(text) {
     const today = new Date().toISOString().slice(0, 10);
     let replies = await redisGet('sc:journal_replies') || [];
     if (!Array.isArray(replies)) replies = [];
-    replies = replies.filter(r => r.date !== today);
-    replies.push({ date: today, command, reason: cmd.reason || '(no reason given)', ts: new Date().toISOString() });
-    await redisSet('sc:journal_replies', replies.slice(-90));
+    // Keep ALL replies (multiple per day) — do NOT filter by date.
+    // Dashboard matches by position: newest reply → newest journal entry that day.
+    replies.push({ date: today, command, ticker: ticker || null, reason: cmd.reason || '', ts: new Date().toISOString() });
+    await redisSet('sc:journal_replies', replies.slice(-180));  // keep 6 months
 
     let alpacaLine = '';
     if (command === 'BUY' && ticker) {
       const result = await alpacaBuy(ticker, confidence);
       if (result.executed) alpacaLine = `\n🏦 Alpaca paper: BUY ${ticker} ($${result.notional.toLocaleString()})`;
-      else if (!process.env.ALPACA_API_KEY) alpacaLine = '\n(Add ALPACA_API_KEY to Vercel env vars to auto-execute)';
+      else if (!process.env.ALPACA_API_KEY) alpacaLine = '\n⚠️ Add ALPACA_API_KEY to Vercel env vars to auto-execute';
+      else alpacaLine = `\n⚠️ Alpaca order failed: ${result.reason.slice(0, 120)}`;
     }
     const boughtReminder = command === 'BUY' && ticker
       ? `\n\n💡 Log real money: <code>BOUGHT ${ticker} [dollar amount]</code>` : '';
