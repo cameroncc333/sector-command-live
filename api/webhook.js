@@ -262,22 +262,17 @@ async function dispatchWorkflow(workflow) {
 
 // ── Vercel handler ─────────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
-  const url  = req.url || '';
-  const qkey = (req.query && req.query.key) || new URL('https://x.com' + url).searchParams.get('key') || '';
+  const q    = req.query || {};
+  const qkey = q.key || '';
   const cronSecret = process.env.CRON_SECRET || '';
 
-  // /cron/briefing — triggers the full daily signal run + Telegram briefing
-  if (url.startsWith('/cron/briefing')) {
+  // /cron/briefing and /cron/alerts are rewritten here via vercel.json rewrites.
+  // Vercel appends _cron=briefing|alerts so we know which workflow to fire.
+  if (q._cron === 'briefing' || q._cron === 'alerts') {
     if (cronSecret && qkey !== cronSecret) return res.status(403).json({ ok: false, error: 'bad key' });
-    const result = await dispatchWorkflow('daily-signals.yml');
-    return res.status(result.ok ? 200 : 502).json({ ok: result.ok, workflow: 'daily-signals.yml', ...result });
-  }
-
-  // /cron/alerts — triggers the event-alerts watcher
-  if (url.startsWith('/cron/alerts')) {
-    if (cronSecret && qkey !== cronSecret) return res.status(403).json({ ok: false, error: 'bad key' });
-    const result = await dispatchWorkflow('event-alerts.yml');
-    return res.status(result.ok ? 200 : 502).json({ ok: result.ok, workflow: 'event-alerts.yml', ...result });
+    const workflow = q._cron === 'briefing' ? 'daily-signals.yml' : 'event-alerts.yml';
+    const result = await dispatchWorkflow(workflow);
+    return res.status(result.ok ? 200 : 502).json({ ok: result.ok, workflow, ...result });
   }
 
   if (req.method === 'GET') {

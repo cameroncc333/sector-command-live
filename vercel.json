@@ -1,4 +1,8 @@
 {
   "outputDirectory": "docs",
-  "framework": null
+  "framework": null,
+  "rewrites": [
+    { "source": "/cron/briefing", "destination": "/api/webhook?_cron=briefing" },
+    { "source": "/cron/alerts",   "destination": "/api/webhook?_cron=alerts"   }
+  ]
 }
