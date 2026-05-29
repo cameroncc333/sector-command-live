@@ -161,7 +161,7 @@ code{background:#21262d;padding:1px 5px;border-radius:4px;font-size:12px;font-fa
   <div class="logo">📡 SECTOR COMMAND</div>
   <div class="header-right">
     <span class="updated" id="updated-ts">Loading…</span>
-    <button class="refresh-btn" onclick="location.reload()">⟳ Refresh</button>
+    <button class="refresh-btn" onclick="location.href=location.pathname+'?t='+Date.now()">⟳ Refresh</button>
   </div>
 </header>
 
@@ -221,7 +221,7 @@ async function init() {
   const [briefing, journal, live] = await Promise.all([
     fetchJSON("briefing.json", "docs/briefing.json"),
     fetchJSON("journal.json",  "docs/journal.json"),
-    fetch("/api/webhook").then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch("/api/webhook?t="+Date.now(),{cache:"no-store"}).then(r=>r.ok?r.json():null).catch(()=>null),
   ]);
 
   if (!briefing) {
@@ -527,16 +527,28 @@ function renderOpportunities(b) {
   }).join(""):`<div class="empty"><div class="empty-icon">📭</div>No ranked opportunities yet. They'll appear on the next briefing run.</div>`;
 
   let perfHtml="";
-  if(perf.portfolio_return_pct!=null){
+  const _alp3=b.alpaca_paper||{};
+  if(_alp3.equity!=null){
+    const alpRet=_alp3.total_return_pct!=null?_alp3.total_return_pct:((_alp3.equity/100000-1)*100);
+    const alpDay=_alp3.daily_pnl_pct||0;
+    const spyDay=_alp3.spy_daily_pct;
+    const alpDollar=(_alp3.equity-100000);
+    perfHtml=`<div class="perf-row" style="margin-bottom:12px">
+      <div class="perf-stat"><div class="lbl">Paper Portfolio</div><div class="val ${alpRet>=0?"green":"red"}">${alpRet>=0?"+":""}${Math.abs(alpRet)<0.1?alpRet.toFixed(3):alpRet.toFixed(2)}%</div><div class="small muted">${alpDollar>=0?"+":"-"}$${Math.abs(alpDollar).toFixed(2)} total</div></div>
+      ${spyDay!=null?`<div class="perf-stat"><div class="lbl">SPY Today</div><div class="val ${spyDay>=0?"green":"red"}">${spyDay>=0?"+":""}${spyDay.toFixed(2)}%</div></div>`:""}
+      <div class="perf-stat"><div class="lbl">Today's P&amp;L</div><div class="val ${alpDay>=0?"green":"red"}">${alpDay>=0?"+":""}${alpDay.toFixed(2)}%</div><div class="small muted">${fmt$(_alp3.daily_pnl||0)} today</div></div>
+    </div>
+    <div class="small muted">Alpaca paper account · Auto-executes on BUY · Balance: ${fmt$(_alp3.equity)}</div>`;
+  } else if(perf.portfolio_return_pct!=null){
     const pr=perf.portfolio_return_pct,sr=perf.spy_return_pct||0,al=perf.alpha_pct||0;
     perfHtml=`<div class="perf-row" style="margin-bottom:12px">
-      <div class="perf-stat"><div class="lbl">Paper Portfolio</div><div class="val ${pr>=0?"green":"red"}">${pr>=0?"+":""}${pr.toFixed(1)}%</div></div>
-      <div class="perf-stat"><div class="lbl">SPY Benchmark</div><div class="val ${sr>=0?"green":"red"}">${sr>=0?"+":""}${sr.toFixed(1)}%</div></div>
+      <div class="perf-stat"><div class="lbl">Paper Portfolio</div><div class="val ${pr>=0?"green":"red"}">${pr>=0?"+":""}${pr.toFixed(2)}%</div></div>
+      <div class="perf-stat"><div class="lbl">SPY Benchmark</div><div class="val ${sr>=0?"green":"red"}">${sr>=0?"+":""}${sr.toFixed(2)}%</div></div>
       <div class="perf-stat"><div class="lbl">Alpha</div><div class="val ${al>=0?"green":"red"}">${al>=0?"+":""}${al.toFixed(2)}%</div></div>
     </div>
     <div class="small muted">${perf.n_trades||0} trades · ${perf.days_running||0} days running</div>`;
   } else {
-    perfHtml=`<div class="empty"><div class="empty-icon">📊</div>Paper P&amp;L tracking starts once you reply <strong>BUY</strong> to a briefing in Telegram.<br><br>Each BUY reply is logged and compared against SPY over the same period.</div>`;
+    perfHtml=`<div class="empty"><div class="empty-icon">📊</div>Reply <strong>BUY</strong> to a briefing in Telegram to start tracking paper P&amp;L vs SPY.</div>`;
   }
 
   document.getElementById('pg-opps').innerHTML=`
@@ -744,18 +756,20 @@ function renderPortfolio(b) {
   let paperHtml="";
   const alp2=b.alpaca_paper||{};
   if(alp2.equity!=null){
-    // Alpaca paper account is live — use it for the comparison
     const alpRet=alp2.total_return_pct!=null?alp2.total_return_pct:((alp2.equity/100000-1)*100);
+    const alpDollar=(alp2.equity-100000);
     const spyDay=alp2.spy_daily_pct;
     const alpDay=alp2.daily_pnl_pct||0;
+    // Use enough decimal places so small returns don't round to 0.00%
+    const retDisp=`${alpRet>=0?"+":""}${Math.abs(alpRet)<0.1?alpRet.toFixed(3):alpRet.toFixed(2)}%`;
     paperHtml=`<div class="card">
       <div class="card-title">Paper Trading P&amp;L vs SPY Benchmark</div>
       <div class="perf-row" style="margin-bottom:10px">
-        <div class="perf-stat"><div class="lbl">Paper Portfolio</div><div class="val ${alpRet>=0?"green":"red"}">${alpRet>=0?"+":""}${alpRet.toFixed(2)}%</div><div class="small muted">vs $100k start</div></div>
-        ${spyDay!=null?`<div class="perf-stat"><div class="lbl">SPY Today</div><div class="val ${spyDay>=0?"green":"red"}">${spyDay>=0?"+":""}${spyDay.toFixed(2)}%</div><div class="small muted">daily change</div></div>`:""}
+        <div class="perf-stat"><div class="lbl">Total Return</div><div class="val ${alpRet>=0?"green":"red"}">${retDisp}</div><div class="small muted">${alpDollar>=0?"+":"-"}$${Math.abs(alpDollar).toFixed(2)} on $100k</div></div>
+        ${spyDay!=null?`<div class="perf-stat"><div class="lbl">SPY Today</div><div class="val ${spyDay>=0?"green":"red"}">${spyDay>=0?"+":""}${spyDay.toFixed(2)}%</div><div class="small muted">market benchmark</div></div>`:""}
         <div class="perf-stat"><div class="lbl">Today's P&amp;L</div><div class="val ${alpDay>=0?"green":"red"}">${alpDay>=0?"+":""}${alpDay.toFixed(2)}%</div><div class="small muted">${fmt$(alp2.daily_pnl||0)} today</div></div>
       </div>
-      <div class="small muted">Tracked on Alpaca paper account · Auto-executes when you reply BUY in Telegram · Balance: ${fmt$(alp2.equity)}</div>
+      <div class="small muted">Alpaca paper account · Auto-executes when you reply BUY in Telegram · Balance: ${fmt$(alp2.equity)}</div>
     </div>`;
   } else if(perf.portfolio_return_pct!=null){
     const pr=perf.portfolio_return_pct,sr=perf.spy_return_pct||0,al=perf.alpha_pct||0;

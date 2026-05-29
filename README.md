@@ -1,234 +1,234 @@
 # Sector Command Live
 
-**A production-deployed quantitative trading system** that integrates deep reinforcement learning, real-time NLP sentiment analysis, multi-asset portfolio optimization, and conversational AI into a single live decision engine — running autonomously in production, texting daily trade briefings, and managing real paper positions through a live web dashboard.
+**A production-deployed quantitative trading system** integrating deep reinforcement learning, real-time NLP sentiment analysis, multi-asset portfolio optimization, and conversational AI — running autonomously every trading day, delivering ranked briefings via Telegram, and tracking paper positions on a live web dashboard.
 
 Built by [Cameron Camarotti](https://github.com/cameroncc333)
 
----
-
-## Overview
-
-Most quantitative finance projects are backtests — historical simulations that look good in a notebook but have never touched live data. This is different.
-
-Sector Command runs **four times every trading day** via automated CI/CD, pulls live market data, runs a trained reinforcement learning ensemble, applies institutional-grade risk management, and delivers a ranked briefing to both a **live web dashboard** and a **Telegram interface** where positions can be executed, tracked, and explained in plain English via an integrated large language model. Every decision is logged to a persistent audit trail with full reasoning attached.
-
-The system was built to answer a specific question: *can a systematic, explainable quantitative process — not a black box — outperform a passive SPY allocation while managing real downside risk?* After 30 days of paper trading, paper mode is disabled and the system trades real capital.
+**Live dashboard:** https://sector-command-live.vercel.app
 
 ---
 
-## Live Web Dashboard
+## What It Does
 
-The system includes a full web dashboard deployed on Railway at the same URL as the Telegram webhook. No separate setup required.
+Every trading day at **9AM, 12PM, and 3:30PM EDT**, a GitHub Actions job:
 
-**Five tabs:**
+1. Pulls live market data (yfinance — VIX, prices, RSI, momentum)
+2. Runs a trained RL ensemble (PPO + A2C + SAC) to pick the highest-conviction sector ETF
+3. Applies a governance layer (2/3 agent agreement required to act; otherwise routes to SPY)
+4. Scores live news headlines with FinBERT NLP sentiment (15 RSS feeds)
+5. Computes macro indicators (yield curve, DXY, VaR, Kelly criterion)
+6. Sends a ranked briefing to Telegram with Option A/B/C and sizing guidance
+7. Publishes fresh data to the live dashboard
+8. Logs the full decision with reasoning trace to a persistent audit trail
 
-| Tab | What it shows |
+You reply `BUY A`, `SKIP`, or ask a question in plain English — Gemini AI answers with full market context.
+
+---
+
+## Live Dashboard
+
+**URL:** https://sector-command-live.vercel.app
+
+Five tabs, all live data:
+
+| Tab | What It Shows |
 |---|---|
-| 📡 Signal | Today's RL recommendation, confidence meter, agent votes, VIX term structure, PCR options sentiment, StockTwits social, FOMC status, WHY reasoning trace |
-| 💼 Portfolio | Real holdings with live P&L, equity curve, VaR/CVaR risk metrics, Alpaca paper account, cash position |
-| 📊 Alpha | Individual stock picks (80-stock factor model), sector signal table, 4-week rotation heatmap, ranked opportunities |
-| 📓 Journal | Full decision log with expandable WHY traces, stats (total/buys/skips/abstains), load-more |
-| 🌐 Macro | Yield curve, DXY dollar index, VIX term structure, PCR, earnings calendar |
+| 📡 Today's Signal | RL recommendation, confidence, agent votes (PPO/A2C/SAC), VIX regime, options PCR, news sentiment, macro |
+| 📈 Opportunities | Ranked A/B/C picks with Kelly sizing, paper P&L vs SPY |
+| 💼 My Positions | Real-money holdings logged via Telegram + Alpaca paper account with live broker P&L |
+| 📓 Journal | Every briefing logged — VIX, regime, decision, your reply (BUY/SKIP/no reply), full reasoning trace |
+| 🌐 (Today) | WHY trace, decision reasoning, freshness indicators |
 
-**Quick links in dashboard header:** Alpaca paper account · Telegram bot · 2-minute auto-refresh with timestamp
+**Dashboard updates:** Automatically refreshes every 10 minutes. Hit **⟳ Refresh** for instant update. Data freshness shown in footer.
+
+---
+
+## Telegram Commands
+
+Send these to your Telegram bot at any time:
+
+| Command | What It Does |
+|---|---|
+| `BUY A` / `BUY B` / `BUY C` | Executes the ranked pick on Alpaca paper + logs your decision |
+| `BUY XLF` | Buys a specific ticker on Alpaca paper |
+| `SKIP` | Logs that you passed on today's signal |
+| `HOLD` | Logs hold decision |
+| `STATUS` | Shows last briefing date, ticker, confidence |
+| `WHY` | Prints the full reasoning trace |
+| `ALPHA` | Top stock picks from the factor model |
+| `PORTFOLIO` | Shows your real-money holdings and cash position |
+| `BALANCE 15000` | Sets your investable balance (drives % sizing in briefings) |
+| `BOUGHT XLE 500` | Logs a $500 real-money position in XLE |
+| `BOUGHT XLE 10 48.50 my reason` | Logs 10 shares at $48.50 with a note |
+| `SOLD XLE` | Removes XLE from your holdings |
+| `PERF` | Paper portfolio return vs SPY |
+| Any question | "Should I add to crypto?", "What is XLF?" — Gemini AI answers |
+
+**All commands are logged.** BUY/SKIP decisions appear in the Journal tab after the next briefing run.
 
 ---
 
 ## Architecture
 
-The design separates the brain (what to buy) from the governance layer (whether to act) from the sizing engine (how much to risk). These are three distinct concerns that most retail systems collapse into one — and that collapse is where edge cases become losses.
+```
+RL Ensemble (brain)
+  ├─ PPO agent  ─┐
+  ├─ A2C agent  ─┼─ majority vote required (≥2/3) ──► Governance Layer
+  └─ SAC agent  ─┘                                         │
+                                                           ▼
+News Sentiment (FinBERT)                          Decision Engine
+  15 RSS feeds ──────────────── modifier ──────► ticker + confidence + sizing
+  (WSJ, Bloomberg, Reuters, etc)
+                                                           │
+Macro Layer                                                ▼
+  Yield curve (10yr-2yr)                          Telegram Briefing
+  DXY dollar index       ──────── context ──────► (Option A/B/C + Kelly %)
+  VaR / CVaR / Kelly
+                                                           │
+Cross-repo Corroboration                                   ▼
+  algo-trading-system    ──────── agree/disagree ─► Journal + Redis + Dashboard
+  fed-rate-sector-analysis
+```
+
+**Key design decisions:**
+- **Governance layer**: ≥ 2/3 RL agent agreement required to act. When agents disagree, routes to SPY (broad market). This is intentional discipline, not a bug.
+- **News cannot change the ticker** — it only modifies confidence ±10 pts. RL picks the asset; news tells you how much to trust it.
+- **Political disclosures (STOCK Act)** are always research-only and never passed into conviction logic.
+- **Paper mode** is active for the first 30 days. To go live: set `PAPER_MODE=0` in Vercel env vars.
+
+---
+
+## Data Flow
 
 ```
-RL Ensemble ─────────────────────────────────────────────┐
-  PPO / A2C / SAC agents                                  │
-  Walk-forward validated on 11 SPDR sector ETFs           │
-  Abstain actions: SPY (no conviction) / BIL (crisis)     │
-                                                          ▼
-News Sentiment ────────────────────────────────► Decision Engine (GRPO-normalized)
-  FinBERT NLP across 7 live RSS feeds                     │
-  Conviction modifier — cannot change the RL ticker       │  Governance layer:
-  Lexicon fallback when transformer unavailable            │  • ≥ 2/3 agent agreement required
-                                                          │  • VIX > 35 → force BIL (cash)
-Options PCR ───────────────────────────────────────────► │  • Max 30% per position
-  Put/Call ratio via yfinance (SPY + QQQ)                 │  • Paper mode until validated
-  Contrarian: FEARFUL=+4, COMPLACENT=−3                   │
-                                                          │
-VIX Term Structure ────────────────────────────────────► │
-  VIX/VIX3M ratio → BACKWARDATION/CONTANGO               │
-  Near-term event risk via VIX9D/VIX ratio                │
-                                                          │
-Cross-Repo Corroboration ──────────────────────────────► │
-  4 upstream repos re-run live signals                    │
-  Equity technicals, algo composite score,                │
-  Fed policy context, FOMC sentiment                      ▼
-                                                  Multi-Asset Ranker
-FOMC Live Feeder ──────────────────────────────►  Sectors + BTC/ETH + GLD/TLT/QQQ
-  Live Fed statements from federalreserve.gov             │
-  Scored with FinBERT-FOMC                                ▼
-                                                  Risk Stack
-Macro Overlay ─────────────────────────────────►  VaR(95%) / CVaR(95%) per position
-  Yield curve (10yr − 13w T-bill spread)          Kelly criterion sizing
-  DXY dollar index                                Trailing stop / RSI / momentum / stale-loss
-  Sector rotation heatmap (4-week rel. strength)  Earnings proximity warnings
-                                                          │
-Equity Alpha (80-stock factor model) ──────────►         │
-  Value / Quality / Momentum / Technical / Low-Vol        │
-  Sector-neutral cross-sectional scoring                  │
-  Regime-adaptive weights (stressed → low-vol)            │
-                                                          ▼
-                                                  Telegram + Web Dashboard
-                                                  Option A / B / C ranked picks
-                                                  Dollar amounts + Kelly fractions
-                                                  Sell alerts + earnings warnings
-                                                  Gemini answers any question
-                                                          │
-                                                          ▼
-                                                  SQLite + Redis Audit Log
-                                                  Every decision, every signal, full reasoning
-                                                  Redis = live API cache (24h TTL briefings)
+GitHub Actions (3x/day)         Vercel (webhook, always-on)
+─────────────────────────       ────────────────────────────
+main_engine.py                  api/webhook.js (Node.js)
+  → reads Redis balance/holdings   → handles Telegram commands
+  → fetches live prices (yfinance) → reads/writes Redis
+  → generates briefing.json        → sc:balance (your balance)
+  → pushes to Redis (sc:last_briefing)  sc:holdings (positions)
+  → sends Telegram briefing        sc:journal_replies (BUY/SKIP)
+  → commits briefing.json to repo  → returns live data on GET
+
+GitHub Pages (static)           Redis (Upstash, persistent)
+  docs/briefing.json  ──────► dashboard reads both sources
+  docs/journal.json   ─────┘  /api/webhook overlaid for live balance
 ```
 
 ---
 
-## GRPO-Inspired Confidence Normalization
-
-Derived from DeepSeek-R1 (arXiv 2501.12948). All conviction modifiers — news sentiment, PCR, RSI, VIX term structure, cross-repo corroboration — are collected as a group and normalized so no single signal can dominate the final confidence score by more than ±20 points.
-
-Before: signals could stack and swing confidence ±40+ points (reward hacking vulnerability).  
-After: group-relative normalization caps total positive and total negative contributions independently. One extreme signal cannot override all other information.
-
----
-
-## What makes it non-trivial
-
-**Reinforcement learning with proper validation.** The PPO, A2C, and SAC agents were trained using walk-forward cross-validation — the same methodology used in institutional backtesting to prevent lookahead bias. Each agent produces a sector allocation; the ensemble requires ≥ 2/3 agreement before acting. Disagreement produces an explicit abstain to SPY rather than a forced trade.
-
-**News sentiment that can't override the model.** FinBERT NLP runs across seven live financial RSS feeds and scores sentiment per sector. It can raise or lower confidence, or trigger an abstain — but it cannot change which sector the RL model selected. This constraint is architectural, not advisory.
-
-**Options PCR feeds the decision engine.** Put/call ratio from yfinance options chains (free, no key) is computed for SPY and QQQ on each run. High PCR = fear = contrarian buy signal (+4 confidence). Low PCR = complacency = caution (−3). This signal flows into the GRPO modifier group alongside news, RSI, and VIX term structure.
-
-**VIX term structure as regime signal.** The VIX/VIX3M ratio distinguishes front-loaded fear spikes (backwardation, −8 confidence) from calm markets (steep contango, +4). The VIX9D/VIX near-term ratio detects event risk (FOMC, CPI). Both feed the decision engine as modifiers, not just context.
-
-**80-stock cross-sectional factor model.** Individual stock picks are generated using the same framework as institutional alpha funds (BlackRock BDVEX, Schroders): Value / Quality / Momentum / Technical / Low-Vol factors, scored cross-sectionally within each sector to read pure idiosyncratic alpha. Factor weights shift dynamically with macro regime: stressed markets tilt toward Low-Vol + Quality; calm/bull markets tilt toward Momentum.
-
-**Kelly criterion from live signals.** With no historical win/loss database yet, Kelly fractions are derived analytically: p is bounded RL confidence, b is estimated payoff from momentum magnitude and Sharpe ratio. Half-Kelly is applied. Position fractions of 5–15% are mathematically consistent with assigned conviction tiers.
-
-**Congressional trading is walled off by design.** STOCK Act disclosures are logged as research context and are explicitly excluded from the decision path in code — not by convention. The ~45-day legal reporting delay makes them economically useless as a signal.
-
-**Seven upstream repositories feed one decision.** `repo_signals.py` re-runs the live signal computation from each repo — equity technicals, factor composite scores, Fed policy sensitivity, FOMC mood proxy — and produces a cross-repo agreement count that modifies conviction.
-
----
-
-## Live data sources (all live on each run — nothing static)
-
-| Source | What it produces | When fetched |
-|---|---|---|
-| yfinance | All sector ETF prices, VIX, VIX3M, VIX9D, yield curve (10yr/13w T-bill), DXY, BTC/ETH/GLD/TLT/QQQ | Every run + live in dashboard API |
-| yfinance options chains | Put/Call ratio for SPY and QQQ | Every main engine run |
-| 7 financial RSS feeds | Per-sector news sentiment via FinBERT or lexicon fallback | Every run |
-| StockTwits API | Social sentiment score for top holdings of RL sector (free, no key) | Every run |
-| federalreserve.gov | Live FOMC statements scored with FinBERT-FOMC | ±3 days of meeting dates |
-| House/Senate STOCK Act S3 | Congressional trade disclosures (research-only context label) | Every run |
-| Alpaca paper trading API | Real paper order execution, positions, portfolio history | On BUY/SELL command + dashboard |
-| Upstash Redis | API cache (24h briefing TTL, 4h equity alpha TTL) | Dashboard polls every 2 min |
-| SQLite | Persistent journal: decisions, signals, P&L, audit trail | Every decision + Telegram reply |
-
-**RL signal note:** The PPO/A2C/SAC ensemble signal (`rl_signal.json`) is regenerated by GitHub Actions 4×/day. Between runs it is intentionally static — the `freshness.rl_source` field in every briefing shows `LIVE` (real model output) or `STUB` (fallback). All other data (VIX, news, PCR, macro, sectors) is fetched live on every request.
-
----
-
-## System behavior
-
-The system runs on a schedule — no human intervention required once deployed.
-
-- **09:00 EDT** — pre-open briefing: full signal refresh, ranked picks with dollar amounts and Kelly fractions
-- **12:00 EDT** — midday update: intraday regime check, position monitoring
-- **15:30 EDT** — pre-close: sell signal sweep, earnings proximity check
-- **16:30 EDT** — EOD summary: P&L update, ghost alpha vs SPY
-- **Every 30 minutes** — event watcher: VIX spike (>20% intraday), regime flip, any position down >5%, earnings within 2 days
-- **Every Sunday** — weekly Telegram summary with P&L vs SPY, top alpha picks, sectors to watch
-
-All briefings are delivered to Telegram with full reasoning. Positions can be executed, logged, and queried via text commands. Any question about the market, a ticker, or the system's reasoning is answered by Gemini with the full current market state injected as context.
-
----
-
-## Telegram commands
+## Repository Structure
 
 ```
-BUY A / BUY XLF          Log decision + optional Alpaca paper order
-BUY 1 / BUY 2            Pick by rank from today's briefing
-SELL / SKIP / HOLD        Log decision
-STATUS                    Last signal summary
-WHY                       Full GRPO reasoning trace (every modifier shown)
-PERF                      Paper P&L vs SPY + alpha + win rate + info ratio
-RISK                      VaR/CVaR per position, yield curve, DXY
-ALPHA                     Top individual stock picks with factor scores
-CRYPTO / GOLD             Live crypto + macro hedge signals
-PORTFOLIO                 Real holdings with live P&L
-BALANCE 12500             Set investable balance
-BOUGHT XLE 5 47.50        Log 5 shares at $47.50
-BOUGHT XLE 500            Log $500 position (shares auto-calculated)
-SOLD XLE                  Remove position
-EXPLAIN XLF               What is this sector?
-HOW MUCH XLF              Sizing guidance
-REPORT                    Generate HTML research report
+main_engine.py              Entry point — runs all 12 signal stages
+engine/
+  decision.py               GRPO-normalized scoring, governance layer
+  performance_tracker.py    Paper P&L vs SPY benchmark
+  position_tracker.py       Real-money holdings (SQLite + Redis sync)
+  alpaca_executor.py        Alpaca paper trading API
+  equity_alpha.py           80-stock cross-sectional factor model
+  risk_metrics.py           VaR, CVaR, Kelly, yield curve, DXY
+  sell_signals.py           Trailing stop, RSI overbought, momentum flip
+  earnings_calendar.py      Sector ETF earnings event alerts
+  llm_router.py             Gemini conversational AI context builder
+feeders/
+  sector_feeder.py          SPDR ETF price/RSI/momentum
+  news_feeder.py            15 RSS feeds → FinBERT NLP
+  crypto_feeder.py          BTC/ETH + GLD/TLT/QQQ via yfinance
+  fomc_live_feeder.py       Fed statement scraping + FinBERT-FOMC
+interface/
+  telegram_bot.py           Briefing formatter, all Telegram commands
+api/
+  webhook.js                Vercel Node.js webhook (Telegram + REST API)
+docs/
+  index.html                Live dashboard (GitHub Pages)
+  briefing.json             Latest signal (auto-generated, committed 3x/day)
+  journal.json              Decision history (auto-generated)
+.github/workflows/
+  daily-signals.yml         3x/day signal runs (9AM, 12PM, 3:30PM EDT)
+  event-alerts.yml          Earnings/sell-signal watcher (manual trigger)
+  weekly-report.yml         Sunday summary report
+generate_rl_signal.py       Run locally → commits RL signal to repo
+data/
+  rl_signal.json            Latest RL ensemble output (committed)
+  sector_command.db         Journal + decisions SQLite DB (committed)
 ```
-Or ask any question in plain English — Gemini answers with today's live market state.
 
 ---
 
-## Deployment
+## Daily Routine
 
-| Component | Platform |
+**You don't need to do anything to keep the system running.** GitHub Actions fires automatically.
+
+Your daily flow:
+1. **9AM** — check Telegram for the morning briefing. Reply `BUY A`, `SKIP`, or ask a question.
+2. **12PM** — midday check arrives. Reply or ignore.
+3. **3:30PM** — pre-close briefing. Good time to decide if you want to enter before close.
+4. **Anytime** — open the dashboard to see live signals, your positions, and paper P&L.
+5. **When you make a real trade** — send `BOUGHT XLE 500 my reason` to log it. The dashboard updates on next refresh.
+
+**To update the RL signal** (do this from your MacBook every 1-2 weeks):
+```bash
+cd ~/Documents/rl-portfolio-optimizer
+source rl_env/bin/activate
+cd ~/Downloads/sector-command-live-2
+python generate_rl_signal.py
+git add data/rl_signal.json && git commit -m "update RL signal" && git push
+```
+
+---
+
+## Setup / Environment Variables
+
+### GitHub Secrets (for Actions)
+| Secret | Purpose |
 |---|---|
-| Webhook + dashboard (Flask) | Railway (always-on, gunicorn) |
-| RL inference + daily signals | GitHub Actions (4×/day cron) |
-| Event alerts | GitHub Actions (every 30 min) |
-| Weekly summary | GitHub Actions (Sunday 4 PM ET) |
-| API cache | Upstash Redis (serverless) |
-| Data persistence | SQLite (Railway volume) |
-| Paper execution | Alpaca Markets paper API |
+| `TELEGRAM_TOKEN` | Your Telegram bot token |
+| `TELEGRAM_CHAT_ID` | Your Telegram chat ID |
+| `ALPACA_API_KEY` | Alpaca paper trading key |
+| `ALPACA_SECRET_KEY` | Alpaca paper trading secret |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST endpoint |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis auth token |
+| `GEMINI_API_KEY` | Google Gemini API (conversational AI) |
+| `DEFAULT_BALANCE` | Default position sizing balance |
 
-**Required environment variables:**
-```
-TELEGRAM_TOKEN          Telegram bot token from @BotFather
-TELEGRAM_CHAT_ID        Your Telegram chat ID
-UPSTASH_REDIS_REST_URL  Upstash Redis REST endpoint
-UPSTASH_REDIS_REST_TOKEN Upstash Redis auth token
-GITHUB_PAT              GitHub personal access token (triggers Actions)
-ALPACA_API_KEY          Alpaca paper trading key (optional)
-ALPACA_SECRET_KEY       Alpaca paper trading secret (optional)
-DEFAULT_BALANCE         Starting portfolio balance (e.g. 12500)
-PAPER_MODE              1 = paper mode (default), 0 = live after 30d validation
-GEMINI_API_KEY          Google Gemini API key (for natural language Q&A)
-NEWSAPI_KEY             NewsAPI key (optional — RSS fallback works without it)
-QUIVER_API_KEY          Quiver Quant key (optional — STOCK Act research context only)
-```
-
----
-
-## The seven-repository research program
-
-This system is the final layer of a research program built bottom-up:
-
-| Repository | What it proved |
+### Vercel Env Vars (for webhook)
+Same as above, plus:
+| Var | Purpose |
 |---|---|
-| `aas-pricing-model` | A multi-variable calculus cost function (8 inputs, partial-derivative optimization) that prices real service contracts for an active business |
-| `fed-rate-sector-analysis` | A statistical event study measuring sector return sensitivity to FOMC rate decisions across 30/60/90-day windows |
-| `equity-sector-analyzer` | A 2,000-line live dashboard computing 30+ risk metrics including Black-Scholes Greeks and Fama-French 5-factor decomposition |
-| `fomc-sentiment-analyzer` | FinBERT NLP applied to 91 FOMC meeting statements; established the NLP methodology reused in this system's news feeder |
-| `algo-trading-system` | A rules-based sector rotation backtester: 238 trades, +64.5% total return, 0.30 Sharpe, −23.5% max drawdown — the baseline the RL agents must beat |
-| `rl-portfolio-optimizer` | The RL capstone: PPO/A2C/SAC trained 500,000 steps on 11 sector ETFs with regime-adaptive reward shaping and walk-forward validation |
-| **`sector-command-live`** (this repo) | **The production layer: live data, live decisions, live execution, live risk management** |
+| `GITHUB_PAT` | Fine-grained PAT with Actions:write — triggers dashboard refresh on BALANCE/BOUGHT/SOLD |
+| `GITHUB_REPO` | `cameroncc333/sector-command-live` |
 
-Each repo is independent and does something real on its own. Together they form a complete quantitative research pipeline — from business math through statistical research through NLP through reinforcement learning through live deployment.
-
----
-
-## Technical stack
-
-Python · stable-baselines3 (PPO/A2C/SAC) · transformers + FinBERT · Flask · Railway · GitHub Actions · SQLite · Upstash Redis · Alpaca Markets API · Google Gemini · yfinance · scipy (Black-Scholes) · pandas · numpy
+### After first deploy
+Register your Telegram webhook:
+```
+curl "https://api.telegram.org/bot<YOUR_TOKEN>/setWebhook?url=https://sector-command-live.vercel.app/api/webhook"
+```
 
 ---
 
-*Runs in paper mode during the initial 30-day validation period. Not financial advice.*
+## Performance Tracking
+
+- **Alpaca paper account** starts at $100,000. Every `BUY` reply auto-executes a market order on Alpaca's paper broker. The dashboard shows live equity, daily P&L, and total return vs the $100k baseline.
+- **SPY comparison** (shown at 9AM, 12PM, 3:30PM): SPY's daily return is fetched each run so you can see if today's Alpaca moves beat or trailed the market.
+- **Journal replies**: Every BUY/SKIP you send appears next to the matching briefing in the Journal tab after the next briefing run (up to 3-hour delay).
+
+---
+
+## Related Repositories
+
+This is the capstone system. It draws signals from:
+
+| Repo | What It Contributes |
+|---|---|
+| [rl-portfolio-optimizer](https://github.com/cameroncc333/rl-portfolio-optimizer) | PPO/A2C/SAC trained agents, walk-forward validation |
+| [algo-trading-system](https://github.com/cameroncc333/algo-trading-system) | Momentum/mean-reversion cross-repo corroboration signal |
+| [fed-rate-sector-analysis](https://github.com/cameroncc333/fed-rate-sector-analysis) | Cross-repo sector rotation corroboration |
+| [equity-sector-analyzer](https://github.com/cameroncc333/equity-sector-analyzer) | Factor model for individual stock picks |
+| [fomc-sentiment-analyzer](https://github.com/cameroncc333/fomc-sentiment-analyzer) | Fed statement NLP via FinBERT-FOMC |
+| [AAS-Pricing-Model](https://github.com/cameroncc333/AAS-Pricing-Model) | Underlying quant research models |
+
+---
+
+*Paper mode active · Auto-transitions to live after 30 days of validated paper performance*

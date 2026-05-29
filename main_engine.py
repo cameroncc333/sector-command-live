@@ -324,12 +324,92 @@ def run(dry_run=False):
     )
     briefing = decide(state, gov)
 
-    # Portfolio snapshot — fetch live prices so P&L is real, not zero
+    # Portfolio snapshot — read directly from Redis (authoritative for Telegram-set data),
+    # then fetch live prices via yfinance so current_price is never stale.
     portfolio_snap = {}
     try:
-        portfolio_snap = pt.portfolio_summary()
-    except Exception:
-        portfolio_snap = {"balance": balance}
+        import requests as _pf_req
+        _ru = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+        _rt = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+        _r_bal = None
+        _r_hld = []
+        if _ru and _rt:
+            _br = _pf_req.post(_ru, json=["GET", "sc:balance"],
+                               headers={"Authorization": f"Bearer {_rt}"}, timeout=3)
+            _bv = _br.json().get("result")
+            if _bv is not None:
+                _r_bal = float(_bv)
+            _hr = _pf_req.post(_ru, json=["GET", "sc:holdings"],
+                               headers={"Authorization": f"Bearer {_rt}"}, timeout=3)
+            _hv = _hr.json().get("result")
+            if _hv:
+                _r_hld = json.loads(_hv) if isinstance(_hv, str) else (_hv or [])
+        # Fall back to position_tracker (reads SQLite then Redis)
+        if _r_bal is None:
+            _r_bal = pt.get_balance()
+        if not _r_hld:
+            _r_hld = pt.get_holdings()
+        if _r_bal:
+            _tickers = [h["ticker"] for h in _r_hld if h.get("ticker")]
+            _prices = {}
+            if _tickers:
+                try:
+                    import yfinance as _yf2
+                    _pdata = _yf2.download(_tickers, period="2d", progress=False, auto_adjust=True)
+                    for _t in _tickers:
+                        try:
+                            _col = _pdata["Close"] if len(_tickers) > 1 else _pdata["Close"]
+                            _px = float(_col[_t].dropna().iloc[-1]) if len(_tickers) > 1 else float(_col.dropna().iloc[-1])
+                            _prices[_t] = round(_px, 2)
+                        except Exception:
+                            pass
+                except Exception as _pe:
+                    print(f"[main_engine] price fetch failed ({_pe})")
+            _invested = 0
+            _hld_out = []
+            for _h in _r_hld:
+                _t = _h.get("ticker", "")
+                _dv = _h.get("dollar_value") or 0
+                _cp = _prices.get(_t)
+                _shares = _h.get("shares")
+                _ac = _h.get("avg_cost")
+                if _shares and _ac and _cp:
+                    _cb = round(_shares * _ac, 2)
+                    _cv = round(_shares * _cp, 2)
+                    _pnl = round(_cv - _cb, 2)
+                    _pnl_pct = round(_pnl / _cb * 100, 2) if _cb else 0
+                else:
+                    _cb = _dv
+                    _pnl = 0
+                    _pnl_pct = 0
+                _invested += _cb
+                _hld_out.append({
+                    "ticker": _t,
+                    "date_bought": _h.get("date_bought"),
+                    "shares": _shares,
+                    "avg_cost": _ac,
+                    "current_price": _cp,
+                    "cost_basis": _cb,
+                    "pnl_dollar": _pnl,
+                    "pnl_pct": _pnl_pct,
+                    "alloc_pct": round(_dv / _r_bal * 100, 1) if _r_bal else None,
+                    "notes": _h.get("notes"),
+                })
+            portfolio_snap = {
+                "balance": _r_bal,
+                "holdings": _hld_out,
+                "total_invested": round(_invested, 2),
+                "total_current": round(sum(h["cost_basis"] + h["pnl_dollar"] for h in _hld_out), 2),
+                "unrealized_pnl": round(sum(h["pnl_dollar"] for h in _hld_out), 2),
+                "unrealized_pct": round(sum(h["pnl_dollar"] for h in _hld_out) / _invested * 100, 2) if _invested else 0,
+                "cash_remaining": round(_r_bal - _invested, 2),
+            }
+    except Exception as _pe2:
+        print(f"[main_engine] Redis portfolio snapshot failed ({_pe2}), falling back")
+        try:
+            portfolio_snap = pt.portfolio_summary()
+        except Exception:
+            portfolio_snap = {}
 
     # Alpaca paper account — live equity + positions from broker
     alpaca_paper = {}
