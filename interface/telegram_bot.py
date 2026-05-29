@@ -552,7 +552,7 @@ def answer_question(question: str, briefing: dict = None) -> str:
 
 
 def _plain_english_summary(b: dict) -> str:
-    """Plain English TL;DR appended to every briefing."""
+    """Plain English TL;DR appended to every briefing — shows ALL options."""
     g          = b.get
     vix        = g("vix") or 16
     ranked     = g("ranked_opportunities") or []
@@ -561,37 +561,39 @@ def _plain_english_summary(b: dict) -> str:
     yc         = macro.get("yield_curve") or {}
     port       = g("portfolio_snap") or {}
     ticker     = g("ticker") or "SPY"
-    action     = g("action") or "BUY"
     confidence = int(g("confidence") or 50)
+    crypto_sigs = g("crypto_signals") or {}
+    equity_picks = g("equity_alpha_picks") or []
 
     _sector_names = {
         "XLF": "Financials", "XLK": "Technology", "XLE": "Energy",
         "XLV": "Health Care", "XLY": "Consumer Disc.", "XLP": "Consumer Staples",
         "XLI": "Industrials", "XLB": "Materials", "XLRE": "Real Estate",
         "XLU": "Utilities", "XLC": "Comm. Services",
-        "SPY": "S&P 500 broad", "QQQ": "Nasdaq 100", "BIL": "T-Bills (cash)",
-        "TLT": "Long Bonds", "GLD": "Gold", "BTC-USD": "Bitcoin",
+        "SPY": "S&P 500", "QQQ": "Nasdaq 100", "BIL": "T-Bills",
+        "TLT": "Long Bonds", "GLD": "Gold",
     }
 
+    _signal_emoji = {
+        "STRONG_MOM": "🚀", "BULLISH": "📈", "OVERSOLD_BOUNCE": "🔄",
+        "OVERBOUGHT": "⚠️", "BEARISH": "📉", "WEAK": "🟡", "NEUTRAL": "⚪",
+    }
+
+    _conv_emoji = {"HIGH": "🔥", "MEDIUM": "✅", "LOW": "🟡", "AVOID": "🔴"}
+
     lines = ["", "─────────────────────────────",
-             "📋 <b>PLAIN ENGLISH</b>", ""]
+             "📋 <b>ALL YOUR OPTIONS TODAY</b>", ""]
 
     # ── Portfolio snapshot ─────────────────────────────────────────────
     bal       = port.get("balance")
     invested  = port.get("total_invested") or 0
     cash_left = port.get("cash_remaining")
-    holdings  = port.get("holdings") or []
     if bal:
-        held_str = ""
-        if holdings:
-            parts = [f"${h['cost_basis']:,.0f} in {h['ticker']}" for h in holdings]
-            held_str = " (" + ", ".join(parts) + ")"
-        cash_str = f"${cash_left:,.0f} cash left" if cash_left is not None else ""
-        port_line = f"💼 <b>Your money:</b> ${bal:,.0f} total"
+        port_line = f"💼 <b>Your balance:</b> ${bal:,.0f}"
         if invested:
-            port_line += f" · ${invested:,.0f} invested{held_str}"
-        if cash_str:
-            port_line += f" · {cash_str}"
+            port_line += f" · ${invested:,.0f} invested"
+        if cash_left is not None:
+            port_line += f" · ${cash_left:,.0f} cash"
         lines.append(port_line)
         lines.append("")
 
@@ -600,141 +602,126 @@ def _plain_english_summary(b: dict) -> str:
         vix_f = float(vix)
     except Exception:
         vix_f = 16.0
-    vts_data  = (b.get("macro") or {}).get("vix_term_structure", {})
+    vts_data  = macro.get("vix_term_structure", {})
     ts_regime = vts_data.get("ts_regime", "")
     if ts_regime == "BACKWARDATION":
-        market_line = "🔴 FEAR SPIKE — VIX term structure inverted, high stress"
+        mkt = "🔴 FEAR SPIKE — very stressed"
     elif vix_f < 15 or ts_regime == "STEEP_CONTANGO":
-        market_line = "🟢 Calm — good day to consider new positions"
+        mkt = "🟢 Calm"
     elif vix_f < 22:
-        market_line = "🟡 Normal — nothing unusual, proceed as planned"
+        mkt = "🟡 Normal"
     elif vix_f < 30:
-        market_line = "🟠 Choppy — keep sizes smaller than usual"
+        mkt = "🟠 Choppy — use smaller sizes"
     else:
-        market_line = "🔴 STRESSED — hold extra cash, be very careful"
-    lines.append(f"📊 <b>Market:</b> {market_line}  (VIX {vix_f:.1f})")
-    lines.append("")
+        mkt = "🔴 STRESSED — hold extra cash"
+    lines.append(f"📊 <b>Market:</b> {mkt}  (VIX {vix_f:.1f})")
 
-    # ── Confidence label (Cameron's scale: 30=maybe, 70=definitely, 100=must) ──
-    def _conf_label(pct):
-        pct = int(pct)
-        if pct >= 80:
-            return f"🔥 {pct}% — MUST BUY — very high conviction"
-        elif pct >= 65:
-            return f"✅ {pct}% — DEFINITELY — strong signal, buy it"
-        elif pct >= 50:
-            return f"🟡 {pct}% — PROBABLY — solid signal, consider a normal position"
-        elif pct >= 35:
-            return f"⚠️ {pct}% — MAYBE — weak signal, small position or wait"
-        else:
-            return f"❌ {pct}% — SKIP — confidence too low to act"
-
-    # ── Sizing helper ──────────────────────────────────────────────────
-    top_op  = ranked[0] if ranked and isinstance(ranked[0], dict) else {}
-    pct_sz  = top_op.get("suggested_pct") or 9
-    dollar  = top_op.get("suggested_dollar")
-    if not dollar and bal:
-        dollar = int(bal * pct_sz / 100)
-    size_str = f"${dollar:,.0f}" if dollar else f"~{pct_sz:.0f}% of your balance"
-
-    # ── Determine call type and render ─────────────────────────────────
-    is_crisis  = ticker == "BIL"
-    is_abstain = ticker == "SPY" and bool(abstain)
-    sector_name = _sector_names.get(ticker, ticker)
-
-    if is_crisis:
-        lines.append("⛔ <b>NO TRADE — CRISIS MODE</b>")
-        lines.append(f"VIX is dangerously high ({vix_f:.0f}). System forces you to cash.")
-        lines.append("")
-        lines.append(
-            "✅ <b>Your move:</b> Stay in cash.\n"
-            "→ Reply <code>SKIP</code> to log no action today"
-        )
-
-    elif is_abstain:
-        lines.append("⚠️ <b>NO SECTOR CALL TODAY</b>")
-        lines.append("The RL models have no strong sector conviction right now.")
-        lines.append(f"📊 Confidence: {_conf_label(confidence)}")
-        lines.append("")
-        if ranked:
-            alt    = ranked[0] if isinstance(ranked[0], dict) else {}
-            alt_t  = alt.get("ticker", "SPY")
-            alt_nm = _sector_names.get(alt_t, alt_t)
-            lines.append(f"📌 <b>Best ranked pick:</b> {alt_t} ({alt_nm})")
-            lines.append("")
-        lines.append(
-            "✅ <b>Your move:</b>\n"
-            "→ Reply <code>SKIP</code> — recommended today\n"
-            "→ Or <code>BUY SPY</code> for a small broad-market position"
-        )
-
-    else:
-        # Normal sector recommendation — show it clearly
-        lines.append(f"🎯 <b>TODAY'S CALL: {action} {ticker} ({sector_name})</b>")
-        lines.append(f"📊 Confidence: {_conf_label(confidence)}")
-        lines.append(f"💰 Suggested size: <b>{size_str}</b>")
-        lines.append("")
-
-        if confidence >= 50:
-            lines.append(
-                f"✅ <b>Your move:</b>\n"
-                f"→ Reply <code>BUY A</code> or <code>BUY {ticker}</code> to log it\n"
-                f"→ Or <code>SKIP</code> to pass today"
-            )
-        elif confidence >= 35:
-            lines.append(
-                f"✅ <b>Your move:</b>\n"
-                f"→ Reply <code>SKIP</code> — low signal, lean toward waiting\n"
-                f"→ Or <code>BUY A</code> for a small position ({size_str}) if you want exposure"
-            )
-        else:
-            lines.append(
-                f"✅ <b>Your move:</b>\n"
-                f"→ Reply <code>SKIP</code> — confidence too low to act"
-            )
-
-    # ── Equity alpha debrief ───────────────────────────────────────────
-    equity_picks = b.get("equity_alpha_picks") or []
-    if equity_picks:
-        lines.append("")
-        lines.append("📈 <b>STOCK PICKS — should you buy?</b>")
-        conv_call = {"HIGH": "✅ BUY", "MEDIUM": "🟡 CONSIDER", "LOW": "⏭️ SKIP", "AVOID": "🔴 AVOID"}
-        conv_desc = {"HIGH": "HIGH conviction", "MEDIUM": "MEDIUM conviction",
-                     "LOW": "LOW conviction — skip unless you have reason", "AVOID": "avoid"}
-        for p in equity_picks[:3]:
-            ticker_p = p.get("ticker", "?")
-            conv     = p.get("conviction", "LOW")
-            call     = conv_call.get(conv, "⏭️ SKIP")
-            desc     = conv_desc.get(conv, conv)
-            dollar   = p.get("suggested_dollar")
-            tagline  = p.get("conviction_tagline", "")
-            size_str = f" → <b>${dollar:,.0f}</b>" if dollar else ""
-            lines.append(f"  {call}: <b>{ticker_p}</b>  [{desc}]{size_str}")
-            if tagline:
-                lines.append(f"     💡 {tagline}")
-            if conv in ("HIGH", "MEDIUM"):
-                lines.append(f"     → Reply <code>BUY {ticker_p}</code> to log it")
-        lines.append("")
-
-    # ── Macro flag ─────────────────────────────────────────────────────
+    # ── Yield curve flag ───────────────────────────────────────────────
     if yc:
         try:
-            inverted = yc.get("inverted", False)
-            spread   = float(str(yc.get("spread", 1)).replace("%", ""))
-            if inverted:
-                lines.append(
-                    "\n⚠️ <b>Macro flag:</b> Yield curve is inverted — historically a recession "
-                    "warning. Don't make big new bets until this clears."
-                )
-            elif spread < 0.5:
-                lines.append("\n📉 <b>Macro note:</b> Yield curve nearly flat — watch for inversion.")
+            if yc.get("inverted"):
+                lines.append("⚠️ Yield curve inverted — recession signal, stay cautious")
         except Exception:
             pass
+    lines.append("")
 
-    lines.append(
-        "\n💬 Ask me anything: \"should I sell XLE?\", \"what is XLF?\", "
-        "\"is this a good time to buy crypto?\" — Gemini answers with today's live data."
-    )
+    # ── Sector ETF picks (RL ranked A/B/C) ────────────────────────────
+    sector_ranked = [o for o in ranked if isinstance(o, dict)
+                     and o.get("asset_type") in ("sector", None, "")]
+    if not sector_ranked:
+        sector_ranked = [o for o in ranked if isinstance(o, dict)]
+    if sector_ranked:
+        lines.append("🏭 <b>SECTOR ETFs</b>  (RL picks — reply BUY A/B/C)")
+        is_abstain = ticker == "SPY" and bool(abstain)
+        for i, opp in enumerate(sector_ranked[:3]):
+            label   = chr(65 + i)  # A, B, C
+            t       = opp.get("ticker", "?")
+            nm      = _sector_names.get(t, t)
+            conv    = opp.get("conviction", "LOW")
+            score   = opp.get("score", 0)
+            dollar  = opp.get("suggested_dollar")
+            pct     = opp.get("suggested_pct", 0)
+            emoji   = _conv_emoji.get(conv, "⚪")
+            conf_pct = confidence if i == 0 else max(10, confidence - i * 12)
+            if i == 0 and is_abstain:
+                conf_pct = min(confidence, 45)
+            sz_str  = f"→ <b>${dollar:,.0f}</b>" if dollar else (f"→ ~{pct:.0f}%" if pct else "")
+            lines.append(f"  {label}) <b>{t}</b> {nm}  {emoji} {conf_pct}% conf  {sz_str}")
+        lines.append("")
+
+    # ── Top stocks ─────────────────────────────────────────────────────
+    if equity_picks:
+        lines.append("📈 <b>TOP STOCKS</b>  (factor model picks)")
+        for i, p in enumerate(equity_picks[:3]):
+            t       = p.get("ticker", "?")
+            conv    = p.get("conviction", "LOW")
+            score   = int(p.get("composite_score") or 0)
+            dollar  = p.get("suggested_dollar")
+            tagline = p.get("conviction_tagline", "")
+            emoji   = _conv_emoji.get(conv, "⚪")
+            sz_str  = f"→ <b>${dollar:,.0f}</b>" if dollar else ""
+            skip_str = "  (skip — low conviction)" if conv in ("LOW", "AVOID") else ""
+            lines.append(f"  {i+1}. <b>{t}</b>  {emoji} {conv}  score {score}/100  {sz_str}{skip_str}")
+            if tagline and conv in ("HIGH", "MEDIUM"):
+                lines.append(f"     💡 {tagline}")
+        lines.append("")
+
+    # ── Crypto ─────────────────────────────────────────────────────────
+    crypto_items = [(t, v) for t, v in crypto_sigs.items() if v.get("type") == "crypto"]
+    # Show BTC and ETH first
+    crypto_order = ["BTC-USD", "ETH-USD"]
+    crypto_sorted = sorted(crypto_items,
+                           key=lambda x: crypto_order.index(x[0]) if x[0] in crypto_order else 99)
+    if crypto_sorted:
+        lines.append("₿ <b>CRYPTO</b>")
+        for t, v in crypto_sorted[:2]:
+            sig     = v.get("signal", "NEUTRAL")
+            emoji   = _signal_emoji.get(sig, "⚪")
+            price   = v.get("price", 0)
+            mom7    = v.get("mom_7d_pct", 0)
+            mom_str = f"+{mom7:.1f}%" if mom7 >= 0 else f"{mom7:.1f}%"
+            max_pct = v.get("max_alloc_pct", 5)
+            max_dol = int(bal * max_pct / 100) if bal else None
+            sz_str  = f"→ max <b>${max_dol:,.0f}</b> ({max_pct}%)" if max_dol else f"→ max {max_pct}%"
+            price_str = f"${price:,.0f}" if price >= 100 else f"${price:,.4f}"
+            lines.append(f"  <b>{t}</b>  {price_str}  {emoji} {sig}  7d:{mom_str}  {sz_str}")
+        lines.append("")
+
+    # ── Macro hedges (GLD, TLT, QQQ) ──────────────────────────────────
+    macro_items = [(t, v) for t, v in crypto_sigs.items() if v.get("type") == "macro"]
+    if macro_items:
+        lines.append("🏦 <b>MACRO HEDGES</b>  (GLD/TLT — crisis protection)")
+        for t, v in macro_items[:3]:
+            sig     = v.get("signal", "NEUTRAL")
+            emoji   = _signal_emoji.get(sig, "⚪")
+            price   = v.get("price", 0)
+            mom7    = v.get("mom_7d_pct", 0)
+            mom_str = f"+{mom7:.1f}%" if mom7 >= 0 else f"{mom7:.1f}%"
+            max_pct = v.get("max_alloc_pct", 10)
+            max_dol = int(bal * max_pct / 100) if bal else None
+            nm      = _sector_names.get(t, t)
+            sz_str  = f"→ max <b>${max_dol:,.0f}</b>" if max_dol else f"→ max {max_pct}%"
+            lines.append(f"  <b>{t}</b> {nm}  ${price:.2f}  {emoji} {sig}  7d:{mom_str}  {sz_str}")
+        lines.append("")
+
+    # ── Your move ─────────────────────────────────────────────────────
+    is_crisis  = ticker == "BIL"
+    is_abstain = ticker == "SPY" and bool(abstain)
+    if is_crisis:
+        lines.append("⛔ <b>YOUR MOVE: STAY CASH</b> — VIX too high to trade")
+        lines.append("→ Reply <code>SKIP</code> to log no action")
+    elif confidence < 35:
+        lines.append("✅ <b>YOUR MOVE:</b>")
+        lines.append("→ Reply <code>SKIP</code> — signal too weak")
+        lines.append("→ Or ask: \"should I buy crypto?\" — Gemini answers")
+    else:
+        top_t = sector_ranked[0].get("ticker", ticker) if sector_ranked else ticker
+        lines.append("✅ <b>YOUR MOVE:</b>")
+        lines.append(f"→ <code>BUY A</code> — {top_t} (top sector pick)")
+        if equity_picks and equity_picks[0].get("conviction") in ("HIGH", "MEDIUM"):
+            st = equity_picks[0].get("ticker", "")
+            lines.append(f"→ <code>BUY {st}</code> — top stock pick")
+        lines.append("→ Or ask any question — Gemini answers with today's live data")
 
     return "\n".join(lines)
 

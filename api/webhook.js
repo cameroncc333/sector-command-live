@@ -239,46 +239,41 @@ async function handle(text) {
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!geminiKey) return '⚠️ GEMINI_API_KEY not set in Vercel env vars.';
 
-  try {
-    const b = briefing;
-    const ranked = b.ranked_opportunities || [];
-    const macro = b.macro || {};
-    const alp = b.alpaca_paper || {};
-    const ctx = [
-      `Date: ${b.date || '—'}  Regime: ${b.regime || '—'}  VIX: ${b.vix || '—'}`,
-      `RL decision: ${b.action || '—'} ${b.ticker || '—'} @ ${b.confidence || '—'}% confidence`,
-      b.abstain_reason ? `Abstain reason: ${b.abstain_reason}` : '',
-      `Ranked picks: ${ranked.slice(0,3).map((o,i)=>['A','B','C'][i]+') '+o.ticker+' '+o.conviction).join(', ')}`,
-      `News sentiment: ${b.news_sentiment >= 0 ? '+' : ''}${(b.news_sentiment||0).toFixed(2)} | Top headline: ${b.news_headline || '—'}`,
-      macro.yield_curve_spread != null ? `Yield curve: ${macro.yield_curve_spread.toFixed(2)}% | DXY: ${macro.dxy || '—'}` : '',
-      alp.equity ? `Alpaca paper equity: $${alp.equity.toLocaleString()} (daily: ${(alp.daily_pnl_pct||0).toFixed(2)}%)` : '',
-      `Crypto signals: ${JSON.stringify((b.crypto_signals||{}).signals||[])}`,
-    ].filter(Boolean).join('\n');
+  const MODELS = ['gemini-2.5-flash','gemini-2.0-flash-lite','gemini-2.0-flash','gemini-2.5-pro','gemini-flash-latest','gemini-pro-latest'];
+  const b = briefing;
+  const macro  = b.macro || {};
+  const alp    = b.alpaca_paper || {};
+  const ctx = [
+    `Date: ${b.date||'—'}  Regime: ${b.regime||'—'}  VIX: ${b.vix||'—'}`,
+    `RL decision: ${b.action||'—'} ${b.ticker||'—'} @ ${b.confidence||'—'}% confidence`,
+    b.abstain_reason ? `Abstain: ${b.abstain_reason}` : '',
+    ranked.length ? `Ranked picks: ${ranked.slice(0,3).map((o,i)=>['A','B','C'][i]+') '+o.ticker+' '+o.conviction+(o.suggested_dollar?` $${Math.round(o.suggested_dollar)}`:'')).join(' | ')}` : '',
+    `News: ${(b.news_sentiment||0)>=0?'+':''}${(b.news_sentiment||0).toFixed(2)} | "${b.news_headline||'—'}"`,
+    macro.yield_curve_spread != null ? `Yield curve: ${macro.yield_curve_spread}% | DXY: ${macro.dxy||'—'}` : '',
+    alp.equity ? `Alpaca paper: $${alp.equity.toLocaleString()} (today ${alp.daily_pnl_pct>=0?'+':''}${(alp.daily_pnl_pct||0).toFixed(2)}%)` : '',
+    `Crypto: ${JSON.stringify(((b.crypto_signals||{}).signals||[]).map(s=>({t:s.ticker,score:s.composite_score,rsi:s.rsi})))}`,
+  ].filter(Boolean).join('\n');
 
-    const prompt = `You are the AI assistant for Sector Command, a live quantitative trading system. Answer the user's question using the market data below. Be concise (3-5 sentences max), practical, and specific to the data shown.\n\nMarket context:\n${ctx}\n\nUser question: ${text}`;
+  const prompt = `You are the AI assistant for Sector Command, Cameron's live quant trading system. Answer his question using the market data below. Be direct, 3-5 sentences, specific to the data. Cameron is a high school student learning to invest — talk like a smart older friend.\n\nMarket context:\n${ctx}\n\nQuestion: ${text}`;
 
-    const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 350, temperature: 0.7 },
-        }),
-      }
-    );
-    if (!r.ok) {
-      const errText = await r.text();
-      return `⚠️ Gemini API error ${r.status}: ${errText.slice(0, 300)}`;
-    }
-    const data = await r.json();
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (answer) return `🤖 <b>AI Answer</b>\n\n${answer.trim()}\n\n<i>Based on ${b.date || 'latest'} briefing data</i>`;
-    return `⚠️ Gemini returned no answer. Response: ${JSON.stringify(data).slice(0, 200)}`;
-  } catch (e) {
-    return `⚠️ Gemini exception: ${String(e).slice(0, 200)}`;
+  for (const model of MODELS) {
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:350,temperature:0.7} }),
+        }
+      );
+      if (r.status === 429) continue; // quota exceeded, try next model
+      if (!r.ok) { const e = await r.text(); return `⚠️ Gemini error (${model}) ${r.status}: ${e.slice(0,200)}`; }
+      const data = await r.json();
+      const answer = data.candidates?.[0]?.content?.parts?.find(p=>p.text)?.text;
+      if (answer) return `🤖 <b>AI Answer</b>\n\n${answer.trim()}\n\n<i>${b.date||'latest'} data · ${model}</i>`;
+    } catch (_) { continue; }
   }
+  return '⚠️ All Gemini models failed or quota exceeded. Try again in a minute.';
 }
 
 // ── Cron-job.org endpoints ─────────────────────────────────────────────────────
