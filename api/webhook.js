@@ -238,8 +238,48 @@ async function handle(text) {
   return 'Commands:\n<code>BUY A</code>  <code>BUY XLF</code>  <code>SELL</code>  <code>SKIP</code>\n<code>STATUS</code>  <code>WHY</code>  <code>ALPHA</code>  <code>PORTFOLIO</code>  <code>PERF</code>\n<code>BALANCE 12500</code>  <code>BOUGHT XLE 500</code>  <code>SOLD XLE</code>';
 }
 
+// ── Cron-job.org endpoints ─────────────────────────────────────────────────────
+// cron-job.org hits /cron/briefing?key=SECRET  → triggers daily-signals.yml
+// cron-job.org hits /cron/alerts?key=SECRET    → triggers event-alerts.yml
+async function dispatchWorkflow(workflow) {
+  const pat  = process.env.GITHUB_PAT;
+  const repo = process.env.GITHUB_REPO;
+  if (!pat || !repo) return { ok: false, reason: 'no GITHUB_PAT/GITHUB_REPO' };
+  try {
+    const r = await fetch(
+      `https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`,
+      {
+        method: 'POST',
+        headers: { Authorization: `token ${pat}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: 'main' }),
+      }
+    );
+    return { ok: r.status === 204, status: r.status };
+  } catch (e) {
+    return { ok: false, reason: String(e) };
+  }
+}
+
 // ── Vercel handler ─────────────────────────────────────────────────────────────
 module.exports = async (req, res) => {
+  const url  = req.url || '';
+  const qkey = (req.query && req.query.key) || new URL('https://x.com' + url).searchParams.get('key') || '';
+  const cronSecret = process.env.CRON_SECRET || '';
+
+  // /cron/briefing — triggers the full daily signal run + Telegram briefing
+  if (url.startsWith('/cron/briefing')) {
+    if (cronSecret && qkey !== cronSecret) return res.status(403).json({ ok: false, error: 'bad key' });
+    const result = await dispatchWorkflow('daily-signals.yml');
+    return res.status(result.ok ? 200 : 502).json({ ok: result.ok, workflow: 'daily-signals.yml', ...result });
+  }
+
+  // /cron/alerts — triggers the event-alerts watcher
+  if (url.startsWith('/cron/alerts')) {
+    if (cronSecret && qkey !== cronSecret) return res.status(403).json({ ok: false, error: 'bad key' });
+    const result = await dispatchWorkflow('event-alerts.yml');
+    return res.status(result.ok ? 200 : 502).json({ ok: result.ok, workflow: 'event-alerts.yml', ...result });
+  }
+
   if (req.method === 'GET') {
     const briefing = await redisGet('sc:last_briefing') || {};
     const balance  = await redisGet('sc:balance');

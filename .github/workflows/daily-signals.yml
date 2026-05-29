@@ -4,12 +4,7 @@ name: Sector Command Live — Daily Signals
 # GitHub Actions schedule handles the two new slots (10:30 AM + 2:00 PM) directly.
 # workflow_dispatch allows manual one-off runs from the GitHub Actions tab.
 on:
-  schedule:
-    # 3 briefings per day (EDT = UTC-4): open, midday, close.
-    # Offset from top-of-hour to avoid GitHub Actions congestion.
-    - cron: '15 13 * * 1-5'  #  9:15 AM EDT — morning setup
-    - cron: '15 16 * * 1-5'  # 12:15 PM EDT — midday check
-    - cron: '45 19 * * 1-5'  #  3:45 PM EDT — pre-close review
+  # schedule removed — cron-job.org triggers via /cron/briefing endpoint.
   workflow_dispatch: {}
 
 jobs:
