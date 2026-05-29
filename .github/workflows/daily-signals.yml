@@ -5,13 +5,9 @@ name: Sector Command Live — Daily Signals
 # workflow_dispatch allows manual one-off runs from the GitHub Actions tab.
 on:
   schedule:
-    # All 6 daily slots (EDT = UTC-4). No external cron service needed.
-    - cron: '0 13 * * 1-5'   #  9:00 AM EDT
-    - cron: '30 14 * * 1-5'  # 10:30 AM EDT
-    - cron: '0 16 * * 1-5'   # 12:00 PM EDT
-    - cron: '30 19 * * 1-5'  #  3:30 PM EDT
-    - cron: '30 20 * * 1-5'  #  4:30 PM EDT
-    - cron: '0 18 * * 1-5'   #  2:00 PM EDT
+    # 2 briefings per day (EDT = UTC-4): pre-market open + after close.
+    - cron: '0 13 * * 1-5'   #  9:00 AM EDT — morning setup
+    - cron: '30 20 * * 1-5'  #  4:30 PM EDT — close review
   workflow_dispatch: {}
 
 jobs:

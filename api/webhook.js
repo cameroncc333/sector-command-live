@@ -244,12 +244,20 @@ module.exports = async (req, res) => {
     const briefing = await redisGet('sc:last_briefing') || {};
     const balance  = await redisGet('sc:balance');
     const holdings = await redisGet('sc:holdings') || [];
+    const holdingsArr = Array.isArray(holdings) ? holdings : [];
+    const balNum = balance != null ? parseFloat(balance) : null;
+    // Enrich holdings with alloc_pct for the dashboard
+    const holdingsEnriched = holdingsArr.map(h => ({
+      ...h,
+      alloc_pct: (balNum && h.dollar_value) ? Math.round(h.dollar_value / balNum * 1000) / 10 : null,
+    }));
     return res.json({
       ok: true,
       service: 'sector-command-webhook',
       briefing_date: briefing.date || 'none',
-      balance,
-      n_holdings: Array.isArray(holdings) ? holdings.length : 0,
+      balance: balNum,
+      holdings: holdingsEnriched,
+      n_holdings: holdingsArr.length,
       env_telegram:  !!process.env.TELEGRAM_TOKEN,
       env_redis:     !!process.env.UPSTASH_REDIS_REST_URL,
       env_alpaca:    !!process.env.ALPACA_API_KEY,

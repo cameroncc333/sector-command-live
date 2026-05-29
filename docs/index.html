@@ -218,16 +218,17 @@ async function fetchJSON(local, ghPath) {
 }
 
 async function init() {
-  const [briefing, journal] = await Promise.all([
+  const [briefing, journal, live] = await Promise.all([
     fetchJSON("briefing.json", "docs/briefing.json"),
     fetchJSON("journal.json",  "docs/journal.json"),
+    fetch("/api/webhook").then(r => r.ok ? r.json() : null).catch(() => null),
   ]);
 
   if (!briefing) {
     const msg = `<div class="card" style="text-align:center;padding:40px 20px">
       <div class="empty-icon">⏳</div>
       <div class="bold" style="font-size:16px;margin-bottom:8px">Waiting for first briefing</div>
-      <div class="muted">GitHub Actions runs the signal engine at 9AM, 10:30AM, 12PM, 2PM, 3:30PM &amp; 4:30PM EDT on weekdays.<br><br>
+      <div class="muted">GitHub Actions runs the signal engine at 9AM &amp; 4:30PM EDT on weekdays.<br><br>
       To trigger one now: go to your GitHub repo → Actions → "Sector Command Live — Daily Signals" → Run workflow.</div>
     </div>`;
     ['pg-today','pg-opps','pg-stocks','pg-portfolio'].forEach(id =>
@@ -236,6 +237,34 @@ async function init() {
     document.getElementById('pg-journal').innerHTML = emptyJournalCard([]);
     document.getElementById('updated-ts').textContent = 'No data yet';
     return;
+  }
+
+  // Overlay live Redis balance/holdings from the webhook so the Portfolio tab
+  // always reflects what was set via Telegram commands (stored in Redis),
+  // even before the next GitHub Actions run regenerates briefing.json.
+  if (live && live.balance != null) {
+    briefing.portfolio_snap = briefing.portfolio_snap || {};
+    briefing.portfolio_snap.balance = live.balance;
+    if (Array.isArray(live.holdings) && live.holdings.length) {
+      const invested = live.holdings.reduce((s, h) => s + (h.dollar_value || 0), 0);
+      briefing.portfolio_snap.holdings = live.holdings.map(h => ({
+        ticker: h.ticker,
+        date_bought: h.date_bought || '—',
+        avg_cost: h.avg_cost || null,
+        current_price: null,
+        cost_basis: h.dollar_value || 0,
+        pnl_dollar: 0,
+        pnl_pct: 0,
+        alloc_pct: h.alloc_pct,
+        notes: h.notes || null,
+      }));
+      briefing.portfolio_snap.total_invested = invested;
+      briefing.portfolio_snap.cash_remaining = live.balance - invested;
+    } else if (!briefing.portfolio_snap.holdings?.length) {
+      briefing.portfolio_snap.holdings = [];
+      briefing.portfolio_snap.total_invested = 0;
+      briefing.portfolio_snap.cash_remaining = live.balance;
+    }
   }
 
   const gen = (briefing.freshness||{}).generated_utc || briefing.date || '—';
