@@ -1,19 +1,18 @@
 """
-Vercel serverless Telegram webhook — handles BUY/SELL/SKIP/BOUGHT/BALANCE/STATUS/WHY/ALPHA.
-
+Vercel serverless Telegram webhook (Flask) — BUY/SELL/SKIP/BOUGHT/BALANCE/STATUS/WHY/ALPHA.
 All state lives in Redis (Upstash). No SQLite, no heavy ML libraries.
-Human replies are stored in Redis sc:journal_replies; GitHub Actions replays
-them into the SQLite journal on each run via journal._restore_replies_from_redis().
 """
 
-from http.server import BaseHTTPRequestHandler
+from flask import Flask, request, jsonify
 import json
 import os
 import datetime
 import requests as req
 
+app = Flask(__name__)
 
-# ── Redis helpers ─────────────────────────────────────────────────────────────
+
+# ── Redis helpers ──────────────────────────────────────────────────────────────
 
 def _redis_get(key: str):
     url   = os.environ.get("UPSTASH_REDIS_REST_URL", "")
@@ -41,7 +40,7 @@ def _redis_set(key: str, value, ttl: int = 7776000):  # 90 days default
         pass
 
 
-# ── Telegram send ─────────────────────────────────────────────────────────────
+# ── Telegram send ──────────────────────────────────────────────────────────────
 
 def _tg_send(text: str):
     token   = os.environ.get("TELEGRAM_TOKEN", "")
@@ -56,7 +55,26 @@ def _tg_send(text: str):
         pass
 
 
-# ── Command parser ────────────────────────────────────────────────────────────
+# ── GitHub Actions dispatch ────────────────────────────────────────────────────
+
+def _trigger_actions_run():
+    pat  = os.environ.get("GITHUB_PAT", "")
+    repo = os.environ.get("GITHUB_REPO", "")
+    if not pat or not repo:
+        return
+    try:
+        req.post(
+            f"https://api.github.com/repos/{repo}/actions/workflows/daily-signals.yml/dispatches",
+            json={"ref": "main"},
+            headers={"Authorization": f"token {pat}",
+                     "Accept": "application/vnd.github+json"},
+            timeout=5,
+        )
+    except Exception:
+        pass
+
+
+# ── Command parser ─────────────────────────────────────────────────────────────
 
 def _parse(text: str) -> dict:
     tokens = text.strip().split()
@@ -88,7 +106,7 @@ def _parse(text: str) -> dict:
             "reason": reason, "tokens": tokens}
 
 
-# ── Alpaca paper order ────────────────────────────────────────────────────────
+# ── Alpaca paper order ─────────────────────────────────────────────────────────
 
 def _alpaca_buy(ticker: str, confidence: int = 50) -> dict:
     key    = os.environ.get("ALPACA_API_KEY", "")
@@ -119,7 +137,7 @@ def _alpaca_buy(ticker: str, confidence: int = 50) -> dict:
         return {"executed": False, "reason": str(e)[:200]}
 
 
-# ── Command handlers ──────────────────────────────────────────────────────────
+# ── Command handlers ───────────────────────────────────────────────────────────
 
 def _handle(text: str) -> str:
     cmd      = _parse(text)
@@ -127,12 +145,10 @@ def _handle(text: str) -> str:
     briefing = _redis_get("sc:last_briefing") or {}
     ranked   = briefing.get("ranked_opportunities") or []
 
-    # ── BUY / SELL / SKIP / HOLD ─────────────────────────────────────────────
     if command in ("BUY", "SELL", "SKIP", "HOLD"):
         ticker = cmd["ticker"]
         amount = cmd["amount"]
 
-        # BUY A / BUY 1 → resolve from ranked list
         if amount and not ticker and ranked:
             idx = int(amount) - 1
             if 0 <= idx < len(ranked):
@@ -142,19 +158,17 @@ def _handle(text: str) -> str:
         ticker     = ticker or briefing.get("ticker") or "SPY"
         confidence = int(briefing.get("confidence") or 50)
 
-        # Store reply in Redis — GitHub Actions replays into SQLite journal
         today   = datetime.date.today().isoformat()
         replies = _redis_get("sc:journal_replies") or []
         if not isinstance(replies, list):
             replies = []
         replies = [r for r in replies if r.get("date") != today]
         replies.append({"date": today, "command": command,
-                         "reason": cmd["reason"] or "(no reason given)",
-                         "ts": datetime.datetime.now(datetime.timezone.utc).isoformat()})
+                        "reason": cmd["reason"] or "(no reason given)",
+                        "ts": datetime.datetime.now(datetime.timezone.utc).isoformat()})
         replies = replies[-90:]
         _redis_set("sc:journal_replies", replies)
 
-        # Alpaca paper order
         alpaca_line = ""
         if command == "BUY" and ticker:
             result = _alpaca_buy(ticker, confidence)
@@ -165,8 +179,7 @@ def _handle(text: str) -> str:
 
         bought_reminder = ""
         if command == "BUY" and ticker:
-            bought_reminder = (f"\n\n💡 Log real money:\n"
-                               f"<code>BOUGHT {ticker} [dollar amount]</code>")
+            bought_reminder = f"\n\n💡 Log real money: <code>BOUGHT {ticker} [dollar amount]</code>"
 
         return (f"✅ Logged: <b>{command} {ticker}</b>"
                 + (f"\nReason: {cmd['reason']}" if cmd["reason"] else "")
@@ -174,7 +187,6 @@ def _handle(text: str) -> str:
                 + "\n📊 Paper mode active"
                 + bought_reminder)
 
-    # ── STATUS ────────────────────────────────────────────────────────────────
     elif command == "STATUS":
         if not briefing:
             return "No briefing yet. GitHub Actions runs at 9AM, 10:30AM, 12PM, 2PM, 3:30PM, 4:30PM EDT."
@@ -187,53 +199,45 @@ def _handle(text: str) -> str:
                 f"Generated: {gen}\n"
                 f"Reply <code>BUY</code>, <code>SKIP</code>, or ask a question.")
 
-    # ── WHY ───────────────────────────────────────────────────────────────────
     elif command == "WHY":
         trace = briefing.get("why_trace") or []
         if trace:
             return "🧠 <b>Reasoning:</b>\n" + "\n".join(f"• {t}" for t in trace if t)
         return "No reasoning trace available for this briefing."
 
-    # ── ALPHA ─────────────────────────────────────────────────────────────────
     elif command == "ALPHA":
         picks = briefing.get("equity_alpha_picks") or []
         if not picks:
-            return ("📊 <b>Equity Alpha</b>\n\nNo stock picks yet — generated with each daily briefing.\n"
-                    "Wait for the next scheduled run or trigger one from GitHub Actions.")
+            return ("📊 <b>Equity Alpha</b>\n\nNo picks yet — generated with each daily briefing.")
         EMOJI = {"HIGH": "🔥", "MEDIUM": "✅", "LOW": "🟡"}
-        lines = ["📈 <b>Stock Alpha Picks</b>  (cross-sectional factor model)"]
+        lines = ["📈 <b>Stock Alpha Picks</b>"]
         for i, p in enumerate(picks[:5], 1):
             emoji   = EMOJI.get(p.get("conviction"), "⚪")
             dollar  = f" → <b>${p['suggested_dollar']:.0f}</b>" if p.get("suggested_dollar") else ""
-            tagline = p.get("conviction_tagline", "")
             lines.append(f"  {i}. {emoji} <b>{p['ticker']}</b> ({p.get('sector_name', '')}) "
-                         f"score {p.get('composite_score', 0):.0f}{dollar}")
-            if tagline:
-                lines.append(f"     💡 {tagline}")
+                         f"score {p.get('composite_score', 0):.0f}/100{dollar}")
+            if p.get("conviction_tagline"):
+                lines.append(f"     💡 {p['conviction_tagline']}")
         return "\n".join(lines)
 
-    # ── BALANCE ───────────────────────────────────────────────────────────────
     elif command == "BALANCE":
         amount = cmd["amount"]
         if amount and amount > 0:
-            _redis_set("sc:balance", amount)  # store as number so position_tracker can float() it
+            _redis_set("sc:balance", amount)
             return (f"✅ Balance set to <b>${amount:,.0f}</b>\n"
-                    f"Dashboard refreshes automatically — or set DEFAULT_BALANCE={int(amount)} in Vercel env vars to persist across redeploys.\n"
                     f"Reply <code>PORTFOLIO</code> to see holdings.")
         else:
             val = _redis_get("sc:balance")
             bal = float(val) if val is not None else None
             if bal:
-                return f"Current balance: ${bal:,.0f}\nUpdate: <code>BALANCE 15000</code>"
+                return f"Current balance: <b>${bal:,.0f}</b>\nUpdate: <code>BALANCE 15000</code>"
             return "Set your balance: <code>BALANCE 12500</code>"
 
-    # ── BOUGHT ────────────────────────────────────────────────────────────────
     elif command == "BOUGHT":
         tokens = cmd["tokens"]
         if len(tokens) < 3:
-            return ("Format: <code>BOUGHT XLE 500</code> (dollar amount)\n"
-                    "Or: <code>BOUGHT XLE 5 47.50</code> (shares + price)\n"
-                    "Add a note: <code>BOUGHT XLE 500 earnings breakout</code>")
+            return ("Format: <code>BOUGHT XLE 500</code>\n"
+                    "With note: <code>BOUGHT XLE 500 earnings breakout</code>")
         ticker = tokens[1].upper()
         nums, note_parts = [], []
         for t in tokens[2:]:
@@ -241,17 +245,14 @@ def _handle(text: str) -> str:
                 nums.append(float(t.replace("$", "").replace(",", "")))
             except ValueError:
                 note_parts.append(t)
-        # strip leading dash/colon separators from note
         notes = " ".join(note_parts).lstrip("-–: ").strip() or None
         if len(nums) == 2:
             dollar = round(nums[0] * nums[1], 2)
-            entry  = {"ticker": ticker, "shares": nums[0], "avg_cost": nums[1],
-                      "dollar_value": dollar}
+            entry  = {"ticker": ticker, "shares": nums[0], "avg_cost": nums[1], "dollar_value": dollar}
         elif len(nums) == 1:
             entry = {"ticker": ticker, "dollar_value": nums[0]}
         else:
             return "Format: <code>BOUGHT XLE 500</code>"
-
         holdings = _redis_get("sc:holdings") or []
         if not isinstance(holdings, list):
             holdings = []
@@ -262,12 +263,10 @@ def _handle(text: str) -> str:
         holdings.append(entry)
         _redis_set("sc:holdings", holdings)
         dollar = entry.get("dollar_value", 0)
-        note_line = f"\nNote: {notes}" if notes else ""
-        return (f"✅ Position logged: <b>{ticker}</b>\n"
-                f"Amount: ${dollar:,.0f}{note_line}\n"
-                f"Reply <code>PORTFOLIO</code> to see all holdings.")
+        return (f"✅ Logged: <b>{ticker}</b> ${dollar:,.0f}"
+                + (f"\nNote: {notes}" if notes else "")
+                + "\nReply <code>PORTFOLIO</code> to see all holdings.")
 
-    # ── SOLD ──────────────────────────────────────────────────────────────────
     elif command == "SOLD":
         tokens = cmd["tokens"]
         ticker = tokens[1].upper() if len(tokens) > 1 else None
@@ -278,17 +277,16 @@ def _handle(text: str) -> str:
             holdings = []
         holdings = [h for h in holdings if h.get("ticker") != ticker]
         _redis_set("sc:holdings", holdings)
-        return f"✅ <b>{ticker}</b> removed from holdings.\nReply <code>PORTFOLIO</code> to confirm."
+        return f"✅ <b>{ticker}</b> removed.\nReply <code>PORTFOLIO</code> to confirm."
 
-    # ── PORTFOLIO ─────────────────────────────────────────────────────────────
     elif command == "PORTFOLIO":
         balance_raw = _redis_get("sc:balance")
-        balance     = float(balance_raw) if balance_raw else None
+        balance     = float(balance_raw) if balance_raw is not None else None
         if not balance:
             return "Set your balance first: <code>BALANCE 12500</code>"
         holdings = _redis_get("sc:holdings") or []
         if not holdings:
-            return (f"Balance: ${balance:,.0f}\nNo open positions.\n"
+            return (f"Balance: <b>${balance:,.0f}</b>\nNo open positions.\n"
                     f"Log one: <code>BOUGHT XLF 500</code>")
         total_invested = sum(h.get("dollar_value", 0) for h in holdings if isinstance(h, dict))
         lines = [f"💼 <b>Portfolio</b>  (Balance: ${balance:,.0f})"]
@@ -298,12 +296,12 @@ def _handle(text: str) -> str:
             t   = h.get("ticker", "?")
             d   = h.get("dollar_value") or 0
             pct = round(d / balance * 100, 1) if balance else 0
-            lines.append(f"  • <b>{t}</b>  ${d:,.0f}  ({pct}%)")
+            note = f"  — {h['notes']}" if h.get("notes") else ""
+            lines.append(f"  • <b>{t}</b>  ${d:,.0f}  ({pct}%){note}")
         cash = balance - total_invested
         lines.append(f"\nInvested: ${total_invested:,.0f}  ·  Cash: ${cash:,.0f}")
         return "\n".join(lines)
 
-    # ── PERF ──────────────────────────────────────────────────────────────────
     elif command == "PERF":
         perf = briefing.get("performance") or {}
         if perf.get("portfolio_return_pct") is not None:
@@ -316,7 +314,6 @@ def _handle(text: str) -> str:
                     f"{n} trades tracked")
         return "No completed trades yet. Reply BUY to a briefing to start tracking."
 
-    # ── fallback ──────────────────────────────────────────────────────────────
     else:
         return ("Commands:\n"
                 "<code>BUY A</code>  <code>BUY XLF</code>  <code>SELL</code>  <code>SKIP</code>\n"
@@ -324,70 +321,49 @@ def _handle(text: str) -> str:
                 "<code>BALANCE 12500</code>  <code>BOUGHT XLE 500</code>  <code>SOLD XLE</code>")
 
 
-# ── GitHub Actions dispatch (refreshes dashboard after BALANCE/BOUGHT) ────────
+# ── Flask routes ───────────────────────────────────────────────────────────────
 
-def _trigger_actions_run():
-    pat  = os.environ.get("GITHUB_PAT", "")
-    repo = os.environ.get("GITHUB_REPO", "")
-    if not pat or not repo:
-        return
+@app.route("/api/webhook", methods=["POST"])
+def telegram_webhook():
     try:
-        req.post(
-            f"https://api.github.com/repos/{repo}/actions/workflows/daily-signals.yml/dispatches",
-            json={"ref": "main"},
-            headers={"Authorization": f"token {pat}",
-                     "Accept": "application/vnd.github+json"},
-            timeout=5,
-        )
-    except Exception:
-        pass
+        body = request.get_json(force=True, silent=True) or {}
+        msg  = body.get("message") or body.get("edited_message") or {}
+        text = (msg.get("text") or "").strip()
+        if text:
+            reply = _handle(text)
+            _tg_send(reply)
+            cmd = text.strip().split()[0].upper() if text.strip() else ""
+            if cmd in ("BALANCE", "BOUGHT", "SOLD"):
+                _trigger_actions_run()
+    except Exception as e:
+        _tg_send(f"⚠️ Error: {e}")
+    return jsonify({"ok": True})
 
 
-# ── Vercel handler ────────────────────────────────────────────────────────────
+@app.route("/api/webhook", methods=["GET"])
+def health():
+    briefing = _redis_get("sc:last_briefing") or {}
+    balance  = _redis_get("sc:balance")
+    holdings = _redis_get("sc:holdings") or []
+    return jsonify({
+        "ok":            True,
+        "service":       "sector-command-webhook",
+        "briefing_date": briefing.get("date", "none"),
+        "balance":       balance,
+        "n_holdings":    len(holdings) if isinstance(holdings, list) else 0,
+        "env_telegram":  bool(os.environ.get("TELEGRAM_TOKEN")),
+        "env_redis":     bool(os.environ.get("UPSTASH_REDIS_REST_URL")),
+        "env_alpaca":    bool(os.environ.get("ALPACA_API_KEY")),
+        "env_github_pat": bool(os.environ.get("GITHUB_PAT")),
+    })
 
-class handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        length = int(self.headers.get("Content-Length", 0))
-        try:
-            body = json.loads(self.rfile.read(length) or b"{}")
-            msg  = body.get("message") or body.get("edited_message") or {}
-            text = (msg.get("text") or "").strip()
-            if text:
-                reply = _handle(text)
-                _tg_send(reply)
-                # Refresh dashboard after balance/position changes
-                cmd = text.strip().split()[0].upper() if text.strip() else ""
-                if cmd in ("BALANCE", "BOUGHT", "SOLD"):
-                    _trigger_actions_run()
-        except Exception as e:
-            _tg_send(f"⚠️ Error processing command: {e}")
-        self._ok()
 
-    def do_GET(self):
-        briefing = _redis_get("sc:last_briefing") or {}
-        balance  = _redis_get("sc:balance")
-        holdings = _redis_get("sc:holdings") or []
-        data = {
-            "ok":            True,
-            "service":       "sector-command-webhook",
-            "briefing_date": briefing.get("date", "none"),
-            "balance":       balance,
-            "n_holdings":    len(holdings) if isinstance(holdings, list) else 0,
-            "env_telegram":  bool(os.environ.get("TELEGRAM_TOKEN")),
-            "env_redis":     bool(os.environ.get("UPSTASH_REDIS_REST_URL")),
-            "env_alpaca":    bool(os.environ.get("ALPACA_API_KEY")),
-            "env_github":    bool(os.environ.get("GITHUB_PAT")),
-        }
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
+# also handle root path (Vercel may strip /api/webhook prefix)
+@app.route("/", methods=["POST"])
+def telegram_webhook_root():
+    return telegram_webhook()
 
-    def _ok(self):
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
-        self.wfile.write(b'{"ok":true}')
 
-    def log_message(self, fmt, *args):
-        pass  # suppress Vercel access log noise
+@app.route("/", methods=["GET"])
+def health_root():
+    return health()
