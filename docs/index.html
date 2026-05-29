@@ -615,7 +615,7 @@ function renderPortfolio(b) {
   const holdRows=holdings.map(h=>{
     const pnlCls=h.pnl_dollar>=0?"green":"red";
     return `<tr>
-      <td><strong>${h.ticker}</strong><div class="small muted">${SNAMES[h.ticker]||""}</div></td>
+      <td><strong>${h.ticker}</strong><div class="small muted">${SNAMES[h.ticker]||""}</div>${h.notes?`<div class="small" style="color:var(--blue);margin-top:2px">💬 ${h.notes}</div>`:""}</td>
       <td>${h.date_bought||"—"}</td>
       <td>${h.avg_cost!=null?"$"+h.avg_cost.toFixed(2):"—"}</td>
       <td>${h.current_price!=null?"$"+h.current_price.toFixed(2):"—"}</td>
@@ -625,6 +625,39 @@ function renderPortfolio(b) {
       <td>${h.alloc_pct!=null?h.alloc_pct+"%":"—"}</td>
     </tr>`;
   }).join("");
+
+  // Alpaca paper account section
+  const alp=b.alpaca_paper||{};
+  let alpacaHtml="";
+  if(alp.equity!=null){
+    const dpnl=alp.daily_pnl||0,dpnlPct=alp.daily_pnl_pct||0;
+    const dpnlCls=dpnl>=0?"green":"red";
+    const positions=(alp.positions||[]);
+    const posRows=positions.map(p=>{
+      const upl=parseFloat(p.unrealized_pl||0),uplPct=parseFloat(p.unrealized_plpc||0)*100;
+      const cls=upl>=0?"green":"red";
+      return `<tr>
+        <td><strong>${p.symbol}</strong></td>
+        <td>${p.qty}</td>
+        <td>$${parseFloat(p.current_price||0).toFixed(2)}</td>
+        <td><span class="${cls}">${upl>=0?"+":""}$${Math.abs(upl).toFixed(0)} (${upl>=0?"+":""}${uplPct.toFixed(1)}%)</span></td>
+      </tr>`;
+    }).join("");
+    alpacaHtml=`<div class="card">
+      <div class="card-title">🏦 Alpaca Paper Account — Live Broker Execution</div>
+      <div class="bal-grid">
+        <div class="bal-card"><div class="bal-lbl">Paper Equity</div><div class="bal-val green">${fmt$(alp.equity)}</div><div class="bal-sub">Account value</div></div>
+        <div class="bal-card"><div class="bal-lbl">Cash</div><div class="bal-val">${fmt$(alp.cash)}</div><div class="bal-sub">Available buying power</div></div>
+        <div class="bal-card"><div class="bal-lbl">Today's P&amp;L</div><div class="bal-val ${dpnlCls}">${dpnl>=0?"+":""}${fmt$(dpnl)}</div><div class="bal-sub">${dpnlPct>=0?"+":""}${dpnlPct.toFixed(2)}% today</div></div>
+        <div class="bal-card"><div class="bal-lbl">Positions</div><div class="bal-val">${positions.length}</div><div class="bal-sub">Open trades</div></div>
+      </div>
+      ${positions.length?`<div style="overflow-x:auto"><table>
+        <thead><tr><th>Symbol</th><th>Qty</th><th>Price</th><th>Unrealized P&amp;L</th></tr></thead>
+        <tbody>${posRows}</tbody>
+      </table></div>`:"<div class='small muted'>No open positions. Reply BUY in Telegram to auto-execute a paper trade.</div>"}
+      <div class="small muted" style="margin-top:10px">Auto-executes when you reply BUY to a Telegram briefing. Tracked by Alpaca — your real paper broker account.</div>
+    </div>`;
+  }
 
   // Paper P&L section
   let paperHtml="";
@@ -664,6 +697,7 @@ function renderPortfolio(b) {
       </div>
     </div>`
     :`<div class="card"><div class="empty"><div class="empty-icon">📭</div>No real-money positions logged yet.<br>Send <code>BOUGHT XLF 500</code> in Telegram to log a position.</div></div>`}
+    ${alpacaHtml}
     ${paperHtml}
     ${freshBar(b)}`;
 }

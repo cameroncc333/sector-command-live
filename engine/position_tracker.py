@@ -203,6 +203,7 @@ class PositionTracker:
                 "pnl_pct":       round(pnl_pct, 2),
                 "date_bought":   h["date_bought"],
                 "alloc_pct":     round(current_val / balance * 100, 1) if balance else None,
+                "notes":         h.get("notes"),
             })
 
         unrealized_pnl = total_current - total_invested

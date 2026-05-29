@@ -216,13 +216,13 @@ def _handle(text: str) -> str:
     elif command == "BALANCE":
         amount = cmd["amount"]
         if amount and amount > 0:
-            _redis_set("sc:balance", str(amount))
+            _redis_set("sc:balance", amount)  # store as number so position_tracker can float() it
             return (f"✅ Balance set to <b>${amount:,.0f}</b>\n"
-                    f"Set DEFAULT_BALANCE={int(amount)} in Vercel env vars to persist across redeploys.\n"
+                    f"Dashboard refreshes automatically — or set DEFAULT_BALANCE={int(amount)} in Vercel env vars to persist across redeploys.\n"
                     f"Reply <code>PORTFOLIO</code> to see holdings.")
         else:
             val = _redis_get("sc:balance")
-            bal = float(val) if val else None
+            bal = float(val) if val is not None else None
             if bal:
                 return f"Current balance: ${bal:,.0f}\nUpdate: <code>BALANCE 15000</code>"
             return "Set your balance: <code>BALANCE 12500</code>"
@@ -232,14 +232,17 @@ def _handle(text: str) -> str:
         tokens = cmd["tokens"]
         if len(tokens) < 3:
             return ("Format: <code>BOUGHT XLE 500</code> (dollar amount)\n"
-                    "Or: <code>BOUGHT XLE 5 47.50</code> (shares + price)")
+                    "Or: <code>BOUGHT XLE 5 47.50</code> (shares + price)\n"
+                    "Add a note: <code>BOUGHT XLE 500 earnings breakout</code>")
         ticker = tokens[1].upper()
-        nums   = []
+        nums, note_parts = [], []
         for t in tokens[2:]:
             try:
                 nums.append(float(t.replace("$", "").replace(",", "")))
             except ValueError:
-                pass
+                note_parts.append(t)
+        # strip leading dash/colon separators from note
+        notes = " ".join(note_parts).lstrip("-–: ").strip() or None
         if len(nums) == 2:
             dollar = round(nums[0] * nums[1], 2)
             entry  = {"ticker": ticker, "shares": nums[0], "avg_cost": nums[1],
@@ -254,11 +257,14 @@ def _handle(text: str) -> str:
             holdings = []
         holdings = [h for h in holdings if h.get("ticker") != ticker]
         entry["date_bought"] = datetime.date.today().isoformat()
+        if notes:
+            entry["notes"] = notes
         holdings.append(entry)
         _redis_set("sc:holdings", holdings)
         dollar = entry.get("dollar_value", 0)
+        note_line = f"\nNote: {notes}" if notes else ""
         return (f"✅ Position logged: <b>{ticker}</b>\n"
-                f"Amount: ${dollar:,.0f}\n"
+                f"Amount: ${dollar:,.0f}{note_line}\n"
                 f"Reply <code>PORTFOLIO</code> to see all holdings.")
 
     # ── SOLD ──────────────────────────────────────────────────────────────────
@@ -318,6 +324,25 @@ def _handle(text: str) -> str:
                 "<code>BALANCE 12500</code>  <code>BOUGHT XLE 500</code>  <code>SOLD XLE</code>")
 
 
+# ── GitHub Actions dispatch (refreshes dashboard after BALANCE/BOUGHT) ────────
+
+def _trigger_actions_run():
+    pat  = os.environ.get("GITHUB_PAT", "")
+    repo = os.environ.get("GITHUB_REPO", "")
+    if not pat or not repo:
+        return
+    try:
+        req.post(
+            f"https://api.github.com/repos/{repo}/actions/workflows/daily-signals.yml/dispatches",
+            json={"ref": "main"},
+            headers={"Authorization": f"token {pat}",
+                     "Accept": "application/vnd.github+json"},
+            timeout=5,
+        )
+    except Exception:
+        pass
+
+
 # ── Vercel handler ────────────────────────────────────────────────────────────
 
 class handler(BaseHTTPRequestHandler):
@@ -330,12 +355,33 @@ class handler(BaseHTTPRequestHandler):
             if text:
                 reply = _handle(text)
                 _tg_send(reply)
+                # Refresh dashboard after balance/position changes
+                cmd = text.strip().split()[0].upper() if text.strip() else ""
+                if cmd in ("BALANCE", "BOUGHT", "SOLD"):
+                    _trigger_actions_run()
         except Exception as e:
             _tg_send(f"⚠️ Error processing command: {e}")
         self._ok()
 
     def do_GET(self):
-        self._ok()
+        briefing = _redis_get("sc:last_briefing") or {}
+        balance  = _redis_get("sc:balance")
+        holdings = _redis_get("sc:holdings") or []
+        data = {
+            "ok":            True,
+            "service":       "sector-command-webhook",
+            "briefing_date": briefing.get("date", "none"),
+            "balance":       balance,
+            "n_holdings":    len(holdings) if isinstance(holdings, list) else 0,
+            "env_telegram":  bool(os.environ.get("TELEGRAM_TOKEN")),
+            "env_redis":     bool(os.environ.get("UPSTASH_REDIS_REST_URL")),
+            "env_alpaca":    bool(os.environ.get("ALPACA_API_KEY")),
+            "env_github":    bool(os.environ.get("GITHUB_PAT")),
+        }
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(data).encode())
 
     def _ok(self):
         self.send_response(200)

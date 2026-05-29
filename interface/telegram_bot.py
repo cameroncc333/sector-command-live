@@ -285,6 +285,24 @@ def format_briefing(b: dict) -> str:
         lines.append(hedge["note"])
         lines.append("")
 
+    # ── Alpaca paper account ───────────────────────────────────────────
+    alp = g("alpaca_paper") or {}
+    if alp.get("equity"):
+        equity  = alp["equity"]
+        cash    = alp.get("cash", 0)
+        dpnl    = alp.get("daily_pnl", 0)
+        dpnlPct = alp.get("daily_pnl_pct", 0)
+        npos    = len(alp.get("positions", []))
+        dpnl_emoji = "🟢" if dpnl >= 0 else "🔴"
+        lines.append(f"🏦 <b>Alpaca Paper:</b> ${equity:,.0f}  |  Cash: ${cash:,.0f}  |  "
+                     f"Today: {dpnl_emoji} {dpnlPct:+.2f}%  ({npos} pos)")
+        for p in (alp.get("positions") or [])[:3]:
+            upl  = float(p.get("unrealized_pl") or 0)
+            uplp = float(p.get("unrealized_plpc") or 0) * 100
+            e    = "🟢" if upl >= 0 else "🔴"
+            lines.append(f"  {e} <b>{p['symbol']}</b>  {upl:+.0f}$ ({uplp:+.1f}%)")
+        lines.append("")
+
     # ── Paper performance ──────────────────────────────────────────────
     perf = g("performance") or {}
     if perf.get("portfolio_value") is not None:
@@ -674,6 +692,28 @@ def _plain_english_summary(b: dict) -> str:
                 f"✅ <b>Your move:</b>\n"
                 f"→ Reply <code>SKIP</code> — confidence too low to act"
             )
+
+    # ── Equity alpha debrief ───────────────────────────────────────────
+    equity_picks = b.get("equity_alpha_picks") or []
+    if equity_picks:
+        lines.append("")
+        lines.append("📈 <b>STOCK PICKS — should you buy them?</b>")
+        conv_to_pct = {"HIGH": 80, "MEDIUM": 62, "LOW": 42}
+        conv_emoji  = {"HIGH": "🔥", "MEDIUM": "✅", "LOW": "🟡"}
+        for p in equity_picks[:3]:
+            ticker_p  = p.get("ticker", "?")
+            conv      = p.get("conviction", "LOW")
+            conf_pct  = conv_to_pct.get(conv, 42)
+            emoji     = conv_emoji.get(conv, "⚪")
+            dollar    = p.get("suggested_dollar")
+            tagline   = p.get("conviction_tagline", "")
+            size_str  = f" → <b>${dollar:,.0f}</b>" if dollar else ""
+            call_str  = "BUY" if conf_pct >= 60 else "SKIP"
+            lines.append(f"  {emoji} <b>{ticker_p}</b>  {call_str} @ {conf_pct}%{size_str}")
+            if tagline:
+                lines.append(f"     💡 {tagline}")
+            lines.append(f"     → Reply <code>BUY {ticker_p}</code> or <code>SKIP</code>")
+        lines.append("")
 
     # ── Macro flag ─────────────────────────────────────────────────────
     if yc:

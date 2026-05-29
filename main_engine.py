@@ -327,6 +327,14 @@ def run(dry_run=False):
     except Exception:
         portfolio_snap = {"balance": balance}
 
+    # Alpaca paper account — live equity + positions from broker
+    alpaca_paper = {}
+    try:
+        from engine.alpaca_executor import portfolio_summary as _alpaca_summary
+        alpaca_paper = _alpaca_summary()
+    except Exception as e:
+        print(f"[main_engine] Alpaca paper summary skipped ({e})")
+
     briefing.update({
         "freshness":            freshness,
         "repo_detail":          repo_corr,
@@ -344,6 +352,7 @@ def run(dry_run=False):
         "equity_alpha_exit_alerts":  equity_alpha_exit_alerts,
         "options_signals":           options_signals,
         "social_sentiment":          social_sentiment,
+        "alpaca_paper":              alpaca_paper,
     })
 
     # 11) Notify

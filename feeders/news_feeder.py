@@ -125,18 +125,22 @@ class NewsFeeder:
     def _fetch_rss(self, limit):
         """Free, keyless fallback: pull multiple finance RSS feeds."""
         import requests
-        # Ordered by reliability — CNBC, Yahoo, and Reuters are most stable.
-        # WSJ requires auth; MarketWatch is reliable. NYT Business is good backup.
-        # Seeking Alpha and Benzinga provide sector-specific news.
         feeds = [
-            "https://www.cnbc.com/id/100003114/device/rss/rss.html",       # CNBC Markets (reliable)
-            "https://www.cnbc.com/id/10000664/device/rss/rss.html",         # CNBC Business
-            "https://finance.yahoo.com/rss/topstories",                     # Yahoo Finance
-            "https://feeds.reuters.com/reuters/businessNews",               # Reuters Business
-            "https://www.marketwatch.com/rss/topstories",                   # MarketWatch
-            "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",    # NYT Business
-            "https://feeds.feedburner.com/TheStreet-Stocks",                # TheStreet
-            "https://www.investing.com/rss/news.rss",                       # Investing.com
+            "https://www.cnbc.com/id/100003114/device/rss/rss.html",           # CNBC Markets
+            "https://www.cnbc.com/id/10000664/device/rss/rss.html",             # CNBC Business
+            "https://finance.yahoo.com/rss/topstories",                         # Yahoo Finance
+            "https://feeds.reuters.com/reuters/businessNews",                   # Reuters Business
+            "https://www.marketwatch.com/rss/topstories",                       # MarketWatch
+            "https://feeds.bloomberg.com/markets/news.rss",                     # Bloomberg Markets
+            "https://feeds.bloomberg.com/economics/news.rss",                   # Bloomberg Economics
+            "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",        # NYT Business
+            "https://nypost.com/business/feed/",                                # NY Post Business
+            "https://www.barrons.com/rss/the-trader",                           # Barron's The Trader
+            "https://feeds.feedburner.com/TheStreet-Stocks",                    # TheStreet
+            "https://www.investing.com/rss/news.rss",                           # Investing.com
+            "https://feeds.a.dj.com/rss/RSSMarketsMain.xml",                    # WSJ Markets
+            "https://feeds.a.dj.com/rss/RSSWSJD.xml",                          # WSJ US Business
+            "https://fortune.com/feed/fortune-feeds/?id=3252520",               # Fortune Finance
         ]
         seen, titles = set(), []
         for feed in feeds:
