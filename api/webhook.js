@@ -84,6 +84,61 @@ async function alpacaBuy(ticker, confidence = 50) {
   } catch (e) { return { executed: false, reason: String(e).slice(0, 200) }; }
 }
 
+// ── Live Alpaca account + positions ──────────────────────────────────────────
+async function fetchAlpacaLive() {
+  const key    = process.env.ALPACA_API_KEY;
+  const secret = process.env.ALPACA_SECRET_KEY;
+  if (!key || !secret) return null;
+  const base = 'https://paper-api.alpaca.markets';
+  const hdrs = { 'APCA-API-KEY-ID': key, 'APCA-API-SECRET-KEY': secret };
+  try {
+    const [acctR, posR] = await Promise.all([
+      fetch(`${base}/v2/account`,   { headers: hdrs }),
+      fetch(`${base}/v2/positions`, { headers: hdrs }),
+    ]);
+    if (!acctR.ok) return null;
+    const acct      = await acctR.json();
+    const positions = posR.ok ? await posR.json() : [];
+    const equity    = parseFloat(acct.equity    || 0);
+    const lastEq    = parseFloat(acct.last_equity || equity);
+    const cash      = parseFloat(acct.cash      || 0);
+    const dayPnl    = equity - lastEq;
+    return {
+      equity:        Math.round(equity  * 100) / 100,
+      cash:          Math.round(cash    * 100) / 100,
+      daily_pnl:     Math.round(dayPnl  * 100) / 100,
+      daily_pnl_pct: lastEq ? Math.round(dayPnl / lastEq * 10000) / 100 : 0,
+      total_return_pct: Math.round((equity / 100000 - 1) * 10000) / 100,
+      positions: Array.isArray(positions) ? positions.map(p => ({
+        symbol:          p.symbol,
+        qty:             p.qty,
+        current_price:   parseFloat(p.current_price   || 0),
+        unrealized_pl:   parseFloat(p.unrealized_pl   || 0),
+        unrealized_plpc: parseFloat(p.unrealized_plpc || 0),
+      })) : [],
+    };
+  } catch { return null; }
+}
+
+// ── Live prices via Yahoo Finance (no key needed) ─────────────────────────────
+async function fetchPrices(tickers) {
+  if (!tickers || !tickers.length) return {};
+  try {
+    const symbols = tickers.join(',');
+    const r = await fetch(
+      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0' } }
+    );
+    if (!r.ok) return {};
+    const data = await r.json();
+    const out  = {};
+    for (const q of (data.quoteResponse?.result || [])) {
+      if (q.symbol && q.regularMarketPrice) out[q.symbol] = q.regularMarketPrice;
+    }
+    return out;
+  } catch { return {}; }
+}
+
 // ── Command parser ─────────────────────────────────────────────────────────────
 function parseCmd(text) {
   const tokens = text.trim().split(/\s+/);
@@ -239,6 +294,9 @@ async function handle(text) {
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!geminiKey) return '⚠️ GEMINI_API_KEY not set in Vercel env vars.';
 
+  // Escape HTML so Telegram's HTML parser doesn't choke on Gemini markdown (<, >, &)
+  const escHtml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
   const MODELS = ['gemini-2.5-flash','gemini-2.0-flash-lite','gemini-2.0-flash','gemini-2.5-pro','gemini-flash-latest','gemini-pro-latest'];
   const b = briefing;
   const macro  = b.macro || {};
@@ -263,14 +321,14 @@ async function handle(text) {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:350,temperature:0.7} }),
+          body: JSON.stringify({ contents:[{parts:[{text:prompt}]}], generationConfig:{maxOutputTokens:600,temperature:0.7} }),
         }
       );
       if (r.status === 429) continue; // quota exceeded, try next model
       if (!r.ok) { const e = await r.text(); return `⚠️ Gemini error (${model}) ${r.status}: ${e.slice(0,200)}`; }
       const data = await r.json();
       const answer = data.candidates?.[0]?.content?.parts?.find(p=>p.text)?.text;
-      if (answer) return `🤖 <b>AI Answer</b>\n\n${answer.trim()}\n\n<i>${b.date||'latest'} data · ${model}</i>`;
+      if (answer) return `🤖 <b>AI Answer</b>\n\n${escHtml(answer.trim())}\n\n<i>${b.date||'latest'} data · ${model}</i>`;
     } catch (_) { continue; }
   }
   return '⚠️ All Gemini models failed or quota exceeded. Try again in a minute.';
@@ -314,27 +372,58 @@ module.exports = async (req, res) => {
   }
 
   if (req.method === 'GET') {
-    const briefing = await redisGet('sc:last_briefing') || {};
-    const balance  = await redisGet('sc:balance');
-    const holdings = await redisGet('sc:holdings') || [];
-    const holdingsArr = Array.isArray(holdings) ? holdings : [];
-    const balNum = balance != null ? parseFloat(balance) : null;
-    // Enrich holdings with alloc_pct for the dashboard
-    const holdingsEnriched = holdingsArr.map(h => ({
-      ...h,
-      alloc_pct: (balNum && h.dollar_value) ? Math.round(h.dollar_value / balNum * 1000) / 10 : null,
-    }));
+    // Fetch Redis data + live Alpaca in parallel
+    const [briefingRaw, balRaw, holdingsRaw, repliesRaw, alpacaLive] = await Promise.all([
+      redisGet('sc:last_briefing'),
+      redisGet('sc:balance'),
+      redisGet('sc:holdings'),
+      redisGet('sc:journal_replies'),
+      fetchAlpacaLive(),
+    ]);
+
+    const briefing    = briefingRaw || {};
+    const holdingsArr = Array.isArray(holdingsRaw) ? holdingsRaw : [];
+    const balNum      = balRaw != null ? parseFloat(balRaw) : null;
+
+    // Fetch live prices for all real-money holdings (Yahoo Finance, no key needed)
+    const tickers = holdingsArr.map(h => h.ticker).filter(Boolean);
+    const prices  = tickers.length ? await fetchPrices(tickers) : {};
+
+    // Enrich holdings: current price, P&L, allocation %
+    const holdingsEnriched = holdingsArr.map(h => {
+      const price      = prices[h.ticker] || null;
+      const costBasis  = h.dollar_value || 0;
+      const avgCost    = h.avg_cost  || null;
+      const shares     = h.shares    || null;
+      let pnlDollar = 0, pnlPct = 0, currentValue = null;
+      if (price && shares && avgCost) {
+        currentValue = Math.round(price * shares * 100) / 100;
+        pnlDollar    = Math.round((currentValue - avgCost * shares) * 100) / 100;
+        pnlPct       = avgCost ? Math.round(pnlDollar / (avgCost * shares) * 1000) / 10 : 0;
+      }
+      return {
+        ...h,
+        current_price: price,
+        current_value: currentValue,
+        pnl_dollar:    pnlDollar,
+        pnl_pct:       pnlPct,
+        alloc_pct:     (balNum && costBasis) ? Math.round(costBasis / balNum * 1000) / 10 : null,
+      };
+    });
+
     return res.json({
-      ok: true,
-      service: 'sector-command-webhook',
-      briefing_date: briefing.date || 'none',
-      balance: balNum,
-      holdings: holdingsEnriched,
-      n_holdings: holdingsArr.length,
-      env_telegram:  !!process.env.TELEGRAM_TOKEN,
-      env_redis:     !!process.env.UPSTASH_REDIS_REST_URL,
-      env_alpaca:    !!process.env.ALPACA_API_KEY,
-      env_github_pat: !!process.env.GITHUB_PAT,
+      ok:              true,
+      service:         'sector-command-webhook',
+      briefing_date:   briefing.date || 'none',
+      balance:         balNum,
+      holdings:        holdingsEnriched,
+      n_holdings:      holdingsArr.length,
+      alpaca_live:     alpacaLive,
+      journal_replies: Array.isArray(repliesRaw) ? repliesRaw : [],
+      env_telegram:    !!process.env.TELEGRAM_TOKEN,
+      env_redis:       !!process.env.UPSTASH_REDIS_REST_URL,
+      env_alpaca:      !!process.env.ALPACA_API_KEY,
+      env_github_pat:  !!process.env.GITHUB_PAT,
     });
   }
 
@@ -345,8 +434,8 @@ module.exports = async (req, res) => {
     if (text) {
       const reply = await handle(text);
       await tgSend(reply);
-      const first = text.trim().split(/\s+/)[0].toUpperCase();
-      if (['BALANCE','BOUGHT','SOLD'].includes(first)) await triggerActions();
+      // NOTE: triggerActions() removed — it was firing daily-signals.yml (full briefing)
+      // on every BOUGHT/BALANCE/SOLD command, sending duplicate Telegram messages.
     }
   } catch (e) {
     await tgSend(`⚠️ Error: ${e.message}`);

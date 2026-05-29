@@ -239,41 +239,59 @@ async function init() {
     return;
   }
 
-  // Overlay live Redis balance/holdings from the webhook so the Portfolio tab
-  // always reflects what was set via Telegram commands (stored in Redis),
-  // even before the next GitHub Actions run regenerates briefing.json.
-  if (live && live.balance != null) {
-    briefing.portfolio_snap = briefing.portfolio_snap || {};
-    briefing.portfolio_snap.balance = live.balance;  // Redis balance is always authoritative
+  // ── Overlay live data from Redis/Alpaca onto the static briefing.json ──────────
+  if (live) {
+    // 1. Balance (Redis is always authoritative)
+    if (live.balance != null) {
+      briefing.portfolio_snap = briefing.portfolio_snap || {};
+      briefing.portfolio_snap.balance = live.balance;
 
-    const snapH = briefing.portfolio_snap.holdings || [];
-    const liveH = Array.isArray(live.holdings) ? live.holdings : [];
-    const snapTickers = new Set(snapH.map(h => h.ticker));
-    const liveTickers = new Set(liveH.map(h => h.ticker));
-    const holdingsMatch = liveH.length === snapH.length &&
-      liveH.every(h => snapTickers.has(h.ticker)) && snapH.every(h => liveTickers.has(h.ticker));
+      // 2. Holdings — live.holdings are enriched with Yahoo Finance prices by the webhook
+      const snapH = briefing.portfolio_snap.holdings || [];
+      const liveH = Array.isArray(live.holdings) ? live.holdings : [];
+      if (liveH.length) {
+        // Merge: live prices override, snap provides any missing fields
+        const snapByTicker = Object.fromEntries(snapH.map(h => [h.ticker, h]));
+        briefing.portfolio_snap.holdings = liveH.map(h => {
+          const snap = snapByTicker[h.ticker] || {};
+          return {
+            ticker:        h.ticker,
+            date_bought:   h.date_bought   || snap.date_bought   || '—',
+            avg_cost:      h.avg_cost      || snap.avg_cost      || null,
+            shares:        h.shares        || snap.shares        || null,
+            current_price: h.current_price || snap.current_price || null,
+            current_value: h.current_value || snap.current_value || null,
+            cost_basis:    h.dollar_value  || snap.cost_basis    || 0,
+            pnl_dollar:    h.pnl_dollar    != null ? h.pnl_dollar : (snap.pnl_dollar  || 0),
+            pnl_pct:       h.pnl_pct       != null ? h.pnl_pct   : (snap.pnl_pct     || 0),
+            alloc_pct:     h.alloc_pct     || snap.alloc_pct     || null,
+            notes:         h.notes         || snap.notes         || null,
+          };
+        });
+        const invested = liveH.reduce((s, h) => s + (h.dollar_value || 0), 0);
+        briefing.portfolio_snap.total_invested = invested;
+        briefing.portfolio_snap.cash_remaining = live.balance - invested;
+      } else {
+        briefing.portfolio_snap.cash_remaining = live.balance - (briefing.portfolio_snap.total_invested || 0);
+      }
+    }
 
-    if (!holdingsMatch || !snapH.length) {
-      // Use live Redis holdings (no prices yet — GitHub Actions will add them next run)
-      const invested = liveH.reduce((s, h) => s + (h.dollar_value || 0), 0);
-      briefing.portfolio_snap.holdings = liveH.map(h => ({
-        ticker: h.ticker,
-        date_bought: h.date_bought || '—',
-        avg_cost: h.avg_cost || null,
-        current_price: null,  // filled in by GitHub Actions next run
-        cost_basis: h.dollar_value || 0,
-        pnl_dollar: 0,
-        pnl_pct: 0,
-        alloc_pct: h.alloc_pct,
-        notes: h.notes || null,
-      }));
-      briefing.portfolio_snap.total_invested = invested;
-      briefing.portfolio_snap.cash_remaining = live.balance - invested;
-    } else {
-      // Snap already has the right tickers (and may have live prices from GitHub Actions)
-      briefing.portfolio_snap.cash_remaining = live.balance - (briefing.portfolio_snap.total_invested || 0);
+    // 3. Live Alpaca data (positions, equity, daily P&L) — always fresh
+    if (live.alpaca_live) {
+      briefing.alpaca_paper = { ...(briefing.alpaca_paper || {}), ...live.alpaca_live };
     }
   }
+
+  // 4. Overlay live journal replies so BUY/SKIP shows immediately without waiting for next run
+  const liveReplies = live && Array.isArray(live.journal_replies) ? live.journal_replies : [];
+  const replyByDate = {};
+  liveReplies.forEach(r => { if (r.date) replyByDate[r.date] = r; });
+  const journalData = (Array.isArray(journal) ? journal : []).map(entry => {
+    if (entry.human_command) return entry;  // already set from DB
+    const r = replyByDate[entry.date];
+    if (r) return { ...entry, human_command: r.command, human_reason: r.reason };
+    return entry;
+  });
 
   const gen = (briefing.freshness||{}).generated_utc || briefing.date || '—';
   document.getElementById('updated-ts').textContent = 'Last run: ' + gen;
@@ -282,7 +300,7 @@ async function init() {
   renderOpportunities(briefing);
   renderStocks(briefing);
   renderPortfolio(briefing);
-  renderJournal(Array.isArray(journal) ? journal : []);
+  renderJournal(journalData);
 }
 
 // ── helpers ───────────────────────────────────────────────────────────
