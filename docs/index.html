@@ -890,7 +890,7 @@ function toggleEl(id,btn){
 
 // ── Boot ──────────────────────────────────────────────────────────
 init();
-setTimeout(()=>location.reload(), 10*60*1000);
+setTimeout(()=>{location.href=location.pathname+'?t='+Date.now();}, 10*60*1000);
 </script>
 </body>
 </html>
