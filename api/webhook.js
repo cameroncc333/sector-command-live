@@ -378,6 +378,12 @@ module.exports = async (req, res) => {
   // Vercel appends _cron=briefing|alerts so we know which workflow to fire.
   if (q._cron === 'briefing' || q._cron === 'alerts') {
     if (cronSecret && qkey !== cronSecret) return res.status(403).json({ ok: false, error: 'bad key' });
+    // Skip weekends — NYSE is closed Saturday and Sunday
+    const etNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    const dow = etNow.getDay(); // 0=Sun, 6=Sat
+    if (dow === 0 || dow === 6) {
+      return res.status(200).json({ ok: true, skipped: true, reason: 'weekend', day: dow });
+    }
     const workflow = q._cron === 'briefing' ? 'daily-signals.yml' : 'event-alerts.yml';
     const result = await dispatchWorkflow(workflow);
     return res.status(result.ok ? 200 : 502).json({ ok: result.ok, workflow, ...result });
