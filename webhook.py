@@ -709,9 +709,14 @@ def api_options():
 def cron_briefing():
     """Called by cron-job.org to trigger the daily briefing workflow on GitHub Actions."""
     import requests as _req
+    from zoneinfo import ZoneInfo
     secret = os.environ.get("CRON_SECRET", "")
     if secret and request.args.get("key") != secret:
         return jsonify({"error": "unauthorized"}), 401
+    # Skip weekends — NYSE is closed Saturday and Sunday
+    dow = datetime.datetime.now(ZoneInfo("America/New_York")).weekday()  # 5=Sat, 6=Sun
+    if dow >= 5:
+        return jsonify({"skipped": True, "reason": "weekend", "day": dow})
     token = os.environ.get("GITHUB_PAT", "")
     if not token:
         return jsonify({"error": "GITHUB_PAT not set"}), 500
@@ -726,9 +731,14 @@ def cron_briefing():
 def cron_alerts():
     """Called by cron-job.org to trigger the 30-min event alert workflow."""
     import requests as _req
+    from zoneinfo import ZoneInfo
     secret = os.environ.get("CRON_SECRET", "")
     if secret and request.args.get("key") != secret:
         return jsonify({"error": "unauthorized"}), 401
+    # Skip weekends — NYSE is closed Saturday and Sunday
+    dow = datetime.datetime.now(ZoneInfo("America/New_York")).weekday()  # 5=Sat, 6=Sun
+    if dow >= 5:
+        return jsonify({"skipped": True, "reason": "weekend", "day": dow})
     token = os.environ.get("GITHUB_PAT", "")
     if not token:
         return jsonify({"error": "GITHUB_PAT not set"}), 500
