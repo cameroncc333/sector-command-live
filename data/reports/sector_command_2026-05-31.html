@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sector Command — Research Report 2026-05-31</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f6f8; color: #1a1d2e; }
+    .page { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+    .header { background: #1a1d2e; color: white; padding: 28px 32px; border-radius: 12px; margin-bottom: 24px; }
+    .header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+    .header .sub { color: #8892a4; margin-top: 4px; font-size: 13px; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px;
+               font-weight: 600; margin-left: 10px; }
+    .badge-paper { background: #ff9f43; color: #1a1d2e; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                   gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: white; border-radius: 10px; padding: 18px 20px;
+                  box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .stat-card .label { font-size: 11px; color: #8892a4; text-transform: uppercase;
+                          letter-spacing: 0.5px; margin-bottom: 6px; }
+    .stat-card .value { font-size: 28px; font-weight: 700; color: #1a1d2e; }
+    .stat-card .sub { font-size: 12px; color: #8892a4; margin-top: 2px; }
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .chart-card { background: white; border-radius: 10px; padding: 20px;
+                   box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .chart-card h3 { font-size: 13px; color: #8892a4; text-transform: uppercase;
+                       letter-spacing: 0.5px; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: #f0f2f5; padding: 10px 12px; text-align: left; font-size: 11px;
+          color: #8892a4; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 10px 12px; border-bottom: 1px solid #f0f2f5; }
+    tr:last-child td { border-bottom: none; }
+    .table-card { background: white; border-radius: 10px; overflow: hidden;
+                   box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 24px; }
+    .table-card .card-header { padding: 16px 20px; border-bottom: 1px solid #f0f2f5; }
+    .table-card .card-header h2 { font-size: 15px; font-weight: 600; }
+    .table-card .card-body { padding: 0; }
+    .footer { text-align: center; color: #8892a4; font-size: 12px; padding-top: 12px; }
+    @media print {
+      body { background: white; }
+      .page { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <h1>Sector Command Live
+      <span class="badge badge-paper">PAPER MODE</span>
+    </h1>
+    <div class="sub">Weekly Research Report — May 31, 2026 &nbsp;|&nbsp;
+      RL Ensemble: PPO / A2C / SAC &nbsp;|&nbsp; 11-sector ETF universe
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">Total Runs</div>
+      <div class="value">18</div>
+      <div class="sub">engine executions</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">BUY Orders</div>
+      <div class="value" style="color:#00aa55">0</div>
+      <div class="sub">paper executed</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Skipped</div>
+      <div class="value" style="color:#ffaa00">0</div>
+      <div class="sub">human override</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Abstains</div>
+      <div class="value" style="color:#4dabf7">7</div>
+      <div class="sub">governance triggered</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Avg Confidence</div>
+      <div class="value">40%</div>
+      <div class="sub">ensemble score</div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>News Sentiment Trend (FinBERT)</h3>
+      <canvas id="newsChart" height="180"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Ensemble Confidence Trend</h3>
+      <canvas id="confChart" height="180"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>Market Regime Distribution</h3>
+      <canvas id="regimeChart" height="180"></canvas>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="card-header"><h2>Recent Decisions (Last 10 Runs)</h2></div>
+    <div class="card-body">
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Regime</th><th>Recommendation</th>
+          <th>Confidence</th><th>Your Action</th><th>Abstain</th>
+        </tr></thead>
+        <tbody>
+        <tr>
+          <td>2026-05-30</td>
+          <td>🟡 NORMAL</td>
+          <td>TLT</td>
+          <td>31%</td>
+          <td style="color:#888;font-weight:600">—</td>
+          <td style="color:#888;font-size:11px"></td>
+        </tr>
+        <tr>
+          <td>2026-05-29</td>
+          <td>🟡 NORMAL</td>
+          <td>XLF</td>
+          <td>31%</td>
+          <td style="color:#888;font-weight:600">—</td>
+          <td style="color:#888;font-size:11px"></td>
+        </tr>
+        <tr>
+          <td>2026-05-29</td>
+          <td>🟡 NORMAL</td>
+          <td>XLK</td>
+          <td>31%</td>
+          <td style="color:#888;font-weight:600">—</td>
+          <td style="color:#888;font-size:11px"></td>
+        </tr>
+        <tr>
+          <td>2026-05-29</td>
+          <td>🟡 NORMAL</td>
+          <td>XLK</td>
+          <td>31%</td>
+          <td style="color:#888;font-weight:600">—</td>
+          <td style="color:#888;font-size:11px"></td>
+        </tr>
+        <tr>
+          <td>2026-05-29</td>
+          <td>🟡 NORMAL</td>
+          <td>XLK</td>
+          <td>31%</td>
+          <td style="color:#888;font-weight:600">—</td>
+          <td style="color:#888;font-size:11px"></td>
+        </tr>
+        <tr>
+          <td>2026-05-29</td>
+          <td>🟡 NORMAL</td>
+          <td>GLD</td>
+          <td>31%</td>
+          <td style="color:#888;font-weight:600">—</td>
+          <td style="color:#888;font-size:11px"></td>
+        </tr>
+        <tr>
+          <td>2026-05-29</td>
+          <td>🟡 NORMAL</td>
+          <td>XLF</td>
+          <td>31%</td>
+          <td style="color:#888;font-weight:600">—</td>
+          <td style="color:#888;font-size:11px"></td>
+        </tr>
+        <tr>
+          <td>2026-05-29</td>
+          <td>🟡 NORMAL</td>
+          <td>XLF</td>
+          <td>31%</td>
+          <td style="color:#888;font-weight:600">—</td>
+          <td style="color:#888;font-size:11px"></td>
+        </tr>
+        <tr>
+          <td>2026-05-29</td>
+          <td>🟡 NORMAL</td>
+          <td>XLF</td>
+          <td>31%</td>
+          <td style="color:#888;font-weight:600">—</td>
+          <td style="color:#888;font-size:11px"></td>
+        </tr>
+        <tr>
+          <td>2026-05-29</td>
+          <td>🟡 NORMAL</td>
+          <td>XLF</td>
+          <td>31%</td>
+          <td style="color:#888;font-weight:600">—</td>
+          <td style="color:#888;font-size:11px"></td>
+        </tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    Sector Command Live &nbsp;·&nbsp; github.com/cameroncc333/sector-command-live
+    &nbsp;·&nbsp; Generated 2026-05-31 &nbsp;·&nbsp; Paper mode (no real capital at risk)
+  </div>
+
+</div>
+
+<script>
+const newsCtx = document.getElementById('newsChart').getContext('2d');
+new Chart(newsCtx, {
+  type: 'line',
+  data: {
+    labels: ["2026-05-25", "2026-05-25", "2026-05-25", "2026-05-25", "2026-05-25", "2026-05-25", "2026-05-25", "2026-05-26", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-30"],
+    datasets: [{
+      data: [-0.125, -0.125, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.222, 0.2, 0.2, 0.222, 0.286, 0.25, 0.25, 0.25, 0.25, 0.222],
+      borderColor: '#4dabf7', backgroundColor: 'rgba(77,171,247,0.1)',
+      borderWidth: 2, pointRadius: 3, tension: 0.3, fill: true
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { min: -1, max: 1, grid: { color: '#f0f2f5' } },
+      x: { ticks: { maxTicksLimit: 6 }, grid: { display: false } }
+    }
+  }
+});
+
+const confCtx = document.getElementById('confChart').getContext('2d');
+new Chart(confCtx, {
+  type: 'bar',
+  data: {
+    labels: ["2026-05-25", "2026-05-25", "2026-05-25", "2026-05-25", "2026-05-25", "2026-05-25", "2026-05-25", "2026-05-26", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-29", "2026-05-30"],
+    datasets: [{
+      data: [67, 40, 50, 50, 50, 50, 50, 50, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31],
+      backgroundColor: [67, 40, 50, 50, 50, 50, 50, 50, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31].map(v =>
+        v >= 75 ? '#00aa55' : v >= 50 ? '#ffaa00' : '#ff4444'),
+      borderRadius: 3,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { min: 0, max: 100, grid: { color: '#f0f2f5' } },
+      x: { ticks: { maxTicksLimit: 6 }, grid: { display: false } }
+    }
+  }
+});
+
+const regCtx = document.getElementById('regimeChart').getContext('2d');
+new Chart(regCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ["CALM", "NORMAL", "STRESSED"],
+    datasets: [{
+      data: [0, 17, 1],
+      backgroundColor: ['#00aa55', '#ffaa00', '#ff4444'],
+    }]
+  },
+  options: { plugins: { legend: { position: 'right' } } }
+});
+</script>
+</body>
+</html>
