@@ -1,5 +1,5 @@
 {
-  "date": "2026-05-30",
+  "date": "2026-06-01",
   "regime": "NORMAL",
   "vix": 16.3,
   "ticker": "XLF",
@@ -12,21 +12,21 @@
     "PPO": "BUY XLK"
   },
   "abstain_reason": null,
-  "news_sentiment": 0.222,
-  "news_headline": "Dell stock skyrockets 32% for its best day ever as AI server revenue soars",
+  "news_sentiment": 0.111,
+  "news_headline": "Nvidia jumps into PCs with new Arm-based chip debuting in laptops from Microsoft, Dell, HP",
   "rsi": 49.0,
   "rel_strength": -0.063,
   "political_note": null,
   "ghost_alpha": 0.0,
   "why_trace": [
     "Ensemble agreement: 1/3 agents on XLF",
-    "News sentiment for XLF: +0.22",
-    "Options PCR (SPY): 1.54 [FEARFUL]",
+    "News sentiment for XLF: +0.11",
+    "Options PCR (SPY): 1.76 [FEARFUL]",
     "repo: algo-system prefers XLK",
     "repo: equity-analyzer momentum/rel weak",
     "modifier: only 1/3 agents chose XLF (minority view) \u2192 -10",
-    "modifier: mildly positive news (+0.22) \u2192 +3",
-    "modifier: PCR 1.54 elevated put buying (contrarian) \u2192 +4",
+    "modifier: mildly positive news (+0.11) \u2192 +3",
+    "modifier: PCR 1.76 elevated put buying (contrarian) \u2192 +4",
     "modifier: VIX term structure steep contango (calm market) \u2192 +4",
     "modifier: 0/2 repos corroborated XLF (no cross-strategy support) \u2192 -12",
     "[GRPO] negative modifiers scaled to cap \u221220"
@@ -36,7 +36,7 @@
     "rl_source": "LIVE",
     "market_data": "LIVE",
     "news": "LEXICON",
-    "generated_utc": "2026-05-30 13:57 UTC",
+    "generated_utc": "2026-06-01 13:00 UTC",
     "vix_ts": "STEEP_CONTANGO"
   },
   "repo_detail": {
@@ -175,8 +175,8 @@
       "pressured": []
     },
     "fomc_sentiment": {
-      "pmsi": 0.061,
-      "regime": "NEUTRAL"
+      "pmsi": 0.173,
+      "regime": "BULLISH"
     },
     "agreement": {
       "agree": 0,
@@ -253,11 +253,11 @@
       "ticker": "BTC-USD",
       "name": "Bitcoin",
       "type": "crypto",
-      "price": 73704.02,
-      "change_24h_pct": 0.45,
-      "mom_7d_pct": -3.87,
-      "rsi": 28.4,
-      "vol_7d_pct": 1.07,
+      "price": 72104.71,
+      "change_24h_pct": -2.0,
+      "mom_7d_pct": -6.7,
+      "rsi": 27.5,
+      "vol_7d_pct": 1.02,
       "signal": "BEARISH",
       "max_alloc_pct": 5.0
     },
@@ -265,11 +265,11 @@
       "ticker": "ETH-USD",
       "name": "Ethereum",
       "type": "crypto",
-      "price": 2017.42,
-      "change_24h_pct": 0.27,
-      "mom_7d_pct": -4.66,
-      "rsi": 27.2,
-      "vol_7d_pct": 1.14,
+      "price": 1986.62,
+      "change_24h_pct": -0.88,
+      "mom_7d_pct": -5.91,
+      "rsi": 29.0,
+      "vol_7d_pct": 1.0,
       "signal": "BEARISH",
       "max_alloc_pct": 5.0
     },
@@ -312,24 +312,24 @@
   },
   "macro": {
     "yield_curve": {
-      "ten_yr": 4.453,
-      "two_yr": 3.588,
+      "ten_yr": 4.447,
+      "two_yr": 3.59,
       "rate_label": "13w T-bill",
-      "spread": 0.865,
+      "spread": 0.857,
       "inverted": false,
       "signal": "NORMAL"
     },
     "dollar": {
-      "dxy": 98.91,
-      "dxy_change": -0.11,
+      "dxy": 99.05,
+      "dxy_change": 0.14,
       "signal": "WEAK USD"
     },
     "vix_term_structure": {
-      "vix": 15.3,
+      "vix": 15.8,
       "vix3m": 18.7,
       "vix9d": 12.6,
-      "ratio": 0.821,
-      "near_ratio": 0.822,
+      "ratio": 0.847,
+      "near_ratio": 0.797,
       "ts_regime": "STEEP_CONTANGO",
       "ts_signal": "\ud83d\udfe2 Deep contango \u2014 calm markets, momentum favored",
       "event_risk": false
@@ -367,7 +367,7 @@
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": 0.15841742860554708,
+        "rel_spy": 0.1584175219934303,
         "rsi": 55.933412403779236,
         "high_52w_prox": 0.8967617159175453,
         "vol_90d": 0.2994771953768367
@@ -396,7 +396,7 @@
       "conviction_tagline": "Quality breakout \u2014 strong fundamentals + technical timing",
       "factor_regime": "NORMAL",
       "raw_factors": {
-        "fwd_pe": 9.599229,
+        "fwd_pe": 9.610655,
         "pb": 3.373579,
         "div_yield": 0.95,
         "fcf_yield": 0.08363937979274014,
@@ -409,7 +409,7 @@
         "rel_spy": 0.09906376841435893,
         "rsi": 41.034528387697335,
         "high_52w_prox": 0.8567478475967931,
-        "vol_90d": 0.5458327490326804
+        "vol_90d": 0.5458327490326803
       },
       "rationale": [
         "High quality: ROE 25.8%",
@@ -449,7 +449,7 @@
         "rel_spy": 0.10814539596948403,
         "rsi": 56.38111708351722,
         "high_52w_prox": 0.9333333196880944,
-        "vol_90d": 0.2644010437827633
+        "vol_90d": 0.26440104378276363
       },
       "rationale": [
         "Cheap vs sector peers: fwd P/E 11.8x",
@@ -523,7 +523,7 @@
         "fcf_yield": 0.030005305696140537,
         "roe": null,
         "margin": 0.31618,
-        "analyst_mean": 3.88571,
+        "analyst_mean": 3.91176,
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
@@ -664,29 +664,29 @@
   "equity_alpha_exit_alerts": [],
   "options_signals": {
     "SPY": {
-      "pcr": 1.541,
+      "pcr": 1.762,
       "signal": "FEARFUL",
-      "interpretation": "PCR 1.54 \u2014 elevated put buying (fear/hedging)"
+      "interpretation": "PCR 1.76 \u2014 elevated put buying (fear/hedging)"
     },
     "QQQ": {
-      "pcr": 1.566,
+      "pcr": 1.501,
       "signal": "FEARFUL",
-      "interpretation": "PCR 1.57 \u2014 elevated put buying (fear/hedging)"
+      "interpretation": "PCR 1.50 \u2014 elevated put buying (fear/hedging)"
     }
   },
   "social_sentiment": {},
   "alpaca_paper": {
-    "equity": 99971.21,
+    "equity": 99971.29,
     "cash": 99931.26,
-    "daily_pnl": -0.0,
-    "daily_pnl_pct": -0.0,
+    "daily_pnl": 0.08,
+    "daily_pnl_pct": 0.0,
     "positions": [
       {
         "symbol": "SPY",
         "qty": "0.052815181",
-        "current_price": "756.48",
-        "unrealized_pl": "-0.046372",
-        "unrealized_plpc": "-0.00116"
+        "current_price": "757.84",
+        "unrealized_pl": "0.025457",
+        "unrealized_plpc": "0.00064"
       }
     ],
     "account_status": "ACTIVE"
