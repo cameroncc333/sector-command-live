@@ -13,7 +13,7 @@
   },
   "abstain_reason": null,
   "news_sentiment": 0.375,
-  "news_headline": "As ACA enrollment falls by millions, Trump administration and policy gurus disagree on why",
+  "news_headline": "First known congressional SpaceX stock buys surface after record IPO",
   "rsi": 49.0,
   "rel_strength": -0.063,
   "political_note": null,
@@ -35,7 +35,7 @@
     "rl_source": "LIVE",
     "market_data": "LIVE",
     "news": "LEXICON",
-    "generated_utc": "2026-07-03 16:00 UTC",
+    "generated_utc": "2026-07-03 19:30 UTC",
     "vix_ts": "STEEP_CONTANGO"
   },
   "repo_detail": {
@@ -174,7 +174,7 @@
       "pressured": []
     },
     "fomc_sentiment": {
-      "pmsi": 0.049,
+      "pmsi": 0.083,
       "regime": "NEUTRAL"
     },
     "agreement": {
@@ -240,14 +240,14 @@
       "conviction": "SPECULATIVE",
       "score": 40.0,
       "rationale": [
-        "+0.6% 24h  |  +3.1% 7d"
+        "+1.1% 24h  |  +3.6% 7d"
       ],
       "suggested_pct": 3.0,
       "suggested_dollar": null,
       "signal_summary": {
-        "rsi": 43.5,
-        "mom_7d": 3.09,
-        "change_24h": 0.63,
+        "rsi": 44.8,
+        "mom_7d": 3.58,
+        "change_24h": 1.1,
         "signal": "BULLISH"
       },
       "kelly_pct": 15.6
@@ -259,14 +259,14 @@
       "conviction": "SPECULATIVE",
       "score": 40.0,
       "rationale": [
-        "+1.8% 24h  |  +9.6% 7d"
+        "+2.8% 24h  |  +10.7% 7d"
       ],
       "suggested_pct": 3.0,
       "suggested_dollar": null,
       "signal_summary": {
-        "rsi": 51.7,
-        "mom_7d": 9.63,
-        "change_24h": 1.78,
+        "rsi": 53.3,
+        "mom_7d": 10.71,
+        "change_24h": 2.78,
         "signal": "BULLISH"
       },
       "kelly_pct": 15.6
@@ -301,11 +301,11 @@
       "ticker": "BTC-USD",
       "name": "Bitcoin",
       "type": "crypto",
-      "price": 61872.79,
-      "change_24h_pct": 0.63,
-      "mom_7d_pct": 3.09,
-      "rsi": 43.5,
-      "vol_7d_pct": 1.81,
+      "price": 62163.64,
+      "change_24h_pct": 1.1,
+      "mom_7d_pct": 3.58,
+      "rsi": 44.8,
+      "vol_7d_pct": 1.82,
       "signal": "BULLISH",
       "max_alloc_pct": 5.0
     },
@@ -313,11 +313,11 @@
       "ticker": "ETH-USD",
       "name": "Ethereum",
       "type": "crypto",
-      "price": 1728.39,
-      "change_24h_pct": 1.78,
-      "mom_7d_pct": 9.63,
-      "rsi": 51.7,
-      "vol_7d_pct": 2.59,
+      "price": 1745.41,
+      "change_24h_pct": 2.78,
+      "mom_7d_pct": 10.71,
+      "rsi": 53.3,
+      "vol_7d_pct": 2.65,
       "signal": "BULLISH",
       "max_alloc_pct": 5.0
     },
@@ -368,8 +368,8 @@
       "signal": "NORMAL"
     },
     "dollar": {
-      "dxy": 100.84,
-      "dxy_change": -0.02,
+      "dxy": 100.86,
+      "dxy_change": -0.0,
       "signal": "NEUTRAL"
     },
     "vix_term_structure": {
@@ -415,10 +415,10 @@
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": 0.16905411031107453,
+        "rel_spy": 0.1690540166565384,
         "rsi": 37.362637132713445,
         "high_52w_prox": 0.9063062786796231,
-        "vol_90d": 0.2931728021211638
+        "vol_90d": 0.29317280212116387
       },
       "rationale": [
         "High quality: ROE 18.2%",
@@ -500,13 +500,54 @@
         "rel_spy": 0.20333179735760565,
         "rsi": 59.4600475901454,
         "high_52w_prox": 0.9819040660086327,
-        "vol_90d": 0.25028845903988045
+        "vol_90d": 0.2502884590398805
       },
       "rationale": [
         "Cheap vs sector peers: fwd P/E 12.4x",
         "Dividend yield 583.0%",
         "Near 52-week high (98.2%) \u2014 breakout zone",
         "RSI 59 \u2014 ideal entry zone"
+      ],
+      "suggested_pct": 4.0,
+      "suggested_dollar": null,
+      "asset_type": "equity"
+    },
+    {
+      "ticker": "NVDA",
+      "name": "Nvidia",
+      "sector_etf": "XLK",
+      "sector_name": "Technology",
+      "conviction": "LOW",
+      "composite_score": 58.0,
+      "factor_scores": {
+        "value": 34.8,
+        "quality": 87.9,
+        "momentum": 41.7,
+        "technical": 83.7,
+        "low_vol": 39.6
+      },
+      "conviction_tagline": "Quality breakout \u2014 strong fundamentals + technical timing",
+      "factor_regime": "NORMAL",
+      "raw_factors": {
+        "fwd_pe": 15.26351,
+        "pb": 24.142504,
+        "div_yield": 0.51,
+        "fcf_yield": 0.009819049673443336,
+        "roe": 1.14288,
+        "margin": 0.62966,
+        "analyst_mean": 4.7049199999999995,
+        "earnings_surprise": null,
+        "mom_12_1": null,
+        "mom_6m": null,
+        "rel_spy": -0.05204599023582546,
+        "rsi": 40.41985530044702,
+        "high_52w_prox": 0.8274245645522346,
+        "vol_90d": 0.39416435091078367
+      },
+      "rationale": [
+        "High quality: ROE 114.3%",
+        "Analyst consensus: Strong Buy (1.3/5)",
+        "RSI 40 \u2014 ideal entry zone"
       ],
       "suggested_pct": 4.0,
       "suggested_dollar": null,
@@ -542,7 +583,7 @@
         "rel_spy": -0.1683918669758806,
         "rsi": 46.376065823933565,
         "high_52w_prox": 0.9074168184178394,
-        "vol_90d": 0.20537875745977063
+        "vol_90d": 0.20537870218909493
       },
       "rationale": [
         "Composite alpha score: 58/100"
@@ -581,52 +622,11 @@
         "rel_spy": -0.12188660878809265,
         "rsi": 49.18903623645079,
         "high_52w_prox": 0.8045209615115793,
-        "vol_90d": 0.5029725937720622
+        "vol_90d": 0.5029725956509786
       },
       "rationale": [
         "High quality: ROE 25.8%",
         "Analyst consensus: Strong Buy (1.6/5)"
-      ],
-      "suggested_pct": 4.0,
-      "suggested_dollar": null,
-      "asset_type": "equity"
-    },
-    {
-      "ticker": "NVDA",
-      "name": "Nvidia",
-      "sector_etf": "XLK",
-      "sector_name": "Technology",
-      "conviction": "LOW",
-      "composite_score": 57.8,
-      "factor_scores": {
-        "value": 34.0,
-        "quality": 88.1,
-        "momentum": 41.7,
-        "technical": 83.7,
-        "low_vol": 38.9
-      },
-      "conviction_tagline": "Quality breakout \u2014 strong fundamentals + technical timing",
-      "factor_regime": "NORMAL",
-      "raw_factors": {
-        "fwd_pe": 15.26351,
-        "pb": 24.142504,
-        "div_yield": 0.51,
-        "fcf_yield": 0.009819049673443336,
-        "roe": 1.14288,
-        "margin": 0.62966,
-        "analyst_mean": 4.7049199999999995,
-        "earnings_surprise": null,
-        "mom_12_1": null,
-        "mom_6m": null,
-        "rel_spy": -0.05204607591534027,
-        "rsi": 40.41985530044702,
-        "high_52w_prox": 0.8274245645522346,
-        "vol_90d": 0.3941644038260425
-      },
-      "rationale": [
-        "High quality: ROE 114.3%",
-        "Analyst consensus: Strong Buy (1.3/5)",
-        "RSI 40 \u2014 ideal entry zone"
       ],
       "suggested_pct": 4.0,
       "suggested_dollar": null,
@@ -659,7 +659,7 @@
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": 0.026776100090837973,
+        "rel_spy": 0.026776025616668253,
         "rsi": 66.89570684265831,
         "high_52w_prox": 0.9828565569876827,
         "vol_90d": 0.1670539436341268
@@ -702,7 +702,7 @@
         "rel_spy": -0.23227716680059596,
         "rsi": 69.4490924434572,
         "high_52w_prox": 0.9635159463791252,
-        "vol_90d": 0.3961306076037231
+        "vol_90d": 0.3961306199168004
       },
       "rationale": [
         "High quality: margin 22.2%",
