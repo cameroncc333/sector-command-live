@@ -4,7 +4,7 @@
   "vix": 16.3,
   "ticker": "XLF",
   "action": "BUY",
-  "confidence": 24,
+  "confidence": 28,
   "current_weight": 8.7,
   "rl_votes": {
     "A2C": "BUY XLF",
@@ -12,7 +12,7 @@
     "PPO": "BUY XLK"
   },
   "abstain_reason": null,
-  "news_sentiment": -0.083,
+  "news_sentiment": 0.0,
   "news_headline": "FAA warns U.S. airlines of safety risks over Saudi Arabia after attacks",
   "rsi": 49.0,
   "rel_strength": -0.063,
@@ -20,12 +20,13 @@
   "ghost_alpha": 0.0,
   "why_trace": [
     "Ensemble agreement: 1/3 agents on XLF",
-    "News sentiment for XLF: -0.08",
+    "News sentiment for XLF: +0.00",
     "Options PCR (SPY): 2.12 [FEARFUL]",
     "repo: algo-system prefers XLK",
     "repo: equity-analyzer momentum/rel weak",
     "modifier: only 1/3 agents chose XLF (minority view) \u2192 -10",
     "modifier: PCR 2.12 elevated put buying (contrarian) \u2192 +4",
+    "modifier: VIX term structure steep contango (calm market) \u2192 +4",
     "modifier: 0/2 repos corroborated XLF (no cross-strategy support) \u2192 -12",
     "[GRPO] negative modifiers scaled to cap \u221220"
   ],
@@ -34,123 +35,133 @@
     "rl_source": "LIVE",
     "market_data": "LIVE",
     "news": "LEXICON",
-    "generated_utc": "2026-10-12 13:00 UTC",
-    "vix_ts": "CONTANGO"
+    "generated_utc": "2026-10-12 16:00 UTC",
+    "vix_ts": "STEEP_CONTANGO"
   },
   "repo_detail": {
     "equity_analyzer": {
-      "rsi": 38.2,
-      "mom": -0.0406,
-      "sharpe": 1.34,
-      "rel": -0.0618
+      "rsi": 53.5,
+      "mom": -0.0305,
+      "sharpe": 1.19,
+      "rel": -0.0565
     },
     "algo_system": {
-      "score": 0.55,
+      "score": 0.045,
       "eligible": true
     },
     "algo_top_pick": "XLK",
     "tech_all": {
       "XLK": {
-        "rsi": 60.3,
-        "mom": 0.0604,
-        "sharpe": 2.45,
-        "rel": 0.0392
+        "rsi": 50.7,
+        "mom": 0.0678,
+        "sharpe": 2.23,
+        "rel": 0.0418
       },
       "XLF": {
-        "rsi": 38.2,
-        "mom": -0.0406,
-        "sharpe": 1.34,
-        "rel": -0.0618
+        "rsi": 53.5,
+        "mom": -0.0305,
+        "sharpe": 1.19,
+        "rel": -0.0565
       },
       "XLE": {
-        "rsi": 67.7,
-        "mom": 0.005,
-        "sharpe": 1.39,
-        "rel": -0.0162
+        "rsi": 77.7,
+        "mom": 0.0292,
+        "sharpe": 1.49,
+        "rel": 0.0032
       },
       "XLV": {
-        "rsi": 55.6,
-        "mom": 0.0369,
-        "sharpe": 1.91,
-        "rel": 0.0157
+        "rsi": 54.5,
+        "mom": 0.025,
+        "sharpe": 1.89,
+        "rel": -0.0011
       },
       "XLY": {
-        "rsi": 53.4,
-        "mom": 0.0012,
-        "sharpe": 0.14,
-        "rel": -0.02
+        "rsi": 51.5,
+        "mom": -0.0,
+        "sharpe": 0.02,
+        "rel": -0.026
       },
       "XLP": {
-        "rsi": 59.8,
-        "mom": 0.0072,
-        "sharpe": 0.42,
-        "rel": -0.014
+        "rsi": 58.2,
+        "mom": 0.0009,
+        "sharpe": 0.63,
+        "rel": -0.0251
       },
       "XLI": {
-        "rsi": 47.9,
-        "mom": -0.0155,
-        "sharpe": -0.01,
-        "rel": -0.0367
+        "rsi": 48.7,
+        "mom": 0.0021,
+        "sharpe": -0.05,
+        "rel": -0.0239
       },
       "XLB": {
-        "rsi": 47.4,
-        "mom": -0.0254,
+        "rsi": 41.2,
+        "mom": -0.0117,
         "sharpe": -0.38,
-        "rel": -0.0466
+        "rel": -0.0377
       },
       "XLRE": {
-        "rsi": 38.3,
-        "mom": -0.0336,
-        "sharpe": -0.08,
-        "rel": -0.0548
+        "rsi": 41.6,
+        "mom": -0.0228,
+        "sharpe": -0.09,
+        "rel": -0.0488
       },
       "XLU": {
-        "rsi": 58.2,
-        "mom": -0.0159,
-        "sharpe": -1.29,
-        "rel": -0.0371
+        "rsi": 61.2,
+        "mom": 0.0011,
+        "sharpe": -1.1,
+        "rel": -0.0249
+      },
+      "XLC": {
+        "rsi": 42.2,
+        "mom": -0.0276,
+        "sharpe": -0.17,
+        "rel": -0.0536
       }
     },
     "algo_all": {
       "by_sector": {
         "XLK": {
-          "score": 0.777,
+          "score": 0.938,
           "eligible": true
         },
         "XLF": {
-          "score": 0.55,
+          "score": 0.045,
           "eligible": true
         },
         "XLE": {
-          "score": 0.554,
+          "score": 0.455,
           "eligible": true
         },
         "XLV": {
-          "score": 0.588,
+          "score": 0.807,
           "eligible": true
         },
         "XLY": {
-          "score": -0.305,
+          "score": -0.307,
           "eligible": false
         },
         "XLP": {
-          "score": -0.339,
+          "score": -0.101,
           "eligible": true
         },
         "XLI": {
-          "score": -0.349,
+          "score": -0.417,
           "eligible": false
         },
         "XLB": {
-          "score": -0.214,
+          "score": -0.052,
           "eligible": false
         },
         "XLRE": {
-          "score": -0.068,
+          "score": -0.197,
           "eligible": false
         },
         "XLU": {
-          "score": -1.194,
+          "score": -1.259,
+          "eligible": false
+        },
+        "XLC": {
+          "score": 0.088,
           "eligible": false
         }
       },
@@ -163,7 +174,7 @@
       "pressured": []
     },
     "fomc_sentiment": {
-      "pmsi": -0.059,
+      "pmsi": -0.063,
       "regime": "NEUTRAL"
     },
     "agreement": {
@@ -198,93 +209,69 @@
   },
   "ranked_opportunities": [
     {
-      "ticker": "XLF",
-      "name": "Financials",
-      "asset_type": "sector",
-      "conviction": "MEDIUM",
-      "score": 62.0,
-      "rationale": [
-        "RL ensemble pick (40.0% confidence)",
-        "algo-system eligible (score +0.55)",
-        "20d momentum weak (-4.1%)"
-      ],
-      "suggested_pct": 18.0,
-      "suggested_dollar": null,
-      "signal_summary": {
-        "rsi": 38.2,
-        "mom": -0.0406,
-        "sharpe": 1.34,
-        "rel": -0.0618,
-        "algo_score": 0.55,
-        "news": -0.083
-      },
-      "kelly_pct": 18.1
-    },
-    {
       "ticker": "TLT",
       "name": "20Y Treasuries",
       "asset_type": "macro",
       "conviction": "LOW",
       "score": 48.0,
       "rationale": [
-        "+0.1% 24h  |  +0.7% 7d",
+        "-0.0% 24h  |  +0.3% 7d",
         "oversold bounce setup"
       ],
       "suggested_pct": 7.0,
       "suggested_dollar": null,
       "signal_summary": {
-        "rsi": 20.8,
-        "mom_7d": 0.66,
-        "change_24h": 0.14,
+        "rsi": 20.9,
+        "mom_7d": 0.31,
+        "change_24h": -0.04,
         "signal": "OVERSOLD_BOUNCE"
       },
-      "kelly_pct": 17.5
+      "kelly_pct": 13.8
     },
     {
-      "ticker": "XLV",
-      "name": "Health Care",
+      "ticker": "XLF",
+      "name": "Financials",
       "asset_type": "sector",
       "conviction": "LOW",
-      "score": 46.0,
+      "score": 47.0,
       "rationale": [
-        "algo-system eligible (score +0.59)",
-        "20d momentum +3.7%",
-        "outperforming SPY +1.6%"
+        "RL ensemble pick (40.0% confidence)",
+        "20d momentum weak (-3.0%)"
       ],
       "suggested_pct": 9.0,
       "suggested_dollar": null,
       "signal_summary": {
-        "rsi": 55.6,
-        "mom": 0.0369,
-        "sharpe": 1.91,
-        "rel": 0.0157,
-        "algo_score": 0.588,
+        "rsi": 53.5,
+        "mom": -0.0305,
+        "sharpe": 1.19,
+        "rel": -0.0565,
+        "algo_score": 0.045,
         "news": 0.0
       },
-      "kelly_pct": 5.8
+      "kelly_pct": 4.4
     },
     {
       "ticker": "XLK",
       "name": "Technology",
       "asset_type": "sector",
       "conviction": "LOW",
-      "score": 41.0,
+      "score": 46.0,
       "rationale": [
-        "algo-system eligible (score +0.78)",
-        "20d momentum +6.0%",
-        "outperforming SPY +3.9%"
+        "algo-system eligible (score +0.94)",
+        "20d momentum +6.8%",
+        "outperforming SPY +4.2%"
       ],
       "suggested_pct": 9.0,
       "suggested_dollar": null,
       "signal_summary": {
-        "rsi": 60.3,
-        "mom": 0.0604,
-        "sharpe": 2.45,
-        "rel": 0.0392,
-        "algo_score": 0.777,
-        "news": -0.077
+        "rsi": 50.7,
+        "mom": 0.0678,
+        "sharpe": 2.23,
+        "rel": 0.0418,
+        "algo_score": 0.938,
+        "news": 0.0
       },
-      "kelly_pct": 7.2
+      "kelly_pct": 7.9
     }
   ],
   "crypto_signals": {
@@ -292,7 +279,7 @@
       "ticker": "BTC-USD",
       "name": "Bitcoin",
       "type": "crypto",
-      "price": 82666.0,
+      "price": 82664.31,
       "change_24h_pct": -1.21,
       "mom_7d_pct": -3.64,
       "rsi": 46.4,
@@ -304,10 +291,10 @@
       "ticker": "ETH-USD",
       "name": "Ethereum",
       "type": "crypto",
-      "price": 2528.03,
-      "change_24h_pct": -0.26,
-      "mom_7d_pct": -6.75,
-      "rsi": 32.6,
+      "price": 2529.38,
+      "change_24h_pct": -0.21,
+      "mom_7d_pct": -6.7,
+      "rsi": 32.7,
       "vol_7d_pct": 2.34,
       "signal": "BEARISH",
       "max_alloc_pct": 5.0
@@ -316,11 +303,11 @@
       "ticker": "GLD",
       "name": "Gold ETF",
       "type": "macro",
-      "price": 384.58,
-      "change_24h_pct": 1.57,
-      "mom_7d_pct": 0.98,
-      "rsi": 37.9,
-      "vol_7d_pct": 1.07,
+      "price": 381.82,
+      "change_24h_pct": -0.72,
+      "mom_7d_pct": -0.25,
+      "rsi": 34.4,
+      "vol_7d_pct": 1.1,
       "signal": "NEUTRAL",
       "max_alloc_pct": 15.0
     },
@@ -328,11 +315,11 @@
       "ticker": "TLT",
       "name": "20Y Treasuries",
       "type": "macro",
-      "price": 77.98,
-      "change_24h_pct": 0.14,
-      "mom_7d_pct": 0.66,
-      "rsi": 20.8,
-      "vol_7d_pct": 0.47,
+      "price": 77.95,
+      "change_24h_pct": -0.04,
+      "mom_7d_pct": 0.31,
+      "rsi": 20.9,
+      "vol_7d_pct": 0.46,
       "signal": "OVERSOLD_BOUNCE",
       "max_alloc_pct": 15.0
     },
@@ -340,11 +327,11 @@
       "ticker": "QQQ",
       "name": "Nasdaq 100",
       "type": "macro",
-      "price": 751.27,
-      "change_24h_pct": 0.49,
-      "mom_7d_pct": 1.55,
-      "rsi": 57.8,
-      "vol_7d_pct": 0.8,
+      "price": 747.39,
+      "change_24h_pct": -0.52,
+      "mom_7d_pct": 0.72,
+      "rsi": 49.9,
+      "vol_7d_pct": 0.85,
       "signal": "NEUTRAL",
       "max_alloc_pct": 15.0
     }
@@ -359,18 +346,18 @@
       "signal": "NORMAL"
     },
     "dollar": {
-      "dxy": 102.4,
-      "dxy_change": 0.19,
+      "dxy": 102.57,
+      "dxy_change": 0.36,
       "signal": "NEUTRAL"
     },
     "vix_term_structure": {
-      "vix": 15.5,
-      "vix3m": 17.8,
-      "vix9d": 11.3,
-      "ratio": 0.872,
-      "near_ratio": 0.726,
-      "ts_regime": "CONTANGO",
-      "ts_signal": "\ud83d\udfe1 Normal contango \u2014 proceed with base regime",
+      "vix": 15.1,
+      "vix3m": 17.9,
+      "vix9d": 11.6,
+      "ratio": 0.847,
+      "near_ratio": 0.767,
+      "ts_regime": "STEEP_CONTANGO",
+      "ts_signal": "\ud83d\udfe2 Deep contango \u2014 calm markets, momentum favored",
       "event_risk": false
     }
   },
@@ -385,31 +372,31 @@
       "sector_etf": "XLB",
       "sector_name": "Materials",
       "conviction": "LOW",
-      "composite_score": 59.6,
+      "composite_score": 59.5,
       "factor_scores": {
         "value": 64.7,
         "quality": 76.1,
         "momentum": 41.7,
-        "technical": 73.3,
+        "technical": 72.6,
         "low_vol": 41.7
       },
       "conviction_tagline": "Quality breakout \u2014 strong fundamentals + technical timing",
       "factor_regime": "NORMAL",
       "raw_factors": {
-        "fwd_pe": 11.783164,
-        "pb": 3.5408654,
-        "div_yield": 0.88,
-        "fcf_yield": 0.07100009164012468,
+        "fwd_pe": 11.587491,
+        "pb": 3.5310998,
+        "div_yield": 0.9,
+        "fcf_yield": 0.07119644520782036,
         "roe": 0.25905,
         "margin": 0.33363998,
         "analyst_mean": 4.43478,
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": -0.12455037968433125,
-        "rsi": 40.69973101070804,
-        "high_52w_prox": 0.8737997611940164,
-        "vol_90d": 0.45527069874162784
+        "rel_spy": -0.13756847432005637,
+        "rsi": 29.803083781460742,
+        "high_52w_prox": 0.8713898641761267,
+        "vol_90d": 0.45409339424542455
       },
       "rationale": [
         "High quality: ROE 25.9%",
@@ -427,34 +414,34 @@
       "conviction": "LOW",
       "composite_score": 59.4,
       "factor_scores": {
-        "value": 57.2,
+        "value": 58.6,
         "quality": 59.7,
         "momentum": 41.7,
-        "technical": 93.9,
+        "technical": 91.8,
         "low_vol": 65.0
       },
       "conviction_tagline": "Technical + Low-Vol strength in Health Care",
       "factor_regime": "NORMAL",
       "raw_factors": {
-        "fwd_pe": 17.012493,
-        "pb": -82.307236,
-        "div_yield": 2.5,
-        "fcf_yield": 0.03453091911855203,
+        "fwd_pe": 17.18472,
+        "pb": -83.18101,
+        "div_yield": 2.54,
+        "fcf_yield": 0.034168190501966046,
         "roe": null,
         "margin": 0.098000005,
         "analyst_mean": 4.3,
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": 0.2192263399182237,
-        "rsi": 72.61408075111831,
+        "rel_spy": 0.22245475371427736,
+        "rsi": 74.71703611223964,
         "high_52w_prox": 1.0,
-        "vol_90d": 0.26052403370145033
+        "vol_90d": 0.2607015267621016
       },
       "rationale": [
         "Near 52-week high (100.0%) \u2014 breakout zone",
-        "RSI 73 \u2014 ideal entry zone",
-        "Outperforming SPY by +21.9% over 6mo"
+        "RSI 75 \u2014 ideal entry zone",
+        "Outperforming SPY by +22.2% over 6mo"
       ],
       "suggested_pct": 4.0,
       "suggested_dollar": null,
@@ -466,35 +453,75 @@
       "sector_etf": "XLE",
       "sector_name": "Energy",
       "conviction": "LOW",
-      "composite_score": 58.8,
+      "composite_score": 57.7,
       "factor_scores": {
         "value": 61.1,
         "quality": 61.9,
         "momentum": 41.7,
-        "technical": 85.5,
+        "technical": 78.3,
         "low_vol": 57.1
       },
       "conviction_tagline": "Quality breakout \u2014 strong fundamentals + technical timing",
       "factor_regime": "NORMAL",
       "raw_factors": {
-        "fwd_pe": 14.380738,
-        "pb": 2.1898758,
-        "div_yield": 3.36,
-        "fcf_yield": 0.05274869994420733,
+        "fwd_pe": 14.570079,
+        "pb": 2.2219007,
+        "div_yield": 3.37,
+        "fcf_yield": 0.05198842216049563,
         "roe": 0.12231,
         "margin": 0.09834,
         "analyst_mean": 4.28,
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": -0.015337195135488813,
-        "rsi": 67.5538727699657,
-        "high_52w_prox": 0.9734122770293113,
-        "vol_90d": 0.24350507801308413
+        "rel_spy": 0.043737803629549266,
+        "rsi": 74.83340001507369,
+        "high_52w_prox": 0.9876475070550089,
+        "vol_90d": 0.24391945640709276
       },
       "rationale": [
-        "Near 52-week high (97.3%) \u2014 breakout zone",
-        "RSI 68 \u2014 ideal entry zone"
+        "Near 52-week high (98.8%) \u2014 breakout zone",
+        "RSI 75 \u2014 ideal entry zone"
+      ],
+      "suggested_pct": 4.0,
+      "suggested_dollar": null,
+      "asset_type": "equity"
+    },
+    {
+      "ticker": "JPM",
+      "name": "JPMorgan",
+      "sector_etf": "XLF",
+      "sector_name": "Financials",
+      "conviction": "LOW",
+      "composite_score": 57.3,
+      "factor_scores": {
+        "value": 45.6,
+        "quality": 63.7,
+        "momentum": 41.7,
+        "technical": 82.0,
+        "low_vol": 75.0
+      },
+      "conviction_tagline": "Technical + Low-Vol strength in Financials",
+      "factor_regime": "NORMAL",
+      "raw_factors": {
+        "fwd_pe": 13.326914,
+        "pb": 2.5171983,
+        "div_yield": 1.98,
+        "fcf_yield": null,
+        "roe": 0.17789,
+        "margin": 0.34921002,
+        "analyst_mean": 3.88,
+        "earnings_surprise": null,
+        "mom_12_1": null,
+        "mom_6m": null,
+        "rel_spy": -0.04055998232325164,
+        "rsi": 44.31332752079402,
+        "high_52w_prox": 0.9214233259336501,
+        "vol_90d": 0.19987373945031658
+      },
+      "rationale": [
+        "RSI 44 \u2014 ideal entry zone",
+        "RL ensemble agrees on Financials sector"
       ],
       "suggested_pct": 4.0,
       "suggested_dollar": null,
@@ -506,34 +533,34 @@
       "sector_etf": "XLY",
       "sector_name": "Consumer Discr.",
       "conviction": "LOW",
-      "composite_score": 57.5,
+      "composite_score": 57.2,
       "factor_scores": {
         "value": 69.1,
-        "quality": 55.7,
+        "quality": 56.5,
         "momentum": 41.7,
-        "technical": 59.7,
+        "technical": 55.9,
         "low_vol": 83.3
       },
       "conviction_tagline": "Income/defensive value \u2014 cheap + stable",
       "factor_regime": "NORMAL",
       "raw_factors": {
-        "fwd_pe": 17.087927,
-        "pb": -162.67635,
+        "fwd_pe": 17.056326,
+        "pb": -162.37552,
         "div_yield": 3.28,
-        "fcf_yield": 0.037621233054083034,
+        "fcf_yield": 0.037690932823023764,
         "roe": null,
         "margin": 0.3172,
         "analyst_mean": 3.94118,
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": -0.3572708193300952,
-        "rsi": 31.714328817016366,
-        "high_52w_prox": 0.8575326763973647,
-        "vol_90d": 0.2253190805454765
+        "rel_spy": -0.34211397743499494,
+        "rsi": 26.041622240973894,
+        "high_52w_prox": 0.8556370526304548,
+        "vol_90d": 0.22474825382042807
       },
       "rationale": [
-        "Composite alpha score: 58/100"
+        "Composite alpha score: 57/100"
       ],
       "suggested_pct": 4.0,
       "suggested_dollar": null,
@@ -545,157 +572,118 @@
       "sector_etf": "XLP",
       "sector_name": "Consumer Staples",
       "conviction": "LOW",
-      "composite_score": 57.5,
+      "composite_score": 56.9,
       "factor_scores": {
         "value": 54.3,
         "quality": 63.1,
         "momentum": 41.7,
-        "technical": 89.0,
-        "low_vol": 50.0
+        "technical": 91.4,
+        "low_vol": 40.5
       },
       "conviction_tagline": "Quality breakout \u2014 strong fundamentals + technical timing",
       "factor_regime": "NORMAL",
       "raw_factors": {
-        "fwd_pe": 21.911945,
-        "pb": -36.533504,
+        "fwd_pe": 21.921202,
+        "pb": -36.548935,
         "div_yield": 3.18,
-        "fcf_yield": 0.030979188680767395,
+        "fcf_yield": 0.030966109273083058,
         "roe": null,
         "margin": 0.25559,
         "analyst_mean": 4.3125,
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": 0.11660308437284761,
-        "rsi": 76.69052802539882,
+        "rel_spy": 0.15656523218165264,
+        "rsi": 74.32480163848876,
         "high_52w_prox": 1.0,
-        "vol_90d": 0.2649487507434485
+        "vol_90d": 0.26428447583230846
       },
       "rationale": [
         "Near 52-week high (100.0%) \u2014 breakout zone",
-        "RSI 77 \u2014 ideal entry zone",
-        "Outperforming SPY by +11.7% over 6mo"
+        "RSI 74 \u2014 ideal entry zone",
+        "Outperforming SPY by +15.7% over 6mo"
       ],
       "suggested_pct": 4.0,
       "suggested_dollar": null,
       "asset_type": "equity"
     },
     {
-      "ticker": "MA",
-      "name": "Mastercard",
-      "sector_etf": "XLF",
-      "sector_name": "Financials",
+      "ticker": "NVDA",
+      "name": "Nvidia",
+      "sector_etf": "XLK",
+      "sector_name": "Technology",
       "conviction": "LOW",
       "composite_score": 56.5,
       "factor_scores": {
-        "value": 26.7,
-        "quality": 66.7,
+        "value": 38.4,
+        "quality": 81.5,
         "momentum": 41.7,
-        "technical": 96.3,
-        "low_vol": 75.0
-      },
-      "conviction_tagline": "Technical + Low-Vol strength in Financials",
-      "factor_regime": "NORMAL",
-      "raw_factors": {
-        "fwd_pe": 25.576363,
-        "pb": 92.110695,
-        "div_yield": 0.59,
-        "fcf_yield": 0.032864749065279364,
-        "roe": 2.41202,
-        "margin": 0.46339,
-        "analyst_mean": 4.575,
-        "earnings_surprise": null,
-        "mom_12_1": null,
-        "mom_6m": null,
-        "rel_spy": 0.021577850713105917,
-        "rsi": 63.5781857984471,
-        "high_52w_prox": 0.983618034021418,
-        "vol_90d": 0.21227992500086318
-      },
-      "rationale": [
-        "Near 52-week high (98.4%) \u2014 breakout zone",
-        "RSI 64 \u2014 ideal entry zone",
-        "RL ensemble agrees on Financials sector"
-      ],
-      "suggested_pct": 4.0,
-      "suggested_dollar": null,
-      "asset_type": "equity"
-    },
-    {
-      "ticker": "EOG",
-      "name": "EOG Resources",
-      "sector_etf": "XLE",
-      "sector_name": "Energy",
-      "conviction": "LOW",
-      "composite_score": 56.4,
-      "factor_scores": {
-        "value": 67.7,
-        "quality": 66.2,
-        "momentum": 41.7,
-        "technical": 68.2,
-        "low_vol": 35.7
-      },
-      "conviction_tagline": "Technical + Value strength in Energy",
-      "factor_regime": "NORMAL",
-      "raw_factors": {
-        "fwd_pe": 9.613395,
-        "pb": 2.443433,
-        "div_yield": 2.75,
-        "fcf_yield": 0.05763100818396302,
-        "roe": 0.22507,
-        "margin": 0.25733,
-        "analyst_mean": 3.65625,
-        "earnings_surprise": null,
-        "mom_12_1": null,
-        "mom_6m": null,
-        "rel_spy": -0.04225920889175239,
-        "rsi": 65.33938028569771,
-        "high_52w_prox": 0.9637049458066866,
-        "vol_90d": 0.3209727426428897
-      },
-      "rationale": [
-        "Composite alpha score: 56/100"
-      ],
-      "suggested_pct": 4.0,
-      "suggested_dollar": null,
-      "asset_type": "equity"
-    },
-    {
-      "ticker": "GOOGL",
-      "name": "Alphabet",
-      "sector_etf": "XLC",
-      "sector_name": "Communication",
-      "conviction": "LOW",
-      "composite_score": 56.4,
-      "factor_scores": {
-        "value": 22.8,
-        "quality": 85.8,
-        "momentum": 41.7,
-        "technical": 94.6,
-        "low_vol": 37.5
+        "technical": 76.7,
+        "low_vol": 44.4
       },
       "conviction_tagline": "Quality breakout \u2014 strong fundamentals + technical timing",
       "factor_regime": "NORMAL",
       "raw_factors": {
-        "fwd_pe": 23.115559,
-        "pb": 6.909384,
-        "div_yield": 0.25,
-        "fcf_yield": 0.005269975697405305,
-        "roe": 0.48676,
-        "margin": 0.54771,
-        "analyst_mean": 4.62903,
+        "fwd_pe": 14.22566,
+        "pb": 23.87385,
+        "div_yield": 0.44,
+        "fcf_yield": 0.0076479932303479894,
+        "roe": 1.17211,
+        "margin": 0.63663,
+        "analyst_mean": 4.7049199999999995,
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": -0.044710185264348334,
-        "rsi": 46.88147990102937,
-        "high_52w_prox": 0.9317782180574803,
-        "vol_90d": 0.3305270096674702
+        "rel_spy": 0.02782721138778288,
+        "rsi": 46.49373927183103,
+        "high_52w_prox": 0.9463718377509347,
+        "vol_90d": 0.38134644412999447
       },
       "rationale": [
-        "High quality: ROE 48.7%",
-        "Analyst consensus: Strong Buy (1.4/5)",
-        "RSI 47 \u2014 ideal entry zone"
+        "High quality: ROE 117.2%",
+        "Analyst consensus: Strong Buy (1.3/5)"
+      ],
+      "suggested_pct": 4.0,
+      "suggested_dollar": null,
+      "asset_type": "equity"
+    },
+    {
+      "ticker": "KO",
+      "name": "Coca-Cola",
+      "sector_etf": "XLP",
+      "sector_name": "Consumer Staples",
+      "conviction": "LOW",
+      "composite_score": 56.3,
+      "factor_scores": {
+        "value": 30.3,
+        "quality": 73.3,
+        "momentum": 41.7,
+        "technical": 82.9,
+        "low_vol": 70.2
+      },
+      "conviction_tagline": "Quality breakout \u2014 strong fundamentals + technical timing",
+      "factor_regime": "NORMAL",
+      "raw_factors": {
+        "fwd_pe": 25.2879,
+        "pb": 10.614808,
+        "div_yield": 2.42,
+        "fcf_yield": 0.01360183576851577,
+        "roe": 0.42054,
+        "margin": 0.28558,
+        "analyst_mean": 4.25,
+        "earnings_surprise": null,
+        "mom_12_1": null,
+        "mom_6m": null,
+        "rel_spy": 0.06251461578986417,
+        "rsi": 53.53533799345169,
+        "high_52w_prox": 0.9751287190700456,
+        "vol_90d": 0.21654513415344
+      },
+      "rationale": [
+        "High quality: ROE 42.1%",
+        "Analyst consensus: Strong Buy (1.8/5)",
+        "Near 52-week high (97.5%) \u2014 breakout zone",
+        "RSI 54 \u2014 ideal entry zone"
       ],
       "suggested_pct": 4.0,
       "suggested_dollar": null,
@@ -726,40 +714,40 @@
     },
     "JPM": {
       "ticker": "JPM",
-      "bullish": 7,
-      "bearish": 1,
-      "total_tagged": 8,
-      "score": 0.75,
+      "bullish": 5,
+      "bearish": 0,
+      "total_tagged": 5,
+      "score": 1.0,
       "signal": "BULLISH"
     },
     "V": {
       "ticker": "V",
-      "bullish": 4,
-      "bearish": 1,
-      "total_tagged": 5,
-      "score": 0.6,
+      "bullish": 2,
+      "bearish": 0,
+      "total_tagged": 2,
+      "score": 1.0,
       "signal": "BULLISH"
     }
   },
   "alpaca_paper": {
-    "equity": 99973.11,
+    "equity": 99972.94,
     "cash": 99891.26,
-    "daily_pnl": -0.04,
+    "daily_pnl": -0.21,
     "daily_pnl_pct": -0.0,
     "positions": [
       {
         "symbol": "QQQ",
         "qty": "0.054262303",
-        "current_price": "750.35",
-        "unrealized_pl": "0.71572",
-        "unrealized_plpc": "0.01789"
+        "current_price": "747.32",
+        "unrealized_pl": "0.551305",
+        "unrealized_plpc": "0.01378"
       },
       {
         "symbol": "SPY",
         "qty": "0.052815181",
-        "current_price": "778.88",
-        "unrealized_pl": "1.136688",
-        "unrealized_plpc": "0.02842"
+        "current_price": "778.69",
+        "unrealized_pl": "1.126653",
+        "unrealized_plpc": "0.02817"
       }
     ],
     "account_status": "ACTIVE"
