@@ -1,10 +1,10 @@
 {
-  "date": "2026-11-26",
+  "date": "2026-11-27",
   "regime": "NORMAL",
   "vix": 16.3,
   "ticker": "XLF",
   "action": "BUY",
-  "confidence": 20,
+  "confidence": 25,
   "current_weight": 8.7,
   "rl_votes": {
     "A2C": "BUY XLF",
@@ -12,30 +12,28 @@
     "PPO": "BUY XLK"
   },
   "abstain_reason": null,
-  "news_sentiment": -0.071,
-  "news_headline": "Microdrama apps chase profits as Hollywood moves into short-form, vertical video",
+  "news_sentiment": 0.0,
+  "news_headline": "Budget airline Norse Atlantic files for bankruptcy in Europe after failing to secure funding",
   "rsi": 49.0,
   "rel_strength": -0.063,
   "political_note": null,
   "ghost_alpha": 0.0,
   "why_trace": [
     "Ensemble agreement: 1/3 agents on XLF",
-    "News sentiment for XLF: -0.07",
-    "Options PCR (SPY): 0.82 [NEUTRAL]",
+    "News sentiment for XLF: +0.00",
+    "Options PCR (SPY): 1.16 [NEUTRAL]",
     "repo: algo-system prefers XLV",
     "repo: equity-analyzer momentum+rel-strength positive",
     "modifier: only 1/3 agents chose XLF (minority view) \u2192 -10",
-    "modifier: VIX term structure backwardation (front-heavy fear) \u2192 -8",
-    "modifier: mixed cross-repo support 1/2 \u2192 -5",
-    "[GRPO] negative modifiers scaled to cap \u221220"
+    "modifier: mixed cross-repo support 1/2 \u2192 -5"
   ],
   "paper_mode": true,
   "freshness": {
     "rl_source": "LIVE",
     "market_data": "LIVE",
     "news": "LEXICON",
-    "generated_utc": "2026-11-26 20:31 UTC",
-    "vix_ts": "BACKWARDATION"
+    "generated_utc": "2026-11-27 14:01 UTC",
+    "vix_ts": "CONTANGO"
   },
   "repo_detail": {
     "equity_analyzer": {
@@ -173,7 +171,7 @@
       "pressured": []
     },
     "fomc_sentiment": {
-      "pmsi": 0.222,
+      "pmsi": 0.164,
       "regime": "BULLISH"
     },
     "agreement": {
@@ -226,21 +224,40 @@
         "sharpe": 1.41,
         "rel": 0.0788,
         "algo_score": 0.657,
-        "news": -0.071
+        "news": 0.0
       },
       "kelly_pct": 32.4
+    },
+    {
+      "ticker": "BTC-USD",
+      "name": "Bitcoin",
+      "asset_type": "crypto",
+      "conviction": "SPECULATIVE",
+      "score": 48.0,
+      "rationale": [
+        "+1.4% 24h  |  +4.4% 7d",
+        "oversold bounce setup"
+      ],
+      "suggested_pct": 3.0,
+      "suggested_dollar": null,
+      "signal_summary": {
+        "rsi": 30.2,
+        "mom_7d": 4.37,
+        "change_24h": 1.45,
+        "signal": "OVERSOLD_BOUNCE"
+      },
+      "kelly_pct": 17.5
     },
     {
       "ticker": "XLP",
       "name": "Consumer Staples",
       "asset_type": "sector",
       "conviction": "LOW",
-      "score": 54.0,
+      "score": 46.0,
       "rationale": [
         "algo-system eligible (score +0.41)",
         "20d momentum +6.3%",
-        "outperforming SPY +13.5%",
-        "news bullish (+0.40)"
+        "outperforming SPY +13.5%"
       ],
       "suggested_pct": 9.0,
       "suggested_dollar": null,
@@ -250,9 +267,9 @@
         "sharpe": 1.25,
         "rel": 0.1349,
         "algo_score": 0.407,
-        "news": 0.4
+        "news": 0.0
       },
-      "kelly_pct": 12.3
+      "kelly_pct": 5.7
     },
     {
       "ticker": "XLV",
@@ -263,7 +280,7 @@
       "rationale": [
         "algo-system eligible (score +1.20)",
         "outperforming SPY +9.4%",
-        "news bullish (+0.75)"
+        "news bullish (+0.67)"
       ],
       "suggested_pct": 9.0,
       "suggested_dollar": null,
@@ -273,25 +290,25 @@
         "sharpe": 2.21,
         "rel": 0.094,
         "algo_score": 1.203,
-        "news": 0.75
+        "news": 0.667
       },
       "kelly_pct": 4.8
     },
     {
-      "ticker": "TLT",
-      "name": "20Y Treasuries",
-      "asset_type": "macro",
-      "conviction": "LOW",
+      "ticker": "ETH-USD",
+      "name": "Ethereum",
+      "asset_type": "crypto",
+      "conviction": "SPECULATIVE",
       "score": 40.0,
       "rationale": [
-        "+0.9% 24h  |  +3.6% 7d"
+        "+2.0% 24h  |  +6.3% 7d"
       ],
-      "suggested_pct": 7.0,
+      "suggested_pct": 3.0,
       "suggested_dollar": null,
       "signal_summary": {
-        "rsi": 52.6,
-        "mom_7d": 3.6,
-        "change_24h": 0.92,
+        "rsi": 34.0,
+        "mom_7d": 6.31,
+        "change_24h": 2.01,
         "signal": "BULLISH"
       },
       "kelly_pct": 15.6
@@ -302,24 +319,24 @@
       "ticker": "BTC-USD",
       "name": "Bitcoin",
       "type": "crypto",
-      "price": 60622.54,
-      "change_24h_pct": 0.4,
-      "mom_7d_pct": -2.07,
-      "rsi": 22.8,
-      "vol_7d_pct": 2.57,
-      "signal": "BEARISH",
+      "price": 61370.11,
+      "change_24h_pct": 1.45,
+      "mom_7d_pct": 4.37,
+      "rsi": 30.2,
+      "vol_7d_pct": 1.54,
+      "signal": "OVERSOLD_BOUNCE",
       "max_alloc_pct": 5.0
     },
     "ETH-USD": {
       "ticker": "ETH-USD",
       "name": "Ethereum",
       "type": "crypto",
-      "price": 1701.19,
-      "change_24h_pct": 0.62,
-      "mom_7d_pct": -3.08,
-      "rsi": 27.6,
-      "vol_7d_pct": 3.74,
-      "signal": "BEARISH",
+      "price": 1721.59,
+      "change_24h_pct": 2.01,
+      "mom_7d_pct": 6.31,
+      "rsi": 34.0,
+      "vol_7d_pct": 1.97,
+      "signal": "BULLISH",
       "max_alloc_pct": 5.0
     },
     "GLD": {
@@ -361,27 +378,27 @@
   },
   "macro": {
     "yield_curve": {
-      "ten_yr": 4.848,
-      "two_yr": 4.155,
+      "ten_yr": 4.896,
+      "two_yr": 4.16,
       "rate_label": "13w T-bill",
-      "spread": 0.693,
+      "spread": 0.736,
       "inverted": false,
       "signal": "NORMAL"
     },
     "dollar": {
-      "dxy": 103.77,
-      "dxy_change": 0.1,
+      "dxy": 103.9,
+      "dxy_change": 0.22,
       "signal": "NEUTRAL"
     },
     "vix_term_structure": {
-      "vix": 26.8,
+      "vix": 25.4,
       "vix3m": 26.3,
       "vix9d": 29.6,
-      "ratio": 1.019,
-      "near_ratio": 1.105,
-      "ts_regime": "BACKWARDATION",
-      "ts_signal": "\u26a0\ufe0f Front-heavy fear spike \u2014 stressed regime confirmed",
-      "event_risk": false
+      "ratio": 0.965,
+      "near_ratio": 1.167,
+      "ts_regime": "CONTANGO",
+      "ts_signal": "\ud83d\udfe1 Normal contango \u2014 proceed with base regime",
+      "event_risk": true
     }
   },
   "earnings_warning": "",
@@ -453,7 +470,7 @@
         "fcf_yield": 0.03399074930739177,
         "roe": null,
         "margin": 0.15666,
-        "analyst_mean": 4.31034,
+        "analyst_mean": 4.3,
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
@@ -491,7 +508,7 @@
         "fwd_pe": 18.506796,
         "pb": -20.631237,
         "div_yield": 2.12,
-        "fcf_yield": 0.05106801331504971,
+        "fcf_yield": 0.04967440424397227,
         "roe": null,
         "margin": 0.072519995,
         "analyst_mean": 4.08571,
@@ -501,7 +518,7 @@
         "rel_spy": 0.16090754852286604,
         "rsi": 59.367335786151884,
         "high_52w_prox": 1.0,
-        "vol_90d": 0.3060130581791664
+        "vol_90d": 0.30601305817916635
       },
       "rationale": [
         "Near 52-week high (100.0%) \u2014 breakout zone",
@@ -542,7 +559,7 @@
         "rel_spy": 0.3880802218020397,
         "rsi": 52.0456564016175,
         "high_52w_prox": 0.9811053961600695,
-        "vol_90d": 0.2227313857258615
+        "vol_90d": 0.22273138572586162
       },
       "rationale": [
         "High quality: ROE 231.4%",
@@ -581,10 +598,10 @@
         "earnings_surprise": null,
         "mom_12_1": null,
         "mom_6m": null,
-        "rel_spy": 0.3529873665239448,
+        "rel_spy": 0.352987489025007,
         "rsi": 52.041166927948076,
         "high_52w_prox": 0.9739000966097642,
-        "vol_90d": 0.21312039203994773
+        "vol_90d": 0.21312043663050256
       },
       "rationale": [
         "High quality: ROE 63.5%",
@@ -626,7 +643,7 @@
         "rel_spy": 0.1411778472755677,
         "rsi": 61.511096464582494,
         "high_52w_prox": 1.0,
-        "vol_90d": 0.17335870919803764
+        "vol_90d": 0.17335881098886619
       },
       "rationale": [
         "Near 52-week high (100.0%) \u2014 breakout zone",
@@ -667,7 +684,7 @@
         "rel_spy": 0.22370442446396488,
         "rsi": 49.6553369277701,
         "high_52w_prox": 0.9031155051186252,
-        "vol_90d": 0.24604152378855912
+        "vol_90d": 0.24604152378855926
       },
       "rationale": [
         "RSI 50 \u2014 ideal entry zone",
@@ -707,7 +724,7 @@
         "rel_spy": 0.2983387975147095,
         "rsi": 58.23003782380065,
         "high_52w_prox": 0.9810011363564028,
-        "vol_90d": 0.18772588366569526
+        "vol_90d": 0.18772588366569531
       },
       "rationale": [
         "High quality: ROE 40.6%",
@@ -723,31 +740,31 @@
   "equity_alpha_exit_alerts": [],
   "options_signals": {
     "SPY": {
-      "pcr": 0.818,
+      "pcr": 1.159,
       "signal": "NEUTRAL",
-      "interpretation": "PCR 0.82 \u2014 balanced options positioning"
+      "interpretation": "PCR 1.16 \u2014 balanced options positioning"
     },
     "QQQ": {
-      "pcr": 2.249,
+      "pcr": 2.001,
       "signal": "FEARFUL",
-      "interpretation": "PCR 2.25 \u2014 elevated put buying (fear/hedging)"
+      "interpretation": "PCR 2.00 \u2014 elevated put buying (fear/hedging)"
     }
   },
   "social_sentiment": {
     "BRK-B": {
       "ticker": "BRK-B",
-      "bullish": 8,
-      "bearish": 3,
+      "bullish": 7,
+      "bearish": 4,
       "total_tagged": 11,
-      "score": 0.455,
+      "score": 0.273,
       "signal": "BULLISH"
     },
     "JPM": {
       "ticker": "JPM",
-      "bullish": 3,
-      "bearish": 8,
+      "bullish": 4,
+      "bearish": 7,
       "total_tagged": 11,
-      "score": -0.455,
+      "score": -0.273,
       "signal": "BEARISH"
     },
     "V": {
@@ -760,24 +777,24 @@
     }
   },
   "alpaca_paper": {
-    "equity": 99963.51,
+    "equity": 99964.84,
     "cash": 99891.26,
-    "daily_pnl": -0.0,
-    "daily_pnl_pct": -0.0,
+    "daily_pnl": 1.33,
+    "daily_pnl_pct": 0.0,
     "positions": [
       {
         "symbol": "QQQ",
         "qty": "0.054262303",
-        "current_price": "633.93",
-        "unrealized_pl": "-5.601497",
-        "unrealized_plpc": "-0.14004"
+        "current_price": "647.8",
+        "unrealized_pl": "-4.848879",
+        "unrealized_plpc": "-0.12122"
       },
       {
         "symbol": "SPY",
         "qty": "0.052815181",
-        "current_price": "716.7",
-        "unrealized_pl": "-2.14736",
-        "unrealized_plpc": "-0.05368"
+        "current_price": "727.6",
+        "unrealized_pl": "-1.571674",
+        "unrealized_plpc": "-0.03929"
       }
     ],
     "account_status": "ACTIVE"
